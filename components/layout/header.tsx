@@ -52,6 +52,7 @@ export function Header() {
 
           {/* Sign in button */}
           <Button
+            nativeButton={false}
             render={<Link href="/sign-in">Sign in</Link>}
             variant="outline"
           />

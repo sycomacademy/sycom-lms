@@ -33,14 +33,16 @@ export function ProgressDemo() {
             const percentage = value;
             const circumference = 2 * Math.PI * 36; // radius = 36 (half of 72px size)
             const offset = circumference - (percentage / 100) * circumference;
+            const titleText = `Progress: ${value}%`;
             return (
               <div className="flex flex-col items-center gap-2" key={value}>
                 <div className="relative flex size-20 items-center justify-center">
                   <svg
+                    aria-label={titleText}
                     className="size-20 -rotate-90 transform"
                     viewBox="0 0 80 80"
                   >
-                    <title>Progress: {value}%</title>
+                    <title>{titleText}</title>
                     <circle
                       className="stroke-current text-muted"
                       cx="40"

@@ -1,9 +1,10 @@
 import type { ComponentType } from "react";
-// import { AccordionDemo } from "@/components/demo/accordion-demo";
-// import { AlertsDemo } from "@/components/demo/alerts-demo";
-// import { BadgesDemo } from "@/components/demo/badges-demo";
+import { AccordionDemo } from "@/components/demo/accordion-demo";
+import { BadgesDemo } from "@/components/demo/badges-demo";
 import { ButtonsDemo } from "@/components/demo/buttons-demo";
 import { CourseCardsDemo } from "@/components/demo/course-cards-demo";
+import { CourseDescriptionDemo } from "@/components/demo/course-description-demo";
+import { FormDemo } from "@/components/demo/form-demo";
 import { HeroDemo } from "@/components/demo/hero-demo";
 import { LabInterfaceDemo } from "@/components/demo/lab-interface-demo";
 import { LabSplitScreenDemo } from "@/components/demo/lab-split-screen-demo";
@@ -14,11 +15,6 @@ import { ProfileStatsDemo } from "@/components/demo/profile-stats-demo";
 import { ProgressDemo } from "@/components/demo/progress-demo";
 import { Footer } from "./layout/footer";
 import { Header } from "./layout/header";
-// import { CardDemo } from "@/components/demo/card-demo";
-// import { BlockExample } from "@/components/demo/form-block";
-// import { FormDemo } from "@/components/demo/form-demo";
-// import { MiscDemo } from "@/components/demo/misc-demo";
-// import { TabsDemo } from "@/components/demo/tabs-demo";
 
 export interface ComponentConfig {
   name: string;
@@ -31,11 +27,29 @@ export interface ComponentConfig {
 
 export const componentRegistry: Record<string, ComponentConfig> = {
   // UI Components
+  accordion: {
+    name: "Accordion",
+    component: AccordionDemo,
+    type: "registry:ui",
+    href: "/style-guide/accordion",
+  },
   buttons: {
     name: "Buttons",
     component: ButtonsDemo,
     type: "registry:ui",
     href: "/style-guide/buttons",
+  },
+  badges: {
+    name: "Badges",
+    component: BadgesDemo,
+    type: "registry:ui",
+    href: "/style-guide/badges",
+  },
+  forms: {
+    name: "Forms",
+    component: FormDemo,
+    type: "registry:ui",
+    href: "/style-guide/forms",
   },
   progress: {
     name: "Progress",
@@ -104,5 +118,11 @@ export const componentRegistry: Record<string, ComponentConfig> = {
     component: LessonPageDemo,
     type: "registry:page",
     href: "/style-guide/lesson-page",
+  },
+  "course-description": {
+    name: "Course Description",
+    component: CourseDescriptionDemo,
+    type: "registry:page",
+    href: "/style-guide/course-description",
   },
 };
