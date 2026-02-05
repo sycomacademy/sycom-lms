@@ -1,0 +1,45 @@
+---
+description: Base UI / shadcn component usage, page structure, and base component protection
+alwaysApply: true
+---
+
+# UI and Component Rules
+
+Rules for using Base UI / shadcn components, structuring pages, and protecting base components.
+
+## Base UI Over Radix
+
+This project uses **Base UI** with shadcn (not Radix UI). Follow Base UI syntax only.
+
+- **Use `render`, not `asChild`.** Base UI uses the `render` prop to customize the root element; Radix uses `asChild`. Never use `asChild` on components from `components/ui/`.
+- When composing triggers, buttons, or custom root elements, pass a React element to `render`, e.g. `render={<Button variant="outline" />}`.
+- If unsure, open the component in `components/ui/` and confirm the actual prop name (e.g. `render`) and supported props before writing code.
+
+## Page Structure (Next.js / React)
+
+When **creating or refactoring a page** (App Router page, layout, or route):
+
+1. **Use the Vercel React best practices skill** (`.cursor/skills/vercel-react-best-practices`): read the skill and apply the relevant rules for data fetching, waterfalls, Suspense, bundle size, and rendering.
+2. Structure the page accordingly (e.g. parallel data fetching, strategic Suspense boundaries, minimal serialization at RSC boundaries).
+
+## Use Only Existing Components and Their Real Props
+
+- **Always use the components that exist** in this project (e.g. under `components/ui/` and any project-specific components). Do not invent or assume components that are not in the codebase.
+- **Before using a component, check its definition**: open the component file and see which props/attributes it accepts (including Base UI primitives’ props). Use only those props and attributes.
+- **Do not hallucinate props or attributes.** If a component does not accept a prop (e.g. it has no `asChild`), do not use it. Wrong examples: using `asChild` on Base UI components, or adding props that are not in the component’s type definition.
+- When in doubt, read the component source in `components/ui/` (and any wrapper) and match the usage to the actual API.
+
+## Base Components (components/ui/) — No Edits Without Permission
+
+- **Do not change files under `components/ui/`** unless the user explicitly asks to modify a base component (e.g. “change the Button variants”, “add a new Dialog prop”).
+- **Compose, don’t edit.** Achieve the desired UI by composing existing components in feature components (e.g. under `components/` but outside `ui/`). Do not edit base components to fit a single use case.
+- **If a task would require editing a base component:** stop and ask: “This would require changing [ComponentName] in `components/ui/`. Should I modify it, or do you prefer a wrapper/alternative?” Do not modify `components/ui/` without explicit approval.
+
+## Summary
+
+| Topic | Rule |
+|-------|------|
+| Base UI vs Radix | Use `render`, never `asChild`. Follow Base UI API only. |
+| Pages | When creating/refactoring pages, use vercel-react-best-practices skill for structure and performance. |
+| Component usage | Use only existing components; always check the component file for real props; never hallucinate props (e.g. no `asChild`). |
+| components/ui/ | Do not edit base components unless the user explicitly asks; compose in other components or ask before changing. |

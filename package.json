@@ -8,7 +8,7 @@
     "start": "next start",
     "check": "ultracite check",
     "fix": "ultracite fix",
-    "prepare": "lefthook install"
+    "prep": "lefthook install"
   },
   "dependencies": {
     "next": "16.1.6",

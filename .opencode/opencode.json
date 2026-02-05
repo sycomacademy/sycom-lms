@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [".opencode/skills/vercel-react-best-practices/AGENTS.md"],
+  "formatter": {
+    "biome": {
+      "command": ["bunx", "biome", "check", "--write", "$FILE"],
+      "extensions": [".js", ".ts", ".jsx", ".tsx", ".json", ".jsonc"]
+    }
+  }
+}

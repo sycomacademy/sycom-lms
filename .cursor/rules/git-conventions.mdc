@@ -1,0 +1,44 @@
+---
+description: Branch and commit naming conventions
+alwaysApply: false
+---
+# Git Conventions
+
+## Branch Naming
+
+- **main** — Staging branch (default). Protected; integrate via PRs.
+- **feature/[name]** — New features (e.g. `feature/auth`, `feature/user-dashboard`).
+- **fix/[name]** — Bug fixes and debug sessions (e.g. `fix/login-redirect`, `fix/hydration`).
+- **refactor/[name]** — Config changes, AI rules, setup, non-feature refactors (e.g. `refactor/biome-config`, `refactor/cursor-rules`).
+- **docs/[name]** — Documentation (e.g. `docs/brand-guideline.md`).
+- **other/[name]** — Anything that doesn’t fit above (e.g.`other/chore-deps`).
+
+Use lowercase, short descriptive names. Prefer hyphens for multi-word names.
+
+## Commit Message Format
+
+Match the branch type as the prefix, then a short description:
+
+```
+<type> - <description>
+```
+
+Examples:
+
+- `feature - add login form and validation`
+- `fix - resolve hydration mismatch on theme toggle`
+- `refactor - add tailwind guardrail rule`
+- `docs - update README`
+- `other - upgrade deps & libs`
+
+Keep the description in lowercase (except proper nouns), concise, and in present tense (“add” not “added”). No period at the end.
+
+## Summary
+
+| Branch prefix | Use for              | Commit example                    |
+|---------------|----------------------|-----------------------------------|
+| feature/      | New features         | `feature - add user profile page` |
+| fix/          | Bugs / debug         | `fix - correct modal focus trap`  |
+| refactor/     | Config, rules, setup | `refactor - extend biome config`  |
+| docs/         | Documentation        | `docs - update README.md`         |
+| other/        | Everything else      | `other - bump dependencies`       |

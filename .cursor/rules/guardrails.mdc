@@ -1,0 +1,50 @@
+---
+description: Guardrails for AI and human contributors
+alwaysApply: true
+---
+
+# Guardrails
+
+Rules that apply to both AI agents and human contributors.
+
+## When the User Asks to Lint a File
+
+When the user asks to **lint a file** (or fix lint in a file):
+
+1. **Check diagnostics**: Use the Read Lints tool (or equivalent) on the given file to see current errors/warnings.
+2. **Fix issues**: Run **`bunx biome check --write path/to/file.tsx`** (or the actual file path). This runs Biome on that file and applies auto-fixes. Alternatively use **`bun fix`** for the whole project.
+
+## After Every Agent Task
+
+When an agent (or human) finishes a coding task:
+
+1. Run **`bun fix`** (or `bun check` then `bun fix`) so code is linted, formatted, and auto-fixed.
+2. Ensure no new lint errors or format drift before considering the task done.
+
+Pre-commit (Lefthook) also runs `ultracite fix` on staged files; running `bun fix` after each task keeps the working tree clean.
+
+## Tailwind Guidelines
+
+- **Use theme/design tokens only.** Prefer semantic and theme colours from `app/globals.css`: `bg-background`, `text-foreground`, `bg-primary`, `text-muted-foreground`, `border-border`, `ring-ring`, etc. Do not introduce arbitrary hex or RGB values in class names.
+- **No arbitrary values in class names.** Avoid:
+  - `p-[4px]`, `m-[13px]`, `top-[2rem]`
+  - `bg-[#473833]`, `text-[#fff]`, `border-[#ccc]`
+  - `w-[327px]`, `h-[calc(100%-4rem)]`
+- Use Tailwind’s scale and theme instead: `p-2`, `m-3`, `bg-primary`, `text-foreground`, `w-full`, `max-w-md`, spacing/sizing utilities from the design system.
+- Spacing, typography, radii: use utilities that map to theme (e.g. `rounded-lg`, `radius-lg`) or add new tokens in `globals.css` if the design system needs them.
+
+## shadcn/ui and Base UI Components
+
+- **Base UI syntax, not Radix.** Components use Base UI (e.g. `render` prop). Never use Radix-style `asChild`; use `render={<Component />}` instead. See `.cursor/rules/ui-components.mdc` for full UI rules.
+- **Do not change files under `components/ui/`** unless the user explicitly asks to modify a component (e.g. “change the Button variants”, “add a new size to the Dialog”).
+- **Compose, don’t edit.** Use existing shadcn components as-is; wrap or combine them in feature-specific components (e.g. in `components/` outside `ui/`) to achieve the desired UI.
+- **If a change truly requires editing a shadcn component:** stop and inform the user: “This would require changing the [ComponentName] in `components/ui/`. Should I modify it, or would you prefer a wrapper/alternative approach?” Do not modify `components/ui/` without explicit approval.
+
+## Summary
+
+| Area        | Rule |
+|------------|------|
+| Lint a file | Use Read Lints for diagnostics; fix with `bunx biome check --write path/to/file.tsx` (or `bun fix` for whole project). |
+| After task | Run `bun fix` before considering the task done. |
+| Tailwind   | Use theme tokens only; no arbitrary values (e.g. `p-[4px]`, `bg-[#hex]`). |
+| shadcn / Base UI | Don’t change `components/ui/` unless explicitly asked; if a change needs it, ask the user first. |
