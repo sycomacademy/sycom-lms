@@ -53,7 +53,7 @@
   --card-foreground: oklch(0.18 0.02 264);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0.02 264);
-  --primary: oklch(0.42 0.18 264);
+  --primary: oklch(0.2495 0.1148 261.94);
   --primary-foreground: oklch(0.98 0.01 264);
   --secondary: oklch(0.96 0.01 264);
   --secondary-foreground: oklch(0.28 0.02 264);
@@ -122,5 +122,9 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+  }
+  button:not([disabled]),
+  [role="button"]:not([disabled]) {
+    cursor: pointer;
   }
 }
