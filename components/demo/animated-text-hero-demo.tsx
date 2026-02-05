@@ -1,32 +1,116 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/packages/utils/cn";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const rotatingWords = [
-  "IT challenges",
-  "security threats",
-  "compliance needs",
-  "digital transformation",
-];
+function LoginForm() {
+  return (
+    <form className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="hero-login-email">Email</Label>
+        <Input
+          id="hero-login-email"
+          placeholder="you@example.com"
+          type="email"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="hero-login-password">Password</Label>
+        <Input
+          id="hero-login-password"
+          placeholder="Enter your password"
+          type="password"
+        />
+      </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Checkbox id="hero-remember" />
+          <label
+            className="text-muted-foreground text-sm"
+            htmlFor="hero-remember"
+          >
+            Remember me
+          </label>
+        </div>
+        <a
+          className="text-primary text-sm hover:underline"
+          href="/forgot-password"
+        >
+          Forgot password?
+        </a>
+      </div>
+      <Button className="w-full" type="submit">
+        Sign In
+      </Button>
+    </form>
+  );
+}
+
+function RegisterForm() {
+  return (
+    <form className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="hero-register-firstName">First Name</Label>
+          <Input id="hero-register-firstName" placeholder="John" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="hero-register-lastName">Last Name</Label>
+          <Input id="hero-register-lastName" placeholder="Doe" />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="hero-register-email">Email</Label>
+        <Input
+          id="hero-register-email"
+          placeholder="you@example.com"
+          type="email"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="hero-register-password">Password</Label>
+        <Input
+          id="hero-register-password"
+          placeholder="Create a password"
+          type="password"
+        />
+      </div>
+      <div className="flex items-center space-x-2">
+        <Checkbox id="hero-terms" />
+        <label className="text-muted-foreground text-sm" htmlFor="hero-terms">
+          I agree to the{" "}
+          <a className="text-primary hover:underline" href="/terms">
+            Terms
+          </a>{" "}
+          and{" "}
+          <a className="text-primary hover:underline" href="/privacy">
+            Privacy Policy
+          </a>
+        </label>
+      </div>
+      <Button className="w-full" type="submit">
+        Create account
+      </Button>
+    </form>
+  );
+}
 
 export function AnimatedTextHeroDemo() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsAnimating(true);
-      setTimeout(() => {
-        setCurrentIndex((prev) => (prev + 1) % rotatingWords.length);
-        setIsAnimating(false);
-      }, 300);
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
+  const [loginOpen, setLoginOpen] = useState(false);
 
   return (
     <div className="relative w-full overflow-hidden bg-background py-24 lg:py-32">
@@ -36,34 +120,56 @@ export function AnimatedTextHeroDemo() {
       <div className="container relative mx-auto px-4">
         <div className="mx-auto max-w-4xl text-center">
           <p className="mb-4 font-medium text-primary text-sm uppercase tracking-widest">
-            Enterprise IT & Cybersecurity
+            Cybersecurity learning platform
           </p>
           <h1 className="mb-6 font-bold text-4xl text-foreground leading-tight md:text-5xl lg:text-6xl">
-            <span className="text-balance">Solve your organization&apos;s</span>
-            <br />
-            <span
-              className={cn(
-                "inline-block text-primary transition-all duration-300",
-                isAnimating
-                  ? "translate-y-4 opacity-0"
-                  : "translate-y-0 opacity-100"
-              )}
-            >
-              {rotatingWords[currentIndex]}
+            <span className="text-balance">
+              Your cybersecurity journey starts here.
             </span>
           </h1>
           <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground">
-            Partner with industry-leading experts to protect your business,
-            streamline operations, and drive innovation with cutting-edge
-            technology solutions.
+            Learn from industry experts, earn recognised certifications, and
+            advance your career with structured courses and hands-on labs—all in
+            one place.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Button className="gap-2" size="lg">
-              Schedule a Free Consultation
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-            <Button size="lg" variant="outline">
-              View Our Services
+            <Dialog onOpenChange={setLoginOpen} open={loginOpen}>
+              <DialogTrigger
+                render={
+                  <Button className="gap-2" size="lg">
+                    Join for free
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                }
+              />
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Welcome</DialogTitle>
+                  <DialogDescription>
+                    Sign in to your account or create one to start learning.
+                  </DialogDescription>
+                </DialogHeader>
+                <Tabs className="mt-4" defaultValue="login">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="login">Login</TabsTrigger>
+                    <TabsTrigger value="register">Register</TabsTrigger>
+                  </TabsList>
+                  <TabsContent className="mt-4" value="login">
+                    <LoginForm />
+                  </TabsContent>
+                  <TabsContent className="mt-4" value="register">
+                    <RegisterForm />
+                  </TabsContent>
+                </Tabs>
+              </DialogContent>
+            </Dialog>
+            <Button
+              nativeButton={false}
+              render={<Link href="/courses">See courses</Link>}
+              size="lg"
+              variant="outline"
+            >
+              See courses
             </Button>
           </div>
         </div>

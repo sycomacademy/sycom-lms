@@ -102,7 +102,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                       <span className="font-medium text-sm">
                         {course.rating}
                       </span>
-                      <span className="text-muted-foreground text-xs">
+                      <span className="text-xs">
                         ({course.reviewCount} reviews)
                       </span>
                     </div>
@@ -118,22 +118,22 @@ export default async function CoursePage({ params }: CoursePageProps) {
                   <Separator />
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center gap-2">
-                      <ClockIcon className="size-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Duration:</span>
+                      <ClockIcon className="size-4" />
+                      <span className="">Duration:</span>
                       <span className="font-medium">
                         {Math.round(course.duration / 60)} hours
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <BookOpenIcon className="size-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Lessons:</span>
+                      <BookOpenIcon className="size-4" />
+                      <span className="">Lessons:</span>
                       <span className="font-medium">
                         {totalLessons} lessons
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <UsersIcon className="size-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Students:</span>
+                      <UsersIcon className="size-4" />
+                      <span className="">Students:</span>
                       <span className="font-medium">
                         {course.enrolledCount.toLocaleString()} enrolled
                       </span>
@@ -162,14 +162,12 @@ export default async function CoursePage({ params }: CoursePageProps) {
                     <CardTitle>About This Course</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <p className="text-muted-foreground">
-                      {course.description}
-                    </p>
+                    <p className="">{course.description}</p>
                     <div>
                       <h3 className="mb-2 font-semibold text-sm">
                         What You'll Learn
                       </h3>
-                      <ul className="list-disc space-y-1 pl-6 text-muted-foreground text-sm">
+                      <ul className="list-disc space-y-1 pl-6 text-sm">
                         {course.whatYoullLearn.map((item) => (
                           <li key={item}>{item}</li>
                         ))}
@@ -180,7 +178,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                       <h3 className="mb-2 font-semibold text-sm">
                         Prerequisites
                       </h3>
-                      <ul className="list-disc space-y-1 pl-6 text-muted-foreground text-sm">
+                      <ul className="list-disc space-y-1 pl-6 text-sm">
                         {course.prerequisites.map((item) => (
                           <li key={item}>{item}</li>
                         ))}
@@ -191,7 +189,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                       <h3 className="mb-2 font-semibold text-sm">
                         Who This Course Is For
                       </h3>
-                      <ul className="list-disc space-y-1 pl-6 text-muted-foreground text-sm">
+                      <ul className="list-disc space-y-1 pl-6 text-sm">
                         {course.whoIsThisFor.map((item) => (
                           <li key={item}>{item}</li>
                         ))}
@@ -202,7 +200,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                       <h3 className="mb-2 font-semibold text-sm">
                         Course Highlights
                       </h3>
-                      <ul className="list-disc space-y-1 pl-6 text-muted-foreground text-sm">
+                      <ul className="list-disc space-y-1 pl-6 text-sm">
                         {course.highlights.map((item) => (
                           <li key={item}>{item}</li>
                         ))}
@@ -222,9 +220,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                   </CardHeader>
                   <CardContent>
                     {course.modules.length === 0 ? (
-                      <p className="text-muted-foreground text-sm">
-                        Curriculum coming soon.
-                      </p>
+                      <p className="text-sm">Curriculum coming soon.</p>
                     ) : (
                       <Accordion className="w-full">
                         {course.modules.map((module, index) => (
@@ -235,14 +231,14 @@ export default async function CoursePage({ params }: CoursePageProps) {
                             <AccordionTrigger className="px-4 py-3">
                               <div className="flex flex-1 items-center justify-between pr-4">
                                 <div className="flex items-center gap-3">
-                                  <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted font-medium text-muted-foreground text-xs">
+                                  <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted font-medium text-xs">
                                     {index + 1}
                                   </div>
                                   <div className="text-left">
                                     <h3 className="font-medium text-sm">
                                       {module.title}
                                     </h3>
-                                    <div className="mt-1 flex items-center gap-4 text-muted-foreground text-xs">
+                                    <div className="mt-1 flex items-center gap-4 text-xs">
                                       <span className="flex items-center gap-1">
                                         <ClockIcon className="size-3" />
                                         {module.sections.reduce(
@@ -279,18 +275,18 @@ export default async function CoursePage({ params }: CoursePageProps) {
                                       key={lesson.id}
                                     >
                                       <div className="flex items-center gap-3">
-                                        <div className="flex size-6 shrink-0 items-center justify-center rounded border text-muted-foreground text-xs">
+                                        <div className="flex size-6 shrink-0 items-center justify-center rounded border text-xs">
                                           {lessonIndex + 1}
                                         </div>
                                         <div>
                                           <span className="font-medium text-sm">
                                             {lesson.title}
                                           </span>
-                                          <span className="ml-2 text-muted-foreground text-xs">
+                                          <span className="ml-2 text-xs">
                                             ({lesson.type})
                                           </span>
                                           <div>
-                                            <span className="text-muted-foreground text-xs">
+                                            <span className="text-xs">
                                               {lesson.duration} min
                                             </span>
                                           </div>
@@ -327,7 +323,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                   </CardHeader>
                   <CardContent>
                     {course.reviews.length === 0 ? (
-                      <p className="text-muted-foreground text-sm">
+                      <p className="text-sm">
                         No reviews yet. Be the first to review this course!
                       </p>
                     ) : (
@@ -352,7 +348,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                                   ))}
                                 </div>
                               </div>
-                              <span className="text-muted-foreground text-xs">
+                              <span className="text-xs">
                                 {new Date(review.createdAt).toLocaleDateString(
                                   "en-GB",
                                   {
@@ -363,9 +359,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                                 )}
                               </span>
                             </div>
-                            <p className="text-muted-foreground text-sm">
-                              {review.comment}
-                            </p>
+                            <p className="text-sm">{review.comment}</p>
                             {review !== course.reviews.at(-1) && <Separator />}
                           </div>
                         ))}
@@ -405,13 +399,11 @@ export default async function CoursePage({ params }: CoursePageProps) {
                           <h3 className="font-semibold text-sm">
                             {instructor.name}
                           </h3>
-                          <p className="text-muted-foreground text-xs">
+                          <p className="text-xs">
                             {instructor.credentials.join(" • ")} •{" "}
                             {instructor.experience}
                           </p>
-                          <p className="text-muted-foreground text-sm">
-                            {instructor.bio}
-                          </p>
+                          <p className="text-sm">{instructor.bio}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -419,7 +411,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                 ) : (
                   <Card>
                     <CardContent className="py-8 text-center">
-                      <p className="text-muted-foreground text-sm">
+                      <p className="text-sm">
                         Instructor information not available.
                       </p>
                     </CardContent>
