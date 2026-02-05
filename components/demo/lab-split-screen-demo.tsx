@@ -42,7 +42,7 @@ export function LabSplitScreenDemo() {
       </div>
       <ResizablePanelGroup
         className="flex-1 rounded-lg border"
-        direction="horizontal"
+        orientation="horizontal"
       >
         <ResizablePanel defaultSize={40} minSize={30}>
           <Card className="h-full rounded-none border-0">

@@ -10,3 +10,4 @@ pre-push:
         - "*.jsonc"
         - "*.css"
       stage_fixed: true
+    - run: bun x tsc --noEmit

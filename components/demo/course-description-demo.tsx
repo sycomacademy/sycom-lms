@@ -282,7 +282,7 @@ export function CourseDescriptionDemo() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Accordion className="w-full" multiple>
+              <Accordion className="w-full">
                 {modules.map((module, index) => (
                   <AccordionItem key={module.title} value={`module-${index}`}>
                     <AccordionTrigger className="px-4 py-3">

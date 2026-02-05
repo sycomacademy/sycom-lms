@@ -73,8 +73,8 @@ export function AccordionDemo() {
           <AccordionItem value="item-2">
             <AccordionTrigger>Second section</AccordionTrigger>
             <AccordionContent>
-              Content for the second accordion panel. Multiple items can be
-              expanded at once when using type="multiple".
+              Content for the second accordion panel. By default, only one item
+              is open at a time.
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="item-3">
@@ -89,7 +89,7 @@ export function AccordionDemo() {
 
       <div className="space-y-4">
         <h3 className="font-medium text-sm">FAQ Accordion</h3>
-        <Accordion className="w-full" type="multiple">
+        <Accordion className="w-full">
           {faqItems.map((item, index) => (
             <AccordionItem key={item.question} value={`faq-${index}`}>
               <AccordionTrigger className="text-left">
@@ -105,7 +105,7 @@ export function AccordionDemo() {
 
       <div className="space-y-4">
         <h3 className="font-medium text-sm">Course Curriculum Accordion</h3>
-        <Accordion className="w-full" type="multiple">
+        <Accordion className="w-full">
           {courseModules.map((module, index) => (
             <AccordionItem key={module.title} value={`module-${index}`}>
               <AccordionTrigger className="px-4 py-3">
