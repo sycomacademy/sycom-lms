@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Work_Sans } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import Providers from "@/components/providers";
 
@@ -23,6 +24,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {process.env.NODE_ENV === "development" && (
+          <Script
+            crossOrigin="anonymous"
+            src="//unpkg.com/react-grab/dist/index.global.js"
+            strategy="beforeInteractive"
+          />
+        )}
+        {process.env.NODE_ENV === "development" && (
+          <Script
+            src="//unpkg.com/@react-grab/cursor/dist/client.global.js"
+            strategy="lazyOnload"
+          />
+        )}
+      </head>
       <body className={`${sans.variable} ${mono.variable} antialiased`}>
         <Providers>{children}</Providers>
       </body>

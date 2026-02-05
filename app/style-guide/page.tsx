@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { componentRegistry } from "@/components/components-registery";
+import { BlockWrapper } from "@/components/demo/wrapper";
 import { ModeSwitcher } from "@/components/layout/mode-switcher";
 import { Separator } from "@/components/ui/separator";
 
@@ -20,12 +21,14 @@ const pageEntries = Object.entries(componentRegistry).filter(
 export default function StyleGuidePage() {
   return (
     <div className="w-full bg-background">
-      <ModeSwitcher />
       <main className="mx-auto min-h-screen w-full min-w-0 max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="mb-8">
-          <h1 className="font-semibold text-2xl text-foreground tracking-tight">
-            Style guide
-          </h1>
+          <div className="flex w-full items-center justify-between gap-2">
+            <h1 className="font-semibold text-2xl text-foreground tracking-tight">
+              Style guide
+            </h1>
+            <ModeSwitcher />
+          </div>
           <p className="mt-1 text-muted-foreground text-sm">
             Basic ui components showcase
           </p>
@@ -74,7 +77,42 @@ export default function StyleGuidePage() {
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
           {uiEntries.map(([slug, config]) => {
             const Demo = config.component;
-            return <Demo key={slug} />;
+            const title = config.label ?? config.name;
+            return (
+              <BlockWrapper
+                containerClassName="lg:col-span-1"
+                key={slug}
+                title={title}
+              >
+                <Demo />
+              </BlockWrapper>
+            );
+          })}
+          {blockEntries.map(([slug, config]) => {
+            const Demo = config.component;
+            const title = config.label ?? config.name;
+            return (
+              <BlockWrapper
+                containerClassName="lg:col-span-2"
+                key={slug}
+                title={title}
+              >
+                <Demo />
+              </BlockWrapper>
+            );
+          })}
+          {pageEntries.map(([slug, config]) => {
+            const Demo = config.component;
+            const title = config.label ?? config.name;
+            return (
+              <BlockWrapper
+                containerClassName="lg:col-span-2"
+                key={slug}
+                title={title}
+              >
+                <Demo />
+              </BlockWrapper>
+            );
           })}
         </div>
       </main>

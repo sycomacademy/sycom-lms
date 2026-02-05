@@ -13,6 +13,8 @@ This project uses **Base UI** with shadcn (not Radix UI). Follow Base UI syntax 
 
 - **Use `render`, not `asChild`.** Base UI uses the `render` prop to customize the root element; Radix uses `asChild`. Never use `asChild` on components from `components/ui/`.
 - When composing triggers, buttons, or custom root elements, pass a React element to `render`, e.g. `render={<Button variant="outline" />}`.
+- **Accordion: use single expansion by default.** Base UI Accordion uses the `multiple` boolean prop (Radix uses `type="Multiple"`). Do not pass `multiple` unless multiple panels must be open at once; the default is single expansion (one item open at a time).
+- **ResizablePanelGroup: use `orientation`, not `direction`.** The component wraps `react-resizable-panels`, which uses `orientation?: "horizontal" | "vertical"` (defaults to `"horizontal"`).
 - If unsure, open the component in `components/ui/` and confirm the actual prop name (e.g. `render`) and supported props before writing code.
 
 ## Page Structure (Next.js / React)
@@ -40,6 +42,8 @@ When **creating or refactoring a page** (App Router page, layout, or route):
 | Topic | Rule |
 |-------|------|
 | Base UI vs Radix | Use `render`, never `asChild`. Follow Base UI API only. |
+| Accordion | Single expansion by default; do not use `multiple` unless needed. |
+| ResizablePanelGroup | Use `orientation`, not `direction` (react-resizable-panels API). |
 | Pages | When creating/refactoring pages, use vercel-react-best-practices skill for structure and performance. |
 | Component usage | Use only existing components; always check the component file for real props; never hallucinate props (e.g. no `asChild`). |
 | components/ui/ | Do not edit base components unless the user explicitly asks; compose in other components or ask before changing. |
