@@ -1,31 +1,33 @@
+"use client";
+
 import { Calendar, Clock, Monitor, Users } from "lucide-react";
 
-const courseDetails = [
-  {
-    icon: Clock,
-    label: "Duration",
-    value: "40 Hours",
-  },
-  {
-    icon: Calendar,
-    label: "Schedule",
-    value: "Weekdays & Weekends",
-  },
-  {
-    icon: Monitor,
-    label: "Format",
-    value: "Online & In-Person",
-  },
-  {
-    icon: Users,
-    label: "Class Size",
-    value: "Max 15 Students",
-  },
-];
+export function CourseInfoDemo() {
+  const courseDetails = [
+    {
+      icon: Clock,
+      label: "Duration",
+      value: "40 Hours",
+    },
+    {
+      icon: Calendar,
+      label: "Schedule",
+      value: "Weekdays & Weekends",
+    },
+    {
+      icon: Monitor,
+      label: "Format",
+      value: "Online & In-Person",
+    },
+    {
+      icon: Users,
+      label: "Class Size",
+      value: "Max 15 Students",
+    },
+  ];
 
-export function CourseInfo() {
   return (
-    <section className="bg-card py-12">
+    <div className="bg-card py-12">
       <div className="container mx-auto px-4">
         <div className="rounded-lg border border-border bg-background p-6">
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -47,6 +49,6 @@ export function CourseInfo() {
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

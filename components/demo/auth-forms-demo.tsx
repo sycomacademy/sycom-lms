@@ -37,7 +37,10 @@ function LoginForm() {
             Remember me
           </label>
         </div>
-        <a className="text-primary text-sm hover:underline" href="#">
+        <a
+          className="text-primary text-sm hover:underline"
+          href="/forgot-password"
+        >
           Forgot password?
         </a>
       </div>
@@ -89,11 +92,11 @@ function RegisterForm() {
         <Checkbox id="terms" />
         <label className="text-muted-foreground text-sm" htmlFor="terms">
           I agree to the{" "}
-          <a className="text-primary hover:underline" href="#">
+          <a className="text-primary hover:underline" href="/terms">
             Terms of Service
           </a>{" "}
           and{" "}
-          <a className="text-primary hover:underline" href="#">
+          <a className="text-primary hover:underline" href="/privacy">
             Privacy Policy
           </a>
         </label>
@@ -105,34 +108,36 @@ function RegisterForm() {
   );
 }
 
-export function AuthModal() {
+export function AuthFormsDemo() {
   const [open, setOpen] = useState(false);
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
-      <DialogTrigger asChild>
-        <Button variant="outline">Login / Register</Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Welcome</DialogTitle>
-          <DialogDescription>
-            Sign in to your account or create a new one.
-          </DialogDescription>
-        </DialogHeader>
-        <Tabs className="mt-4" defaultValue="login">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Login</TabsTrigger>
-            <TabsTrigger value="register">Register</TabsTrigger>
-          </TabsList>
-          <TabsContent className="mt-4" value="login">
-            <LoginForm />
-          </TabsContent>
-          <TabsContent className="mt-4" value="register">
-            <RegisterForm />
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
+    <div className="flex items-center justify-center py-12">
+      <Dialog onOpenChange={setOpen} open={open}>
+        <DialogTrigger
+          render={<Button variant="outline">Login / Register</Button>}
+        />
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Welcome</DialogTitle>
+            <DialogDescription>
+              Sign in to your account or create a new one.
+            </DialogDescription>
+          </DialogHeader>
+          <Tabs className="mt-4" defaultValue="login">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="register">Register</TabsTrigger>
+            </TabsList>
+            <TabsContent className="mt-4" value="login">
+              <LoginForm />
+            </TabsContent>
+            <TabsContent className="mt-4" value="register">
+              <RegisterForm />
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-export function ContactForm() {
+export function ContactFormDemo() {
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -27,7 +27,7 @@ export function ContactForm() {
           We&apos;ll get back to you within 24 hours.
         </p>
         <Button
-          className="mt-4 bg-transparent"
+          className="mt-4"
           onClick={() => setSubmitted(false)}
           variant="outline"
         >
@@ -76,50 +76,5 @@ export function ContactForm() {
         Send Message
       </Button>
     </form>
-  );
-}
-
-export function ContactSection() {
-  return (
-    <section className="bg-card py-16 lg:py-24">
-      <div className="container mx-auto px-4">
-        <div className="grid gap-12 lg:grid-cols-2">
-          {/* Info Side */}
-          <div>
-            <p className="mb-2 font-medium text-primary text-sm uppercase tracking-widest">
-              Get in Touch
-            </p>
-            <h2 className="mb-4 font-bold text-3xl text-foreground md:text-4xl">
-              Ready to Secure Your Business?
-            </h2>
-            <p className="mb-8 text-muted-foreground">
-              Contact us today for a free consultation. Our security experts are
-              ready to help you protect your organization from cyber threats.
-            </p>
-            <div className="space-y-4">
-              <div>
-                <p className="font-medium text-foreground">Email</p>
-                <p className="text-muted-foreground">contact@sycom.com</p>
-              </div>
-              <div>
-                <p className="font-medium text-foreground">Phone</p>
-                <p className="text-muted-foreground">+1 (234) 567-890</p>
-              </div>
-              <div>
-                <p className="font-medium text-foreground">Address</p>
-                <p className="text-muted-foreground">
-                  123 Security Lane, Cyber City, CC 12345
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Form Side */}
-          <div className="rounded-lg border border-border bg-background p-6 lg:p-8">
-            <ContactForm />
-          </div>
-        </div>
-      </div>
-    </section>
   );
 }

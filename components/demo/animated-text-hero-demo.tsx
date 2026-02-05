@@ -3,7 +3,7 @@
 import { ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn } from "@/packages/utils/cn";
 
 const rotatingWords = [
   "IT challenges",
@@ -12,7 +12,7 @@ const rotatingWords = [
   "digital transformation",
 ];
 
-export function AnimatedTextHero() {
+export function AnimatedTextHeroDemo() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -29,7 +29,7 @@ export function AnimatedTextHero() {
   }, []);
 
   return (
-    <section className="relative overflow-hidden bg-background py-24 lg:py-32">
+    <div className="relative w-full overflow-hidden bg-background py-24 lg:py-32">
       {/* Background Grid Pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20" />
 
@@ -68,6 +68,6 @@ export function AnimatedTextHero() {
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

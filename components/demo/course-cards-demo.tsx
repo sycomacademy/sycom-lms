@@ -11,11 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Progress,
-  ProgressIndicator,
-  ProgressTrack,
-} from "@/components/ui/progress";
+import { Progress } from "@/components/ui/progress";
 
 export function CourseCardsDemo() {
   const courses = [
@@ -85,11 +81,7 @@ export function CourseCardsDemo() {
                   <span>Progress</span>
                   <span>{course.progress}%</span>
                 </div>
-                <Progress value={course.progress}>
-                  <ProgressTrack>
-                    <ProgressIndicator />
-                  </ProgressTrack>
-                </Progress>
+                <Progress value={course.progress} />
               </div>
             )}
           </CardContent>

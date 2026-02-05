@@ -2,23 +2,25 @@
 
 import { useEffect, useRef } from "react";
 
-const partners = [
-  "Microsoft",
-  "AWS",
-  "Google Cloud",
-  "Cisco",
-  "Palo Alto",
-  "CrowdStrike",
-  "Splunk",
-  "Okta",
-];
+export function PartnerLogosDemo() {
+  const partners = [
+    "Microsoft",
+    "AWS",
+    "Google Cloud",
+    "Cisco",
+    "Palo Alto",
+    "CrowdStrike",
+    "Splunk",
+    "Okta",
+  ];
 
-export function PartnerLogos() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const scroll = scrollRef.current;
-    if (!scroll) return;
+    if (!scroll) {
+      return;
+    }
 
     let animationId: number;
     let position = 0;
@@ -37,7 +39,7 @@ export function PartnerLogos() {
   }, []);
 
   return (
-    <section className="border-border border-y bg-background py-12">
+    <div className="border-border border-y bg-background py-12">
       <div className="container mx-auto px-4">
         <p className="mb-8 text-center font-medium text-muted-foreground text-sm uppercase tracking-widest">
           Trusted by Industry Leaders
@@ -50,7 +52,7 @@ export function PartnerLogos() {
           {[...partners, ...partners].map((partner, index) => (
             <div
               className="flex h-12 min-w-[150px] shrink-0 items-center justify-center rounded-lg bg-secondary px-6"
-              key={`${partner}-${index}`}
+              key={`${partner}-${index}-${Math.random()}`}
             >
               <span className="font-medium text-muted-foreground text-sm">
                 {partner}
@@ -59,6 +61,6 @@ export function PartnerLogos() {
           ))}
         </div>
       </div>
-    </section>
+    </div>
   );
 }

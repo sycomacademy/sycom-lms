@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Award,
   Clock,
@@ -8,30 +10,6 @@ import {
   Users,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-
-interface FeatureCardProps {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-}
-
-export function FeatureCard({
-  icon: Icon,
-  title,
-  description,
-}: FeatureCardProps) {
-  return (
-    <Card className="border-border bg-card text-center transition-all hover:border-primary/50">
-      <CardContent className="p-6">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-          <Icon className="h-7 w-7 text-primary" />
-        </div>
-        <h3 className="mb-2 font-semibold text-foreground text-lg">{title}</h3>
-        <p className="text-muted-foreground text-sm">{description}</p>
-      </CardContent>
-    </Card>
-  );
-}
 
 export function FeatureCardDemo() {
   const features = [
@@ -76,8 +54,35 @@ export function FeatureCardDemo() {
   return (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {features.map((feature) => (
-        <FeatureCard key={feature.title} {...feature} />
+        <FeatureCard
+          description={feature.description}
+          icon={feature.icon}
+          key={feature.title}
+          title={feature.title}
+        />
       ))}
     </div>
+  );
+}
+
+function FeatureCard({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}) {
+  return (
+    <Card className="text-center transition-all hover:border-primary/50">
+      <CardContent className="p-6">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+          <Icon className="h-7 w-7 text-primary" />
+        </div>
+        <h3 className="mb-2 font-semibold text-foreground text-lg">{title}</h3>
+        <p className="text-muted-foreground text-sm">{description}</p>
+      </CardContent>
+    </Card>
   );
 }

@@ -1,13 +1,15 @@
-const stats = [
-  { value: "13+", label: "Years Experience" },
-  { value: "70+", label: "Enterprise Clients" },
-  { value: "20+", label: "Security Engineers" },
-  { value: "99.9%", label: "Uptime SLA" },
-];
+"use client";
 
-export function StatsBar() {
+export function StatsBarDemo() {
+  const stats = [
+    { value: "13+", label: "Years Experience" },
+    { value: "70+", label: "Enterprise Clients" },
+    { value: "20+", label: "Security Engineers" },
+    { value: "99.9%", label: "Uptime SLA" },
+  ];
+
   return (
-    <section className="bg-primary py-12">
+    <div className="bg-primary py-12">
       <div className="container mx-auto px-4">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat) => (
@@ -20,6 +22,6 @@ export function StatsBar() {
           ))}
         </div>
       </div>
-    </section>
+    </div>
   );
 }

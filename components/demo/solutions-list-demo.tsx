@@ -2,7 +2,7 @@
 
 import { Cloud, Eye, Lock, Shield } from "lucide-react";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/packages/utils/cn";
 
 const solutions = [
   {
@@ -39,13 +39,13 @@ const solutions = [
   },
 ];
 
-export function SolutionsList() {
+export function SolutionsListDemo() {
   const [activeSolution, setActiveSolution] = useState(solutions[0].id);
 
   const active = solutions.find((s) => s.id === activeSolution);
 
   return (
-    <section className="bg-card py-16 lg:py-24">
+    <div className="bg-card py-16 lg:py-24">
       <div className="container mx-auto px-4">
         <div className="mb-12 text-center">
           <p className="mb-2 font-medium text-primary text-sm uppercase tracking-widest">
@@ -110,6 +110,6 @@ export function SolutionsList() {
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

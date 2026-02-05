@@ -1,4 +1,6 @@
-import { cn } from "@/lib/utils";
+"use client";
+
+import { cn } from "@/packages/utils/cn";
 
 interface SectionLabelProps {
   number?: string;
@@ -6,7 +8,7 @@ interface SectionLabelProps {
   className?: string;
 }
 
-export function SectionLabel({ number, label, className }: SectionLabelProps) {
+function SectionLabel({ number, label, className }: SectionLabelProps) {
   return (
     <div className={cn("flex items-center gap-3", className)}>
       {number && (
@@ -22,7 +24,7 @@ export function SectionLabel({ number, label, className }: SectionLabelProps) {
   );
 }
 
-export function SectionLabelShowcase() {
+export function SectionLabelDemo() {
   return (
     <div className="space-y-6">
       <SectionLabel label="Incident Response" number="01" />

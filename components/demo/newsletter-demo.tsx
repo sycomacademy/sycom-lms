@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function Newsletter() {
+export function NewsletterDemo() {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
 
@@ -19,7 +19,7 @@ export function Newsletter() {
   };
 
   return (
-    <section className="bg-primary py-16">
+    <div className="bg-primary py-16">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
           <Mail className="mx-auto mb-4 h-12 w-12 text-primary-foreground/80" />
@@ -41,7 +41,7 @@ export function Newsletter() {
               onSubmit={handleSubmit}
             >
               <Input
-                className="max-w-sm border-primary-foreground/20 bg-primary-foreground/10 text-primary-foreground placeholder:text-primary-foreground/60"
+                className="h-10 max-w-sm border-primary-foreground/20 bg-primary-foreground/10 text-primary-foreground placeholder:text-primary-foreground/60"
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
@@ -59,6 +59,6 @@ export function Newsletter() {
           )}
         </div>
       </div>
-    </section>
+    </div>
   );
 }

@@ -1,3 +1,5 @@
+"use client";
+
 import { Heart, Lightbulb, Scale, Shield, Target, Zap } from "lucide-react";
 
 const values = [
@@ -39,9 +41,9 @@ const values = [
   },
 ];
 
-export function ValuesGrid() {
+export function ValuesGridDemo() {
   return (
-    <section className="bg-card py-16 lg:py-24">
+    <div className="bg-card py-16 lg:py-24">
       <div className="container mx-auto px-4">
         <div className="mb-12 text-center">
           <p className="mb-2 font-medium text-primary text-sm uppercase tracking-widest">
@@ -69,6 +71,6 @@ export function ValuesGrid() {
           ))}
         </div>
       </div>
-    </section>
+    </div>
   );
 }

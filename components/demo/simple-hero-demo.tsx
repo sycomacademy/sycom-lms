@@ -1,9 +1,11 @@
+"use client";
+
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function SimpleHero() {
+export function SimpleHeroDemo() {
   return (
-    <section className="relative bg-card py-20 lg:py-28">
+    <div className="relative bg-card py-20 lg:py-28">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="mb-6 font-bold text-3xl text-foreground md:text-4xl lg:text-5xl">
@@ -21,6 +23,6 @@ export function SimpleHero() {
           </Button>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

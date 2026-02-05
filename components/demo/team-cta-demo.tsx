@@ -1,9 +1,11 @@
+"use client";
+
 import { ArrowRight, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function TeamCTA() {
+export function TeamCTADemo() {
   return (
-    <section className="bg-card py-16 lg:py-24">
+    <div className="bg-card py-16 lg:py-24">
       <div className="container mx-auto px-4">
         <div className="flex flex-col items-center gap-8 lg:flex-row lg:justify-between">
           <div className="flex items-center gap-6">
@@ -25,6 +27,6 @@ export function TeamCTA() {
           </Button>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

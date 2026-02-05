@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Facebook,
   Github,
@@ -6,7 +8,7 @@ import {
   Twitter,
   Youtube,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/packages/utils/cn";
 
 interface SocialLinksProps {
   variant?: "default" | "outline" | "filled";
@@ -34,10 +36,7 @@ const iconSizes = {
   lg: "h-6 w-6",
 };
 
-export function SocialLinks({
-  variant = "default",
-  size = "md",
-}: SocialLinksProps) {
+function SocialLinks({ variant = "default", size = "md" }: SocialLinksProps) {
   return (
     <div className="flex items-center gap-3">
       {socialLinks.map((social) => (
@@ -62,7 +61,7 @@ export function SocialLinks({
   );
 }
 
-export function SocialLinksShowcase() {
+export function SocialLinksDemo() {
   return (
     <div className="space-y-6">
       <div>

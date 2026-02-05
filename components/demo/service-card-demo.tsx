@@ -1,12 +1,6 @@
-import {
-  ArrowRight,
-  Cloud,
-  Eye,
-  FileCheck,
-  Lock,
-  Server,
-  Shield,
-} from "lucide-react";
+"use client";
+
+import { ArrowRight, Eye, Lock, type LucideIcon, Shield } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -14,30 +8,19 @@ interface ServiceCardProps {
   number: string;
   title: string;
   features: string[];
-  icon?: "shield" | "lock" | "eye" | "server" | "cloud" | "file";
+  icon: LucideIcon;
   href?: string;
 }
 
-const iconMap = {
-  shield: Shield,
-  lock: Lock,
-  eye: Eye,
-  server: Server,
-  cloud: Cloud,
-  file: FileCheck,
-};
-
-export function ServiceCard({
+function ServiceCard({
   number,
   title,
   features,
-  icon = "shield",
+  icon: Icon,
   href = "#",
 }: ServiceCardProps) {
-  const Icon = iconMap[icon];
-
   return (
-    <Card className="group relative overflow-hidden border-border bg-card transition-all hover:border-primary/50">
+    <Card className="group relative overflow-hidden transition-all hover:border-primary/50">
       <CardContent className="p-6">
         <div className="mb-4 flex items-start justify-between">
           <span className="font-bold text-4xl text-primary/20">{number}</span>
@@ -80,7 +63,7 @@ export function ServiceCardDemo() {
         "Recovery Planning",
         "Post-Incident Review",
       ],
-      icon: "shield" as const,
+      icon: Shield,
     },
     {
       number: "02",
@@ -91,7 +74,7 @@ export function ServiceCardDemo() {
         "Vulnerability Assessment",
         "Risk Analysis",
       ],
-      icon: "eye" as const,
+      icon: Eye,
     },
     {
       number: "03",
@@ -102,7 +85,7 @@ export function ServiceCardDemo() {
         "Network Security",
         "Cloud Security",
       ],
-      icon: "lock" as const,
+      icon: Lock,
     },
   ];
 

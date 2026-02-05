@@ -3,25 +3,29 @@
 import { Mail, MapPin, Menu, Phone, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn } from "@/packages/utils/cn";
 
-export function SlidePanel() {
+export function SlidePanelDemo() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
-      <Button className="gap-2" onClick={() => setIsOpen(true)}>
-        <Menu className="h-4 w-4" />
-        Open Panel
-      </Button>
+      <div className="flex items-center justify-center py-12">
+        <Button className="gap-2" onClick={() => setIsOpen(true)}>
+          <Menu className="h-4 w-4" />
+          Open Panel
+        </Button>
+      </div>
 
       {/* Backdrop */}
-      <div
+      <button
+        aria-label="Close panel"
         className={cn(
           "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm transition-opacity",
           isOpen ? "opacity-100" : "pointer-events-none opacity-0"
         )}
         onClick={() => setIsOpen(false)}
+        type="button"
       />
 
       {/* Panel */}
