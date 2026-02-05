@@ -1,65 +1,231 @@
+import { ArrowRight, Award, FlaskConical, Users } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
+import { AnimatedTextHeroDemo } from "@/components/demo/animated-text-hero-demo";
+import { TestimonialCardDemo } from "@/components/demo/testimonial-card-demo";
+import { Footer } from "@/components/layout/footer";
+import { Header } from "@/components/layout/header";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { SectionLabel } from "@/components/ui/section-label";
+import { courses, faqs, features } from "@/mock-db";
 
-export default function Home() {
+// Get featured courses (first 3)
+const featuredCourses = courses.slice(0, 3);
+
+export default function HomePage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between bg-white px-16 py-32 sm:items-start dark:bg-black">
-        <Image
-          alt="Next.js logo"
-          className="dark:invert"
-          height={20}
-          priority
-          src="/next.svg"
-          width={100}
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs font-semibold text-3xl text-black leading-10 tracking-tight dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg text-zinc-600 leading-8 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 font-medium text-base sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] md:w-[158px] dark:hover:bg-[#ccc]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <Image
-              alt="Vercel logomark"
-              className="dark:invert"
-              height={16}
-              src="/vercel.svg"
-              width={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-black/8 border-solid px-5 transition-colors hover:border-transparent hover:bg-black/4 md:w-[158px] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Documentation
-          </a>
-        </div>
+    <>
+      <Header />
+      <main>
+        {/* Hero Section */}
+        <AnimatedTextHeroDemo />
+
+        {/* Features Section */}
+        <section className="py-16 lg:py-24">
+          <div className="container mx-auto px-4">
+            <SectionLabel label="Why Choose Us" />
+            <h2 className="mb-12 text-center font-bold text-3xl text-foreground md:text-4xl">
+              Platform Features
+            </h2>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {features.map((feature) => {
+                let Icon = Award;
+                if (feature.icon === "FlaskConical") {
+                  Icon = FlaskConical;
+                } else if (feature.icon === "Users") {
+                  Icon = Users;
+                }
+                return (
+                  <Card
+                    className="text-center transition-all hover:border-primary/50"
+                    key={feature.id}
+                  >
+                    <CardContent className="p-6">
+                      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                        <Icon className="h-7 w-7 text-primary" />
+                      </div>
+                      <h3 className="mb-2 font-semibold text-foreground text-lg">
+                        {feature.title}
+                      </h3>
+                      <p className="text-muted-foreground text-sm">
+                        {feature.description}
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Featured Courses Section */}
+        <section className="bg-muted py-16 lg:py-24">
+          <div className="container mx-auto px-4">
+            <SectionLabel label="Our Courses" />
+            <div className="mb-12 text-center">
+              <h2 className="mb-4 font-bold text-3xl text-foreground md:text-4xl">
+                Featured Courses
+              </h2>
+              <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+                Explore our most popular cybersecurity courses designed to
+                advance your career and prepare you for industry certifications.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {featuredCourses.map((course) => (
+                <Card key={course.id}>
+                  <div className="relative aspect-video bg-secondary">
+                    {course.thumbnailUrl ? (
+                      <Image
+                        alt={course.title}
+                        className="object-cover"
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        src={course.thumbnailUrl}
+                      />
+                    ) : null}
+                  </div>
+                  <CardContent className="p-6">
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="rounded-md bg-primary/10 px-2 py-1 font-medium text-primary text-xs">
+                        {course.category}
+                      </span>
+                      <span className="text-muted-foreground text-sm">
+                        {Math.round(course.duration / 60)}h
+                      </span>
+                    </div>
+                    <h3 className="mb-2 font-semibold text-foreground text-lg">
+                      {course.title}
+                    </h3>
+                    <p className="mb-4 line-clamp-2 text-muted-foreground text-sm">
+                      {course.shortDescription}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-lg">
+                        £{(course.price / 100).toFixed(2)}
+                      </span>
+                      <Button
+                        nativeButton={false}
+                        render={
+                          <Link href={`/courses/${course.slug}`}>
+                            View Course
+                          </Link>
+                        }
+                        variant="outline"
+                      >
+                        View Course
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <div className="mt-12 text-center">
+              <Button
+                nativeButton={false}
+                render={<Link href="/courses">View All Courses</Link>}
+                size="lg"
+              >
+                View All Courses
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonials Section */}
+        <section className="py-16 lg:py-24">
+          <div className="container mx-auto px-4">
+            <SectionLabel label="Testimonials" />
+            <div className="mb-12 text-center">
+              <h2 className="mb-4 font-bold text-3xl text-foreground md:text-4xl">
+                What Our Students Say
+              </h2>
+              <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+                Hear from professionals who have transformed their careers with
+                our cybersecurity training programs.
+              </p>
+            </div>
+            <TestimonialCardDemo />
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="bg-primary py-16 lg:py-24">
+          <div className="container mx-auto px-4">
+            <div className="mx-auto max-w-3xl text-center">
+              <h2 className="mb-4 font-bold text-3xl text-primary-foreground md:text-4xl">
+                Ready to Start Your Cybersecurity Journey?
+              </h2>
+              <p className="mb-8 text-lg text-primary-foreground/90">
+                Join thousands of professionals advancing their careers with our
+                comprehensive training programs and industry-recognized
+                certifications.
+              </p>
+              <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+                <Button
+                  nativeButton={false}
+                  render={<Link href="/courses">Explore Courses</Link>}
+                  size="lg"
+                  variant="secondary"
+                >
+                  Explore Courses
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+                <Button
+                  className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10"
+                  nativeButton={false}
+                  render={<Link href="/sign-in">Sign Up Now</Link>}
+                  size="lg"
+                  variant="outline"
+                >
+                  Sign Up Now
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section className="bg-muted py-16 lg:py-24">
+          <div className="container mx-auto px-4">
+            <SectionLabel label="FAQ" />
+            <div className="mb-12 text-center">
+              <h2 className="mb-4 font-bold text-3xl text-foreground md:text-4xl">
+                Frequently Asked Questions
+              </h2>
+              <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+                Find answers to common questions about our courses,
+                certifications, and learning platform.
+              </p>
+            </div>
+            <div className="mx-auto max-w-3xl">
+              <Accordion className="w-full">
+                {faqs.map((faq) => (
+                  <AccordionItem key={faq.id} value={faq.id}>
+                    <AccordionTrigger className="text-left">
+                      {faq.question}
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <p className="text-muted-foreground text-sm">
+                        {faq.answer}
+                      </p>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </div>
+          </div>
+        </section>
       </main>
-    </div>
+      <Footer />
+    </>
   );
 }
