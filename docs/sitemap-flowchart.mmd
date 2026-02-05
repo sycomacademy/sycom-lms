@@ -1,0 +1,129 @@
+%% Sycom LMS Sitemap - Navigation flow (routes and links)
+flowchart LR
+  subgraph nav [Main navigation]
+    Home["/"]
+    Blog["/blog"]
+    Courses["/courses"]
+    Pathway["/pathway"]
+    SignIn["/sign-in"]
+  end
+
+  BlogPost["/blog/slug"]
+  CourseDetail["/courses/slug"]
+  PathwayDetail["/pathway/slug"]
+
+  Home --> Blog
+  Home --> Courses
+  Home --> Pathway
+  Home --> SignIn
+  Blog --> BlogPost
+  Courses --> CourseDetail
+  Pathway --> PathwayDetail
+
+%% Sycom LMS Sitemap - Pages and their sections
+flowchart TB
+  subgraph pages [Logged-out pages]
+    Home["Home (/)"]
+    Blog["Blog (/blog)"]
+    BlogPost["Blog Post (/blog/[slug])"]
+    Courses["Courses (/courses)"]
+    CourseDetail["Course Detail (/courses/[slug])"]
+    Pathway["Pathway (/pathway)"]
+    PathwayDetail["Pathway Detail (/pathway/[slug])"]
+    SignIn["Sign In (/sign-in)"]
+  end
+
+  subgraph homeSections [Home sections]
+    direction TB
+    H1[Navbar]
+    H2[Hero Header]
+    H3[Features List]
+    H4[Featured Courses]
+    H5[Testimonial]
+    H6[CTA]
+    H7[FAQ]
+    H8[Footer]
+  end
+
+  subgraph blogSections [Blog sections]
+    direction TB
+    B1[Navbar]
+    B2[Page Header]
+    B3[Blog Posts List]
+    B4[Pagination]
+    B5[Footer]
+  end
+
+  subgraph blogPostSections [Blog Post sections]
+    direction TB
+    BP1[Navbar]
+    BP2[Article Header]
+    BP3[Article Content]
+    BP4[Related Posts]
+    BP5[Footer]
+  end
+
+  subgraph coursesSections [Courses sections]
+    direction TB
+    C1[Navbar]
+    C2[Page Header]
+    C3[Course Filters]
+    C4[Courses Grid]
+    C5[Pagination]
+    C6[Footer]
+  end
+
+  subgraph courseDetailSections [Course Detail sections]
+    direction TB
+    CD1[Navbar]
+    CD2[Course Hero]
+    CD3[Course Overview]
+    CD4[Course Curriculum]
+    CD5[Instructor]
+    CD6[Reviews]
+    CD7[Enrollment CTA]
+    CD8[Footer]
+  end
+
+  subgraph pathwaySections [Pathway sections]
+    direction TB
+    P1[Navbar]
+    P2[Page Header]
+    P3[Pathway List]
+    P4[Footer]
+  end
+
+  subgraph pathwayDetailSections [Pathway Detail sections]
+    direction TB
+    PD1[Navbar]
+    PD2[Pathway Hero]
+    PD3[Pathway Overview]
+    PD4[Courses in Pathway]
+    PD5[Enrollment CTA]
+    PD6[Footer]
+  end
+
+  subgraph signInSections [Sign In sections]
+    direction TB
+    S1[Navbar]
+    S2[Sign In Form]
+    S3[Sign Up Link]
+    S4[Footer]
+  end
+
+  Home --> homeSections
+  Blog --> blogSections
+  BlogPost --> blogPostSections
+  Courses --> coursesSections
+  CourseDetail --> courseDetailSections
+  Pathway --> pathwaySections
+  PathwayDetail --> pathwayDetailSections
+  SignIn --> signInSections
+
+  Home --> Blog
+  Home --> Courses
+  Home --> Pathway
+  Home --> SignIn
+  Blog --> BlogPost
+  Courses --> CourseDetail
+  Pathway --> PathwayDetail

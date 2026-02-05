@@ -24,6 +24,7 @@ import { NumberedServicesDemo } from "@/components/demo/numbered-services-demo";
 import { PartnerLogosDemo } from "@/components/demo/partner-logos-demo";
 import { ProfileStatsDemo } from "@/components/demo/profile-stats-demo";
 import { ProgressDemo } from "@/components/demo/progress-demo";
+import { QuizDemo } from "@/components/demo/quiz-demo";
 import { SectionLabelDemo } from "@/components/demo/section-label-demo";
 import { ServiceCardDemo } from "@/components/demo/service-card-demo";
 import { SimpleHeroDemo } from "@/components/demo/simple-hero-demo";
@@ -35,6 +36,7 @@ import { StatsCardDemo } from "@/components/demo/stats-card-demo";
 import { TeamCTADemo } from "@/components/demo/team-cta-demo";
 import { TestimonialCardDemo } from "@/components/demo/testimonial-card-demo";
 import { ValuesGridDemo } from "@/components/demo/values-grid-demo";
+import { CourseFormDemo } from "./demo/course-form-demo";
 import { Footer } from "./layout/footer";
 import { Header } from "./layout/header";
 
@@ -72,6 +74,12 @@ export const componentRegistry: Record<string, ComponentConfig> = {
     component: FormDemo,
     type: "registry:ui",
     href: "/style-guide/forms",
+  },
+  "course-form": {
+    name: "Course Form",
+    component: CourseFormDemo,
+    type: "registry:ui",
+    href: "/style-guide/course-form",
   },
   progress: {
     name: "Progress",
@@ -259,6 +267,12 @@ export const componentRegistry: Record<string, ComponentConfig> = {
     component: Header,
     type: "registry:block",
     href: "/style-guide/header",
+  },
+  quiz: {
+    name: "Quiz",
+    component: QuizDemo,
+    type: "registry:block",
+    href: "/style-guide/quiz",
   },
   // Page Components
   "login-page": {
