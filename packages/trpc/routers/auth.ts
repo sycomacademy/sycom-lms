@@ -5,12 +5,6 @@ import {
   getProfileByUserId,
   profileExists,
 } from "@/packages/db/queries/profile";
-import { emailExists, getUserByEmail } from "@/packages/db/queries/user";
-import {
-  forgotPasswordSchema,
-  signInSchema,
-  signUpSchema,
-} from "@/packages/schema/auth";
 import {
   protectedProcedure,
   publicProcedure,
@@ -19,7 +13,7 @@ import {
 
 export const authRouter = router({
   /**
-   * Get current session
+   * Get current session (optional; use useSession from Better Auth for client)
    */
   getSession: publicProcedure.query(({ ctx }) => {
     return ctx.session;
@@ -37,52 +31,8 @@ export const authRouter = router({
   }),
 
   /**
-   * Check if email is available
-   */
-  checkEmail: publicProcedure
-    .input(forgotPasswordSchema)
-    .query(async ({ input }) => {
-      const exists = await emailExists(input.email);
-      return { available: !exists };
-    }),
-
-  /**
-   * Validate sign up data (server-side validation)
-   */
-  validateSignUp: publicProcedure
-    .input(signUpSchema)
-    .mutation(async ({ input }) => {
-      // Check if email is already in use
-      const exists = await emailExists(input.email);
-      if (exists) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "An account with this email already exists",
-        });
-      }
-      return { valid: true };
-    }),
-
-  /**
-   * Validate sign in data (server-side validation)
-   */
-  validateSignIn: publicProcedure
-    .input(signInSchema)
-    .mutation(async ({ input }) => {
-      // Check if email exists
-      const user = await getUserByEmail(input.email);
-      if (!user) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "No account found with this email",
-        });
-      }
-      return { valid: true, emailVerified: user.emailVerified };
-    }),
-
-  /**
    * Create profile after successful registration
-   * This is called after better-auth creates the user
+   * Better Auth does not manage profiles; call this after sign-up
    */
   createProfile: protectedProcedure.mutation(async ({ ctx }) => {
     const userId = ctx.session.user.id;

@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -19,32 +18,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { signUp } from "@/packages/auth/auth-client";
 import { type SignUpInput, signUpSchema } from "@/packages/schema/auth";
-import { trpc } from "@/packages/trpc/client";
-
-function getErrorMessage(error: unknown): string {
-  if (!(error instanceof Error)) {
-    return "Something went wrong. Please try again.";
-  }
-
-  const message = error.message;
-
-  // Check for JSON parsing errors (server error page returned)
-  if (
-    message.includes("not valid JSON") ||
-    message.includes("Unexpected token")
-  ) {
-    return "Server error occurred. Please try again later or contact support.";
-  }
-
-  return message;
-}
 
 function getSignUpErrorMessage(errorMessage: string): string {
-  if (errorMessage.includes("email") && errorMessage.includes("configured")) {
+  const m = errorMessage.toLowerCase();
+  if (m.includes("email") && m.includes("configured")) {
     return "Email service is temporarily unavailable. Please try again later.";
   }
-  if (errorMessage.includes("Failed to send")) {
+  if (m.includes("failed to send") || m.includes("verification")) {
     return "Unable to send verification email. Please try again later.";
+  }
+  if (m.includes("already") || m.includes("exists") || m.includes("in use")) {
+    return "An account with this email already exists.";
   }
   return errorMessage || "Failed to create account";
 }
@@ -64,23 +48,10 @@ export function SignUpForm() {
     mode: "onBlur",
   });
 
-  // Server-side validation mutation using TanStack Query
-  const validateMutation = useMutation(
-    trpc.auth.validateSignUp.mutationOptions({
-      onError: (error) => {
-        toast.error(error.message);
-      },
-    })
-  );
-
   async function onSubmit(data: SignUpInput) {
     setIsLoading(true);
 
     try {
-      // First validate on server (check if email exists)
-      await validateMutation.mutateAsync(data);
-
-      // Then call better-auth signUp
       const result = await signUp.email({
         email: data.email,
         password: data.password,
@@ -100,11 +71,14 @@ export function SignUpForm() {
         { duration: 5000 }
       );
 
-      // Redirect to verification pending page or sign-in
       router.push("/sign-in?verified=pending");
     } catch (error) {
-      console.error("[SignUp] Error:", error);
-      toast.error(getErrorMessage(error), { duration: 5000 });
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong. Please try again.",
+        { duration: 5000 }
+      );
     } finally {
       setIsLoading(false);
     }

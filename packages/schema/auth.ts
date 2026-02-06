@@ -15,12 +15,9 @@ export const passwordSchema = z
   .regex(/[0-9]/, "Password must contain at least one number");
 
 /**
- * Email validation
+ * Email validation (Zod v4: use z.email() instead of deprecated z.string().email())
  */
-export const emailSchema = z
-  .string()
-  .min(1, "Email is required")
-  .email("Please enter a valid email address");
+export const emailSchema = z.email("Please enter a valid email address");
 
 /**
  * Name validation

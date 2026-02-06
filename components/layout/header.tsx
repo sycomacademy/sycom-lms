@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Button } from "../ui/button";
+import { HeaderAuth } from "./header-auth";
 
 const navLinks = [
   { href: "/blog", label: "Blog" },
@@ -50,12 +50,7 @@ export function Header() {
             </a>
           </div>
 
-          {/* Sign in button */}
-          <Button
-            nativeButton={false}
-            render={<Link href="/sign-in">Sign in</Link>}
-            variant="outline"
-          />
+          <HeaderAuth />
         </div>
       </div>
     </header>

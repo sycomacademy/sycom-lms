@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -68,9 +68,14 @@ export function SignInForm() {
     mode: "onBlur",
   });
 
-  // Show verification message if coming from sign-up
+  // Show verification message if coming from sign-up (useRef avoids double toast in Strict Mode)
+  const toastShownForRef = useRef<string | null>(null);
   useEffect(() => {
     const verified = searchParams.get("verified");
+    if (!verified || verified === toastShownForRef.current) {
+      return;
+    }
+    toastShownForRef.current = verified;
     if (verified === "pending") {
       toast.info(
         "Please check your email to verify your account before signing in.",

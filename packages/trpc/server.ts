@@ -1,5 +1,10 @@
 import "server-only";
 
+import type {
+  FetchInfiniteQueryOptions,
+  FetchQueryOptions,
+  QueryKey,
+} from "@tanstack/react-query";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
@@ -11,6 +16,24 @@ import { createContext } from "@/packages/trpc/core/context";
 import { makeQueryClient } from "@/packages/trpc/query-client";
 import type { AppRouter } from "@/packages/trpc/routers";
 import { appRouter } from "@/packages/trpc/routers";
+
+/** Options returned by tRPC query or infiniteQuery procedures (from getTrpc()). */
+type TRPCPrefetchOptions =
+  | FetchQueryOptions<unknown, Error, unknown, QueryKey>
+  | FetchInfiniteQueryOptions<unknown, Error, unknown, QueryKey, unknown>;
+
+function isInfiniteQueryOptions(
+  opts: TRPCPrefetchOptions
+): opts is FetchInfiniteQueryOptions<
+  unknown,
+  Error,
+  unknown,
+  QueryKey,
+  unknown
+> {
+  const key = opts.queryKey as [string[], { type?: string }?];
+  return key[1]?.type === "infinite";
+}
 
 export const getQueryClient = cache(makeQueryClient);
 
@@ -42,18 +65,23 @@ export const getTrpc = cache(async () => {
   });
 });
 
-export async function prefetch(
-  queryOptions: ReturnType<
-    ReturnType<
-      typeof createTRPCOptionsProxy<AppRouter>
-    >["todo"]["getAll"]["queryOptions"]
-  >
-) {
+export async function prefetch(queryOptions: TRPCPrefetchOptions) {
   const queryClient = getQueryClient();
-  if (queryOptions.queryKey[1]?.type === "infinite") {
-    await queryClient.prefetchInfiniteQuery(queryOptions as never);
+  if (isInfiniteQueryOptions(queryOptions)) {
+    await queryClient.prefetchInfiniteQuery(queryOptions);
   } else {
-    await queryClient.prefetchQuery(queryOptions as never);
+    await queryClient.prefetchQuery(queryOptions);
+  }
+}
+
+export async function batchPrefetch(queryOptionsArray: TRPCPrefetchOptions[]) {
+  const queryClient = getQueryClient();
+  for (const queryOptions of queryOptionsArray) {
+    if (isInfiniteQueryOptions(queryOptions)) {
+      await queryClient.prefetchInfiniteQuery(queryOptions);
+    } else {
+      await queryClient.prefetchQuery(queryOptions);
+    }
   }
 }
 
