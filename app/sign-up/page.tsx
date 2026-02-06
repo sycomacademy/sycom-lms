@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { OAuthButton } from "@/components/auth/oauth-button";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
+import { SignUpForm } from "@/components/auth/sign-up-form";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -11,8 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
 export default function SignUpPage() {
@@ -30,32 +28,7 @@ export default function SignUpPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field>
-                <FieldLabel>First Name</FieldLabel>
-                <FieldGroup>
-                  <Input placeholder="John" type="text" />
-                </FieldGroup>
-              </Field>
-              <Field>
-                <FieldLabel>Last Name</FieldLabel>
-                <FieldGroup>
-                  <Input placeholder="Doe" type="text" />
-                </FieldGroup>
-              </Field>
-            </div>
-            <Field>
-              <FieldLabel>Email</FieldLabel>
-              <FieldGroup>
-                <Input placeholder="you@example.com" type="email" />
-              </FieldGroup>
-            </Field>
-            <Field>
-              <FieldLabel>Password</FieldLabel>
-              <FieldGroup>
-                <Input placeholder="••••••••" type="password" />
-              </FieldGroup>
-            </Field>
+            <SignUpForm />
             <p className="text-muted-foreground text-xs">
               By signing up you agree to our{" "}
               <Link className="text-primary hover:underline" href="/terms">
@@ -66,9 +39,6 @@ export default function SignUpPage() {
                 Privacy Policy
               </Link>
             </p>
-            <Button className="w-full" size="lg">
-              Create Account
-            </Button>
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <Separator />
@@ -77,10 +47,7 @@ export default function SignUpPage() {
                 <span className="bg-card px-2">Or continue with</span>
               </div>
             </div>
-            <div className="space-y-3">
-              <OAuthButton provider="google" />
-              <OAuthButton provider="linkedin" />
-            </div>
+            <OAuthButtons />
           </CardContent>
           <CardFooter className="flex justify-center">
             <p className="text-muted-foreground text-xs">

@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { OAuthButton } from "@/components/auth/oauth-button";
+import { Suspense } from "react";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
+import { SignInForm } from "@/components/auth/sign-in-form";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -11,9 +12,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
 export default function SignInPage() {
@@ -31,30 +29,9 @@ export default function SignInPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Field>
-              <FieldLabel>Email</FieldLabel>
-              <FieldGroup>
-                <Input placeholder="you@example.com" type="email" />
-              </FieldGroup>
-            </Field>
-            <Field>
-              <FieldLabel>Password</FieldLabel>
-              <FieldGroup>
-                <Input placeholder="••••••••" type="password" />
-              </FieldGroup>
-            </Field>
-            <div className="flex items-center justify-between text-muted-foreground text-xs">
-              <label className="flex items-center gap-2" htmlFor="remember-me">
-                <Checkbox id="remember-me" />
-                <span>Remember me</span>
-              </label>
-              <Link className="hover:text-foreground" href="/forgot-password">
-                Forgot password?
-              </Link>
-            </div>
-            <Button className="w-full" size="lg">
-              Sign In
-            </Button>
+            <Suspense fallback={null}>
+              <SignInForm />
+            </Suspense>
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <Separator />
@@ -63,10 +40,7 @@ export default function SignInPage() {
                 <span className="bg-card px-2">Or continue with</span>
               </div>
             </div>
-            <div className="space-y-3">
-              <OAuthButton provider="google" />
-              <OAuthButton provider="linkedin" />
-            </div>
+            <OAuthButtons />
           </CardContent>
           <CardFooter className="flex justify-center">
             <p className="text-muted-foreground text-xs">

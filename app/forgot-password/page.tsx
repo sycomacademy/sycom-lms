@@ -1,7 +1,7 @@
 import Link from "next/link";
+import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,8 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 
 export default function ForgotPasswordPage() {
   return (
@@ -28,16 +26,8 @@ export default function ForgotPasswordPage() {
               password.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Field>
-              <FieldLabel>Email</FieldLabel>
-              <FieldGroup>
-                <Input placeholder="you@example.com" type="email" />
-              </FieldGroup>
-            </Field>
-            <Button className="w-full" size="lg">
-              Send Reset Link
-            </Button>
+          <CardContent>
+            <ForgotPasswordForm />
           </CardContent>
           <CardFooter className="flex justify-center">
             <Link
