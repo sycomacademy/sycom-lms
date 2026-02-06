@@ -31,6 +31,7 @@ import { SimpleHeroDemo } from "@/components/demo/simple-hero-demo";
 import { SlidePanelDemo } from "@/components/demo/slide-panel-demo";
 import { SocialLinksDemo } from "@/components/demo/social-links-demo";
 import { SolutionsListDemo } from "@/components/demo/solutions-list-demo";
+import { SonnerDemo } from "@/components/demo/sonner-demo";
 import { StatsBarDemo } from "@/components/demo/stats-bar-demo";
 import { StatsCardDemo } from "@/components/demo/stats-card-demo";
 import { TeamCTADemo } from "@/components/demo/team-cta-demo";
@@ -116,6 +117,12 @@ export const componentRegistry: Record<string, ComponentConfig> = {
     component: ContactFormDemo,
     type: "registry:ui",
     href: "/style-guide/contact-form",
+  },
+  sonner: {
+    name: "Sonner",
+    component: SonnerDemo,
+    type: "registry:ui",
+    href: "/style-guide/sonner",
   },
   // Block Components
   hero: {

@@ -10,6 +10,8 @@ export const env = createEnv({
     DATABASE_URL: z.string().min(1),
     BETTER_AUTH_URL: z.url(),
     BETTER_AUTH_SECRET: z.string().min(32),
+    GOOGLE_CLIENT_ID: z.string().min(1),
+    GOOGLE_CLIENT_SECRET: z.string().min(1),
     LINKEDIN_CLIENT_ID: z.string().min(1),
     LINKEDIN_CLIENT_SECRET: z.string().min(1),
     NODE_ENV: z

@@ -11,12 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
-export default function SignInPage() {
+export default function SignUpPage() {
   return (
     <>
       <Header />
@@ -24,13 +23,27 @@ export default function SignInPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1 text-center">
             <CardTitle className="font-semibold text-2xl">
-              Welcome Back
+              Create an Account
             </CardTitle>
             <CardDescription>
-              Sign in to your account to continue learning
+              Sign up to start your cybersecurity learning journey
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field>
+                <FieldLabel>First Name</FieldLabel>
+                <FieldGroup>
+                  <Input placeholder="John" type="text" />
+                </FieldGroup>
+              </Field>
+              <Field>
+                <FieldLabel>Last Name</FieldLabel>
+                <FieldGroup>
+                  <Input placeholder="Doe" type="text" />
+                </FieldGroup>
+              </Field>
+            </div>
             <Field>
               <FieldLabel>Email</FieldLabel>
               <FieldGroup>
@@ -43,17 +56,18 @@ export default function SignInPage() {
                 <Input placeholder="••••••••" type="password" />
               </FieldGroup>
             </Field>
-            <div className="flex items-center justify-between text-muted-foreground text-xs">
-              <label className="flex items-center gap-2" htmlFor="remember-me">
-                <Checkbox id="remember-me" />
-                <span>Remember me</span>
-              </label>
-              <Link className="hover:text-foreground" href="/forgot-password">
-                Forgot password?
+            <p className="text-muted-foreground text-xs">
+              By signing up you agree to our{" "}
+              <Link className="text-primary hover:underline" href="/terms">
+                Terms of Service
+              </Link>{" "}
+              &{" "}
+              <Link className="text-primary hover:underline" href="/privacy">
+                Privacy Policy
               </Link>
-            </div>
+            </p>
             <Button className="w-full" size="lg">
-              Sign In
+              Create Account
             </Button>
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -70,9 +84,9 @@ export default function SignInPage() {
           </CardContent>
           <CardFooter className="flex justify-center">
             <p className="text-muted-foreground text-xs">
-              Don't have an account?{" "}
-              <Link className="text-primary hover:underline" href="/sign-up">
-                Sign up
+              Already have an account?{" "}
+              <Link className="text-primary hover:underline" href="/sign-in">
+                Sign in
               </Link>
             </p>
           </CardFooter>

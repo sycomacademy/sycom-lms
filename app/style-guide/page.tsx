@@ -27,7 +27,10 @@ export default function StyleGuidePage() {
             <h1 className="font-semibold text-2xl text-foreground tracking-tight">
               Style guide
             </h1>
-            <ModeSwitcher />
+            <div className="flex items-center gap-2">
+              <ModeSwitcher />
+              <Link href="/">home</Link>
+            </div>
           </div>
           <p className="mt-1 text-muted-foreground text-sm">
             Basic ui components showcase
