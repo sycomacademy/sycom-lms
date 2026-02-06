@@ -40,7 +40,7 @@ export function Header() {
         {/* Right side: Phone & Sign in button */}
         <div className="flex items-center gap-4">
           {/* Phone number */}
-          <div className="hidden items-center gap-2 sm:flex">
+          {/* <div className="hidden items-center gap-2 sm:flex">
             <span className="font-sans text-foreground text-sm">/</span>
             <a
               className="font-sans text-foreground text-sm transition-colors hover:text-primary"
@@ -48,7 +48,7 @@ export function Header() {
             >
               0113-328-0244
             </a>
-          </div>
+          </div> */}
 
           <HeaderAuth />
         </div>

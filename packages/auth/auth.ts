@@ -1,7 +1,9 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
+import { nanoid } from "nanoid";
 import { db, schema } from "@/packages/db";
+import { createProfile } from "@/packages/db/queries/profile";
 import { env } from "@/packages/env/server";
 
 async function sendEmail({
@@ -124,4 +126,23 @@ export const auth = betterAuth({
     },
   },
   plugins: [nextCookies()],
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          await createProfile({
+            id: nanoid(),
+            userId: user.id,
+            settings: {
+              theme: "system",
+              emailNotifications: false,
+              marketingEmails: false,
+              courseReminders: false,
+              weeklyDigest: false,
+            },
+          });
+        },
+      },
+    },
+  },
 });
