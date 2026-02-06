@@ -9,35 +9,36 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SectionLabel } from "@/components/ui/section-label";
 import { Separator } from "@/components/ui/separator";
-import { courses, pathways } from "@/mock-db";
+import {
+  getAllPathwaySlugs,
+  getCoursesForPathway,
+  getPathwayBySlug,
+} from "@/packages/db/queries/pathway";
 
 interface PathwayPageProps {
   params: Promise<{ slug: string }>;
 }
 
 export async function generateStaticParams() {
-  return pathways.map((pathway) => ({
-    slug: pathway.slug,
-  }));
+  const slugs = await getAllPathwaySlugs();
+  return slugs.map((s) => ({ slug: s.slug }));
 }
 
 export default async function PathwayDetailPage({ params }: PathwayPageProps) {
   const { slug } = await params;
-  const pathway = pathways.find((p) => p.slug === slug);
+  const pathway = await getPathwayBySlug(slug);
 
   if (!pathway) {
     notFound();
   }
 
-  const pathwayCourses = pathway.courseIds
-    .map((id) => courses.find((c) => c.id === id))
-    .filter(Boolean);
+  const pathwayCourses = await getCoursesForPathway(pathway.id);
   const totalDuration = pathwayCourses.reduce(
-    (acc, course) => acc + (course?.duration || 0),
+    (acc, course) => acc + course.duration,
     0
   );
   const totalPrice = pathwayCourses.reduce(
-    (acc, course) => acc + (course?.price || 0),
+    (acc, course) => acc + course.price,
     0
   );
 
@@ -69,7 +70,7 @@ export default async function PathwayDetailPage({ params }: PathwayPageProps) {
                   >
                     {pathway.level}
                   </Badge>
-                  {pathway.certifications.map((cert) => (
+                  {(pathway.certifications as string[])?.map((cert) => (
                     <Badge
                       className="gap-1 border-background/50 bg-background/20 text-background"
                       key={cert}
@@ -119,7 +120,7 @@ export default async function PathwayDetailPage({ params }: PathwayPageProps) {
                       <Award className="size-4" />
                       <span>Certifications:</span>
                       <span className="font-medium">
-                        {pathway.certifications.length}
+                        {(pathway.certifications as string[])?.length ?? 0}
                       </span>
                     </div>
                   </div>
@@ -139,7 +140,7 @@ export default async function PathwayDetailPage({ params }: PathwayPageProps) {
                 </CardHeader>
                 <CardContent>
                   <ul className="list-disc space-y-2 pl-6 text-muted-foreground">
-                    {pathway.whatYoullAchieve.map((item) => (
+                    {(pathway.whatYoullAchieve as string[])?.map((item) => (
                       <li key={item}>{item}</li>
                     ))}
                   </ul>
@@ -152,21 +153,21 @@ export default async function PathwayDetailPage({ params }: PathwayPageProps) {
                 </CardHeader>
                 <CardContent>
                   <ul className="list-disc space-y-2 pl-6 text-muted-foreground">
-                    {pathway.whoIsThisFor.map((item) => (
+                    {(pathway.whoIsThisFor as string[])?.map((item) => (
                       <li key={item}>{item}</li>
                     ))}
                   </ul>
                 </CardContent>
               </Card>
 
-              {pathway.prerequisites.length > 0 && (
+              {(pathway.prerequisites as string[])?.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Prerequisites</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ul className="list-disc space-y-2 pl-6 text-muted-foreground">
-                      {pathway.prerequisites.map((item) => (
+                      {(pathway.prerequisites as string[])?.map((item) => (
                         <li key={item}>{item}</li>
                       ))}
                     </ul>
@@ -180,7 +181,7 @@ export default async function PathwayDetailPage({ params }: PathwayPageProps) {
                 </CardHeader>
                 <CardContent>
                   <ul className="list-disc space-y-2 pl-6 text-muted-foreground">
-                    {pathway.highlights.map((item) => (
+                    {(pathway.highlights as string[])?.map((item) => (
                       <li key={item}>{item}</li>
                     ))}
                   </ul>
@@ -199,9 +200,6 @@ export default async function PathwayDetailPage({ params }: PathwayPageProps) {
             </h2>
             <div className="space-y-6">
               {pathwayCourses.map((course, index) => {
-                if (!course) {
-                  return null;
-                }
                 return (
                   <Card key={course.id}>
                     <CardContent className="p-6">

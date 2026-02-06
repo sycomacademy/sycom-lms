@@ -10,28 +10,30 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { SectionLabel } from "@/components/ui/section-label";
-import { blogPosts } from "@/mock-db";
+import {
+  getAllBlogPostSlugs,
+  getBlogPostBySlug,
+  getRelatedPosts,
+} from "@/packages/db/queries/blog";
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
 }
 
 export async function generateStaticParams() {
-  return blogPosts.map((post) => ({
-    slug: post.slug,
-  }));
+  const slugs = await getAllBlogPostSlugs();
+  return slugs.map((s) => ({ slug: s.slug }));
 }
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const { slug } = await params;
-  const post = blogPosts.find((p) => p.slug === slug);
+  const post = await getBlogPostBySlug(slug);
 
   if (!post) {
     notFound();
   }
 
-  // Get related posts (exclude current post, take 3)
-  const relatedPosts = blogPosts.filter((p) => p.id !== post.id).slice(0, 3);
+  const relatedPosts = await getRelatedPosts(post.id, 3);
 
   return (
     <>

@@ -13,7 +13,7 @@ export function useUser() {
     isLoading: isMeLoading,
     refetch,
   } = useQuery({
-    ...trpc.auth.me.queryOptions(undefined),
+    ...trpc.auth.me.queryOptions(),
     enabled: isSignedIn,
   });
 
