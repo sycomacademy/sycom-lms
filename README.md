@@ -1,37 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sycom LMS
 
-## Getting Started
+Learn cybersecurity with hands-on labs, certification prep, and career-focused training.
 
-First, run the development server:
+## Tech stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Runtime / package manager**: Bun
+- **Framework**: Next.js 16 (App Router)
+- **UI**: React 19, TypeScript, Tailwind CSS 4, shadcn/ui (Base UI)
+- **Data / API**: TanStack Query, tRPC, Neon (Postgres), Drizzle ORM
+- **Auth**: Better Auth
+- **Env**: T3 Env (`@t3-oss/env-nextjs`)
+- **AI**: Vercel AI SDK, Anthropic
+- **Code quality**: Biome (via Ultracite), Lefthook
+- sendgrid
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Scripts
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Script | What it does | When to run |
+|--------|----------------|-------------|
+| `bun dev` | Start the Next.js dev server | Local development |
+| `bun build` | Production build | Before deploy or to verify build |
+| `bun start` | Run the production server | After `bun build` (e.g. locally or in prod) |
+| `bun lint` | Run Biome lint check | On demand or in CI |
+| `bun format` | Format with Biome | On demand |
+| `bun check` | Ultracite check (lint + format) | On demand |
+| `bun fix` | Ultracite fix (auto-fix and format) | Before committing; also runs on pre-commit via Lefthook |
+| `bun typecheck` | TypeScript check only | CI or when verifying types |
+| `bun run db:generate` | Generate Drizzle migrations from schema changes | After changing any schema in `packages/db/schema` |
+| `bun run db:push` | Push schema to the DB (no migration files) | Once when setting up the DB, or for quick local sync (dev only) |
+| `bun run db:migrate` | Apply pending migrations | After pulling new migrations or in deployment |
+| `bun run db:studio` | Open Drizzle Studio UI | When you need to inspect or edit data |
+| `bun prepare` | Install Lefthook git hooks | Once after clone (or when adding the repo) |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# sycom-lms
+**DB scripts:** Set `DATABASE_URL` (e.g. from a `.env` in the repo root). For `db:generate` / `db:push` / `db:migrate` / `db:studio` you can run e.g. `dotenv -e .env -- bun run db:generate` if your env is in `.env`.
