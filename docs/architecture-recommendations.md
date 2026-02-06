@@ -476,3 +476,17 @@ export const lessonRelations = relations(lessons, ({ one, many }) => ({
 - Multi-channel delivery (web + mobile)
 
 Your current stack is perfect for an LMS. Focus on building the core learning experience first, optimize for content management later.
+
+---
+
+## Migration Status
+
+**Mock DB to Neon Postgres migration: Complete**
+
+All data previously stored in the `mock-db/` directory has been migrated to Neon Postgres via Drizzle ORM schemas, migrations, and a seed script. The `mock-db/` directory has been removed.
+
+**Current schema**: `instructor`, `course` (with modules/sections/lessons/reviews), `pathway` (with junction table), `author`, `blog_post`, `faq`, `feature`, `testimonial` — all in `packages/db/schema/`.
+
+**Data fetching**: All pages use React Server Components with direct database queries from `packages/db/queries/`. No client-side data fetching waterfalls for initial page loads.
+
+**Image storage**: URLs stored as `text` columns in Postgres. Files currently served from `/public/images/`. Production recommendation: Vercel Blob, Cloudflare R2, or AWS S3.

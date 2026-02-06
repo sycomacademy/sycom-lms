@@ -14,12 +14,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SectionLabel } from "@/components/ui/section-label";
-import { courses, faqs, features } from "@/mock-db";
+import { getFeaturedCourses } from "@/packages/db/queries/course";
+import { getAllFaqs } from "@/packages/db/queries/faq";
+import { getAllFeatures } from "@/packages/db/queries/feature";
 
-// Get featured courses (first 3)
-const featuredCourses = courses.slice(0, 3);
-
-export default function HomePage() {
+export default async function HomePage() {
+  const [featuredCourses, features, faqs] = await Promise.all([
+    getFeaturedCourses(3),
+    getAllFeatures(),
+    getAllFaqs(),
+  ]);
   return (
     <>
       <Header />

@@ -6,9 +6,10 @@ import { Header } from "@/components/layout/header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { SectionLabel } from "@/components/ui/section-label";
-import { blogPosts } from "@/mock-db";
+import { getAllBlogPosts } from "@/packages/db/queries/blog";
 
-export default function BlogPage() {
+export default async function BlogPage() {
+  const blogPosts = await getAllBlogPosts();
   return (
     <>
       <Header />
