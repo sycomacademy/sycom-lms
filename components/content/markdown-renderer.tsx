@@ -1,5 +1,7 @@
+import "highlight.js/styles/github.min.css";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
+import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/packages/utils/cn";
 
@@ -60,15 +62,59 @@ const markdownComponents = {
       {children}
     </Link>
   ),
-  code: ({ children }: { children?: React.ReactNode }) => (
-    <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-sm">
-      {children}
-    </code>
-  ),
+  code: ({
+    className,
+    children,
+    ...props
+  }: {
+    className?: string;
+    children?: React.ReactNode;
+  }) => {
+    const isBlock = className?.includes("language-");
+    return (
+      <code
+        className={cn(
+          isBlock ? "block p-4 font-mono text-sm" : "font-mono text-sm",
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </code>
+    );
+  },
   pre: ({ children }: { children?: React.ReactNode }) => (
-    <pre className="mb-4 overflow-x-auto rounded-lg bg-muted p-4 font-mono text-sm">
+    <pre className="mb-4 overflow-x-auto rounded-lg border border-border bg-muted p-4">
       {children}
     </pre>
+  ),
+  table: ({ children }: { children?: React.ReactNode }) => (
+    <div className="my-4 w-full overflow-x-auto">
+      <table className="w-full caption-bottom border-collapse text-sm">
+        {children}
+      </table>
+    </div>
+  ),
+  thead: ({ children }: { children?: React.ReactNode }) => (
+    <thead className="border-border border-b [&_tr]:border-b">{children}</thead>
+  ),
+  tbody: ({ children }: { children?: React.ReactNode }) => (
+    <tbody className="[&_tr:last-child]:border-0">{children}</tbody>
+  ),
+  tr: ({ children }: { children?: React.ReactNode }) => (
+    <tr className="border-border border-b transition-colors hover:bg-muted/50">
+      {children}
+    </tr>
+  ),
+  th: ({ children }: { children?: React.ReactNode }) => (
+    <th className="h-10 px-4 text-left align-middle font-medium text-foreground [&:has([role=checkbox])]:pr-0">
+      {children}
+    </th>
+  ),
+  td: ({ children }: { children?: React.ReactNode }) => (
+    <td className="p-4 align-middle [&:has([role=checkbox])]:pr-0">
+      {children}
+    </td>
   ),
 };
 
@@ -80,6 +126,7 @@ export function MarkdownRenderer({
     <div className={cn("max-w-none text-foreground", className)}>
       <ReactMarkdown
         components={markdownComponents}
+        rehypePlugins={[rehypeHighlight]}
         remarkPlugins={[remarkGfm]}
       >
         {content}

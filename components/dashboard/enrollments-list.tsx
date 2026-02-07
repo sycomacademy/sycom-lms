@@ -116,6 +116,22 @@ export function EnrollmentsList({
                     />
                   </div>
                 </div>
+                <div className="mt-3">
+                  <Button
+                    className="w-full"
+                    nativeButton={false}
+                    render={
+                      <Link
+                        href={`/courses/${c.slug}/learn`}
+                        prefetch={false}
+                      />
+                    }
+                    size="sm"
+                    variant={enr.progress === 100 ? "outline" : "default"}
+                  >
+                    {enr.progress === 100 ? "Review" : "Continue"}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}

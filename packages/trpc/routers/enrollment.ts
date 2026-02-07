@@ -10,6 +10,7 @@ import {
   getWishlistByUserId,
   getWishlistItem,
   removeFromWishlist,
+  syncEnrollmentProgress,
 } from "@/packages/db/queries/enrollment";
 import { protectedProcedure, router } from "@/packages/trpc/core/init";
 
@@ -19,12 +20,19 @@ export const enrollmentRouter = router({
     return getEnrollmentsByUserId(ctx.session.user.id);
   }),
 
-  /** Check if enrolled in a specific course */
+  /** Check if enrolled in a specific course (syncs progress from lesson_progress) */
   isEnrolled: protectedProcedure
     .input(z.object({ courseId: z.string() }))
     .query(async ({ ctx, input }) => {
       const record = await getEnrollment(ctx.session.user.id, input.courseId);
-      return { enrolled: !!record, enrollment: record };
+      if (record) {
+        await syncEnrollmentProgress(ctx.session.user.id, input.courseId);
+        return {
+          enrolled: true,
+          enrollment: await getEnrollment(ctx.session.user.id, input.courseId),
+        };
+      }
+      return { enrolled: false, enrollment: null };
     }),
 
   /** Enroll in a course */
