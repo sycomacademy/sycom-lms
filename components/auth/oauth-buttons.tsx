@@ -86,25 +86,27 @@ function OAuthButton({
   const config = providerConfig[provider];
 
   return (
-    <Button
-      className={cn("w-full gap-3", className)}
-      disabled={disabled || isLoading}
-      onClick={onClick}
-      type="button"
-      variant={isLastUsed ? "default" : "outline"}
-    >
-      {isLoading ? (
-        <Loader2Icon className="h-5 w-5 animate-spin" />
-      ) : (
-        config.logo
-      )}
-      <span>Continue with {config.label}</span>
+    <div className="flex w-full items-center gap-2">
+      <Button
+        className={cn("flex-1 gap-3", className)}
+        disabled={disabled || isLoading}
+        onClick={onClick}
+        type="button"
+        variant="outline"
+      >
+        {isLoading ? (
+          <Loader2Icon className="h-5 w-5 animate-spin" />
+        ) : (
+          config.logo
+        )}
+        <span>Continue with {config.label}</span>
+      </Button>
       {isLastUsed && (
-        <Badge className="ml-auto" variant="secondary">
+        <Badge className="shrink-0" variant="secondary">
           Last used
         </Badge>
       )}
-    </Button>
+    </div>
   );
 }
 

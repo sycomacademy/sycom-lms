@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -166,28 +167,29 @@ export function SignInForm({ callbackUrl }: SignInFormProps) {
             Forgot password?
           </Link>
         </div>
-        <Button className="w-full" disabled={isLoading} size="lg" type="submit">
-          {isLoading ? (
-            <>
-              <Loader2Icon className="animate-spin" />
-              Signing In...
-            </>
-          ) : (
-            <SignInButtonLabel lastMethod={lastMethod} />
+        <div className="flex w-full flex-col items-end gap-2">
+          {lastMethod === "email" && (
+            <Badge className="shrink-0" variant="secondary">
+              Last used
+            </Badge>
           )}
-        </Button>
+          <Button
+            className="w-full flex-1"
+            disabled={isLoading}
+            size="lg"
+            type="submit"
+          >
+            {isLoading ? (
+              <>
+                <Loader2Icon className="animate-spin" />
+                Signing In...
+              </>
+            ) : (
+              "Sign In"
+            )}
+          </Button>
+        </div>
       </form>
     </Form>
   );
-}
-
-function SignInButtonLabel({
-  lastMethod,
-}: {
-  lastMethod: string | null | undefined;
-}) {
-  if (lastMethod === "email") {
-    return "Sign In (Last used)";
-  }
-  return "Sign In";
 }
