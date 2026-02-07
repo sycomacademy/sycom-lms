@@ -9,6 +9,7 @@ import {
   courseModule,
   courseReview,
   courseSection,
+  quizQuestion,
 } from "./schema/course";
 import { enrollment, wishlist } from "./schema/enrollment";
 import { faq } from "./schema/faq";
@@ -17,6 +18,7 @@ import { fileMetadata } from "./schema/file-metadata";
 import { instructor } from "./schema/instructor";
 import { pathway, pathwayCourse } from "./schema/pathway";
 import { profile } from "./schema/profile";
+import { lessonProgress, quizAttempt } from "./schema/progress";
 import { testimonial } from "./schema/testimonial";
 
 // import ws from "ws";
@@ -37,8 +39,11 @@ export const schema = {
   courseSection,
   courseLesson,
   courseReview,
+  quizQuestion,
   enrollment,
   wishlist,
+  lessonProgress,
+  quizAttempt,
   pathway,
   pathwayCourse,
   author,
