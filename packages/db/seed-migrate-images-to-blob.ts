@@ -1,0 +1,155 @@
+/**
+ * Seed script: migrate public images to Vercel Blob and update DB rows.
+ *
+ * Run with: bun run db:seed:migrate-images
+ *
+ * Requires: DATABASE_URL, BLOB_READ_WRITE_TOKEN (e.g. from .env.local)
+ *
+ * 1. Uploads every file under public/images/ to Vercel Blob (path: images/...).
+ * 2. Updates instructor, course, author, blog_post, testimonial rows where
+ *    photo_url / thumbnail_url / featured_image_url match a migrated path.
+ *
+ * Safe to re-run: re-uploads and overwrites blob; updates only rows that still
+ * have the old public path (idempotent for already-migrated rows).
+ */
+import "dotenv/config";
+import { config } from "dotenv";
+
+config({ path: ".env.local" });
+
+import { readdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { neon } from "@neondatabase/serverless";
+import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/neon-http";
+import { uploadFile } from "@/packages/storage/upload";
+import { author, blogPost } from "./schema/blog";
+import { course } from "./schema/course";
+import { instructor } from "./schema/instructor";
+import { testimonial } from "./schema/testimonial";
+
+const DATABASE_URL = process.env.DATABASE_URL;
+const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+
+if (!DATABASE_URL) {
+  throw new Error("DATABASE_URL is not set");
+}
+if (!BLOB_TOKEN) {
+  throw new Error("BLOB_READ_WRITE_TOKEN is not set");
+}
+
+const sql = neon(DATABASE_URL);
+const db = drizzle(sql);
+
+const PUBLIC_IMAGES_DIR = join(process.cwd(), "public", "images");
+
+/** Collect relative paths under dir (e.g. "avatar.png", "instructors/james.jpg"). */
+async function listImagePaths(
+  dir: string,
+  baseDir: string,
+  prefix = ""
+): Promise<string[]> {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const acc: string[] = [];
+  for (const e of entries) {
+    const rel = prefix ? `${prefix}/${e.name}` : e.name;
+    if (e.isDirectory()) {
+      acc.push(...(await listImagePaths(join(dir, e.name), baseDir, rel)));
+    } else {
+      acc.push(rel);
+    }
+  }
+  return acc;
+}
+
+async function migrate() {
+  console.log("Migrating public/images to Vercel Blob and updating DB...\n");
+
+  // 1. List all files under public/images
+  const relativePaths = await listImagePaths(
+    PUBLIC_IMAGES_DIR,
+    PUBLIC_IMAGES_DIR
+  );
+  if (relativePaths.length === 0) {
+    console.log("No files found under public/images. Exiting.");
+    return;
+  }
+
+  // 2. Upload each to blob and build oldPath -> newUrl map
+  const pathToBlobUrl: Record<string, string> = {};
+  for (const rel of relativePaths) {
+    const fullPath = join(PUBLIC_IMAGES_DIR, rel);
+    const buf = await readFile(fullPath);
+    const arrayBuffer = buf.buffer.slice(
+      buf.byteOffset,
+      buf.byteOffset + buf.byteLength
+    );
+    const { url } = await uploadFile(rel, arrayBuffer, {
+      pathPrefix: "images",
+    });
+    const oldPublicPath = `/images/${rel}`;
+    pathToBlobUrl[oldPublicPath] = url;
+    console.log(`  Uploaded images/${rel} -> ${url}`);
+  }
+
+  const entries = Object.entries(pathToBlobUrl);
+  if (entries.length === 0) {
+    console.log("No uploads. Exiting.");
+    return;
+  }
+
+  // 3. Update DB rows for each (oldPath, newUrl)
+  let updated = 0;
+
+  for (const [oldPath, newUrl] of entries) {
+    const r1 = await db
+      .update(instructor)
+      .set({ photoUrl: newUrl })
+      .where(eq(instructor.photoUrl, oldPath));
+    if (Number(r1.rowCount) > 0) {
+      updated += Number(r1.rowCount);
+    }
+
+    const r2 = await db
+      .update(course)
+      .set({ thumbnailUrl: newUrl })
+      .where(eq(course.thumbnailUrl, oldPath));
+    if (Number(r2.rowCount) > 0) {
+      updated += Number(r2.rowCount);
+    }
+
+    const r3 = await db
+      .update(author)
+      .set({ photoUrl: newUrl })
+      .where(eq(author.photoUrl, oldPath));
+    if (Number(r3.rowCount) > 0) {
+      updated += Number(r3.rowCount);
+    }
+
+    const r4 = await db
+      .update(blogPost)
+      .set({ featuredImageUrl: newUrl })
+      .where(eq(blogPost.featuredImageUrl, oldPath));
+    if (Number(r4.rowCount) > 0) {
+      updated += Number(r4.rowCount);
+    }
+
+    const r5 = await db
+      .update(testimonial)
+      .set({ photoUrl: newUrl })
+      .where(eq(testimonial.photoUrl, oldPath));
+    if (Number(r5.rowCount) > 0) {
+      updated += Number(r5.rowCount);
+    }
+  }
+
+  console.log(`\nDone. Updated ${updated} row(s).`);
+  console.log(
+    "Rows that still reference /images/... paths not under public/images were left unchanged (add those files and re-run to migrate them)."
+  );
+}
+
+migrate().catch((err) => {
+  console.error("Migration failed:", err);
+  process.exit(1);
+});

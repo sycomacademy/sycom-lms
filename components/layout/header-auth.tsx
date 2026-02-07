@@ -43,7 +43,7 @@ export function HeaderAuth() {
 
   async function handleSignOut() {
     await signOut();
-    router.refresh();
+    router.push("/sign-in");
   }
 
   return (
@@ -67,9 +67,7 @@ export function HeaderAuth() {
         }
       />
       <DropdownMenuContent align="end">
-        <DropdownMenuItem>
-          <Link href="/dashboard">Dashboard</Link>
-        </DropdownMenuItem>
+        <DropdownMenuItem render={<Link href="/dashboard">Dashboard</Link>} />
         <DropdownMenuItem onClick={handleSignOut} variant="destructive">
           Sign out
         </DropdownMenuItem>
