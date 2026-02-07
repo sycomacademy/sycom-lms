@@ -1,0 +1,122 @@
+name: Neon Branch Management
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+
+# Prevent concurrent runs for the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  setup:
+    name: Setup
+    outputs:
+      branch: ${{ steps.branch_name.outputs.current_branch }}
+      # Determine the Neon parent branch based on the PR's base branch
+      neon_parent: ${{ steps.neon_parent.outputs.value }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get branch name
+        id: branch_name
+        uses: tj-actions/branch-names@v8
+
+      - name: Determine Neon parent branch
+        id: neon_parent
+        run: |
+          # PRs targeting main (prod deploys from staging) use main as parent
+          # PRs targeting staging (feature work) use staging as parent
+          if [[ "${{ github.event.pull_request.base.ref }}" == "main" ]]; then
+            echo "value=main" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=staging" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ──────────────────────────────────────────────
+  # CREATE: Preview branch for feature PRs into staging
+  # ──────────────────────────────────────────────
+  create_neon_branch:
+    name: Create Neon Preview Branch
+    needs: setup
+    # Only create preview branches for PRs targeting staging (feature branches)
+    # PRs from staging → main don't need a preview branch (staging already exists)
+    if: |
+      github.event.pull_request.base.ref == 'staging' &&
+      github.event_name == 'pull_request' && (
+        github.event.action == 'opened' ||
+        github.event.action == 'reopened' ||
+        github.event.action == 'synchronize'
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Neon Branch
+        id: create_neon_branch
+        uses: neondatabase/create-branch-action@v5
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch_name: preview/pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}
+          # Branch off staging so preview DBs have staging's data + schema
+          parent: staging
+          api_key: ${{ secrets.NEON_API_KEY }}
+
+      # Uncomment to run migrations on the preview branch:
+      # - uses: actions/checkout@v4
+      # - name: Run Migrations
+      #   run: npm run db:migrate
+      #   env:
+      #     DATABASE_URL: "${{ steps.create_neon_branch.outputs.db_url_with_pooler }}"
+
+  # ──────────────────────────────────────────────
+  # DELETE: Clean up preview branch when PR is closed/merged
+  # ──────────────────────────────────────────────
+  delete_neon_branch:
+    name: Delete Neon Preview Branch
+    needs: setup
+    # Only delete for PRs targeting staging (those are the ones with preview branches)
+    if: |
+      github.event.pull_request.base.ref == 'staging' &&
+      github.event_name == 'pull_request' &&
+      github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete Neon Branch
+        uses: neondatabase/delete-branch-action@v3
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch: preview/pr-${{ github.event.number }}-${{ needs.setup.outputs.branch }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+
+  # ──────────────────────────────────────────────
+  # RESET STAGING: Manually triggered to restore staging DB from production
+  # Use this when staging DB is corrupted and needs to be reset to prod state
+  # ──────────────────────────────────────────────
+  # NOTE: This job only runs when a PR targeting staging has the
+  # "Reset Neon Branch" label applied. To reset staging:
+  #   1. Create or use an existing PR targeting staging
+  #   2. Add the label "Reset Neon Branch"
+  #   3. The workflow will reset the staging Neon branch to match main (prod)
+  reset_staging:
+    name: Reset Staging to Production
+    needs: setup
+    if: |
+      contains(github.event.pull_request.labels.*.name, 'Reset Neon Branch') &&
+      github.event.pull_request.base.ref == 'staging' &&
+      github.event_name == 'pull_request' && (
+        github.event.action == 'labeled' ||
+        github.event.action == 'synchronize' ||
+        github.event.action == 'opened' ||
+        github.event.action == 'reopened'
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reset Staging Neon Branch to Production
+        uses: neondatabase/reset-branch-action@v1
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch: staging
+          parent: true
+          api_key: ${{ secrets.NEON_API_KEY }}
