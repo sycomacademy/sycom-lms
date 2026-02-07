@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Authentication pages with dedicated form components and email sending for password reset and verification
 - Ultracite linting and formatting tooling
 - Agent rules, skills, and Vercel integration config
+- GitHub Actions workflows: Neon workflow and reset-staging workflow in `.github/workflows/`
 
 ### Changed
 
@@ -27,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Courses listing page refactored: RSC fetches data, passes to client component for filtering
 - Updated `README.md` with database section, schema overview, query docs, seed instructions, and image storage recommendations
 - Updated `docs/architecture-recommendations.md` with migration status
+- Better Auth URL and env configuration for staging/production
+- Select component styles: consistent ring properties for focus visibility
+- Profile hook added; number field removed from profile
 
 ### Removed
 

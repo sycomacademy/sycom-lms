@@ -12,7 +12,8 @@ Learn cybersecurity with hands-on labs, certification prep, and career-focused t
 - **Env**: T3 Env (`@t3-oss/env-nextjs`)
 - **AI**: Vercel AI SDK, Anthropic
 - **Code quality**: Biome (via Ultracite), Lefthook
-- sendgrid
+- **Email**: SendGrid
+- **CI**: GitHub Actions (Neon workflow, reset-staging)
 
 ## Scripts
 
@@ -31,7 +32,6 @@ Learn cybersecurity with hands-on labs, certification prep, and career-focused t
 | `bun run db:migrate` | Apply pending migrations | After pulling new migrations or in deployment |
 | `bun run db:studio` | Open Drizzle Studio UI | When you need to inspect or edit data |
 | `bun prepare` | Install Lefthook git hooks | Once after clone (or when adding the repo) |
-
 | `bun run db:seed` | Seed the database with initial data | After running migrations on a fresh DB |
 
 **DB scripts:** Set `DATABASE_URL` (e.g. from a `.env` in the repo root). For `db:generate` / `db:push` / `db:migrate` / `db:studio` you can run e.g. `dotenv -e .env -- bun run db:generate` if your env is in `.env`.
