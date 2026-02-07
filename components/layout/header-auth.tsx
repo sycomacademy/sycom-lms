@@ -1,13 +1,11 @@
 "use client";
 
 import {
-  BookOpenIcon,
   ChevronDownIcon,
+  HeartIcon,
   LayoutDashboardIcon,
   LogOutIcon,
-  RouteIcon,
   SettingsIcon,
-  UserIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -101,33 +99,30 @@ export function HeaderAuth() {
         {/* Navigation */}
         <DropdownMenuGroup>
           <DropdownMenuLabel>Navigate</DropdownMenuLabel>
-          <DropdownMenuItem render={<Link href="/dashboard" />}>
-            <LayoutDashboardIcon />
-            Dashboard
-          </DropdownMenuItem>
-          <DropdownMenuItem render={<Link href="/courses" />}>
-            <BookOpenIcon />
-            My Courses
-          </DropdownMenuItem>
-          <DropdownMenuItem render={<Link href="/pathway" />}>
-            <RouteIcon />
-            Learning Pathways
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-
-        <DropdownMenuSeparator />
-
-        {/* Account */}
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Account</DropdownMenuLabel>
-          <DropdownMenuItem render={<Link href="/dashboard" />}>
-            <UserIcon />
-            Profile
-          </DropdownMenuItem>
-          <DropdownMenuItem render={<Link href="/dashboard" />}>
-            <SettingsIcon />
-            Settings
-          </DropdownMenuItem>
+          <DropdownMenuItem
+            render={
+              <Link href="/dashboard">
+                <LayoutDashboardIcon />
+                Dashboard
+              </Link>
+            }
+          />
+          <DropdownMenuItem
+            render={
+              <Link href="/dashboard/wishlist">
+                <HeartIcon />
+                Wishlist
+              </Link>
+            }
+          />
+          <DropdownMenuItem
+            render={
+              <Link href="/dashboard/settings">
+                <SettingsIcon />
+                Settings
+              </Link>
+            }
+          />
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />

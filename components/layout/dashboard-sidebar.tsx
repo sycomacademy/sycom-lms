@@ -2,9 +2,13 @@
 
 import {
   BookOpenIcon,
-  HeartIcon,
+  ExternalLinkIcon,
+  HeadphonesIcon,
+  HelpCircleIcon,
   LayoutDashboardIcon,
   MapIcon,
+  MessageCircleIcon,
+  MessageSquareIcon,
   RouteIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -12,6 +16,7 @@ import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -22,31 +27,64 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 
-const mainNav = [
+const learnNav = [
   {
-    label: "Overview",
+    label: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboardIcon,
+    exact: true,
+  },
+  {
+    label: "Modules",
+    href: "/dashboard/courses",
+    icon: BookOpenIcon,
+    exact: false,
+  },
+  {
+    label: "Pathway",
+    href: "/pathway",
+    icon: RouteIcon,
+    exact: false,
   },
 ];
 
-const learningNav = [
+const supportNav = [
   {
-    label: "My Courses",
-    href: "/courses",
-    icon: BookOpenIcon,
+    label: "FAQ",
+    href: "/dashboard/faq",
+    icon: HelpCircleIcon,
+    exact: false,
+    external: false,
   },
   {
-    label: "Learning Pathways",
-    href: "/pathway",
-    icon: RouteIcon,
+    label: "Contact Support",
+    href: "mailto:support@sycom.co.uk",
+    icon: HeadphonesIcon,
+    exact: true,
+    external: true,
   },
   {
-    label: "Wishlist",
-    href: "/dashboard#wishlist",
-    icon: HeartIcon,
+    label: "Report Feedback",
+    href: "/dashboard/feedback",
+    icon: MessageSquareIcon,
+    exact: false,
+    external: false,
+  },
+  {
+    label: "WhatsApp",
+    href: "https://wa.me/447000000000",
+    icon: MessageCircleIcon,
+    exact: true,
+    external: true,
   },
 ];
+
+function isActive(pathname: string, href: string, exact: boolean): boolean {
+  if (exact) {
+    return pathname === href || pathname === href.split("#")[0];
+  }
+  return pathname.startsWith(href);
+}
 
 export function DashboardSidebar() {
   const pathname = usePathname();
@@ -54,28 +92,27 @@ export function DashboardSidebar() {
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader className="p-4">
-        <div className="flex items-center gap-2">
+        <Link className="flex items-center gap-2" href="/dashboard">
           <div className="flex size-8 items-center justify-center rounded-lg bg-primary">
             <MapIcon className="size-4 text-primary-foreground" />
           </div>
           <span className="font-semibold text-sm group-data-[collapsible=icon]:hidden">
-            Learning Hub
+            SYCOM LMS
           </span>
-        </div>
+        </Link>
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Main */}
+        {/* Learn */}
         <SidebarGroup>
-          <SidebarGroupLabel>Dashboard</SidebarGroupLabel>
+          <SidebarGroupLabel>Learn</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainNav.map((item) => (
+              {learnNav.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
-                    isActive={pathname === item.href}
+                    isActive={isActive(pathname, item.href, item.exact)}
                     render={<Link href={item.href} />}
-                    tooltip={item.label}
                   >
                     <item.icon />
                     <span>{item.label}</span>
@@ -88,24 +125,36 @@ export function DashboardSidebar() {
 
         <SidebarSeparator />
 
-        {/* Learning */}
+        {/* Support */}
         <SidebarGroup>
-          <SidebarGroupLabel>Learning</SidebarGroupLabel>
+          <SidebarGroupLabel>Support</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {learningNav.map((item) => (
+              {supportNav.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     isActive={
-                      item.href === "/dashboard#wishlist"
-                        ? false
-                        : pathname.startsWith(item.href)
+                      !item.external &&
+                      isActive(pathname, item.href, item.exact)
                     }
-                    render={<Link href={item.href} />}
-                    tooltip={item.label}
+                    render={
+                      item.external ? (
+                        // biome-ignore lint/a11y/useAnchorContent: content injected by SidebarMenuButton render prop
+                        <a
+                          href={item.href}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        />
+                      ) : (
+                        <Link href={item.href} />
+                      )
+                    }
                   >
                     <item.icon />
                     <span>{item.label}</span>
+                    {item.external && (
+                      <ExternalLinkIcon className="ml-auto size-3 text-muted-foreground" />
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -113,6 +162,8 @@ export function DashboardSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      <SidebarFooter />
     </Sidebar>
   );
 }
