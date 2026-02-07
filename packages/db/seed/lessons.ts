@@ -1,3 +1,8 @@
+/**
+ * Seed lessons: CISSP and Network+ course content, quiz questions.
+ *
+ * Idempotent: uses ON CONFLICT DO NOTHING; UPDATE only where content IS NULL.
+ */
 import { neon } from "@neondatabase/serverless";
 import "dotenv/config";
 
@@ -8,19 +13,17 @@ const sql = neon(
     })()
 );
 
-async function seedLessons() {
-  console.log("Seeding lessons for enrolled courses...");
+export async function seedLessons() {
+  console.log("  [lessons] Seeding CISSP and Network+ content...");
 
   // ─── Course 4: CISSP Masterclass ─────────────────────
   const cissp = "4";
 
-  // Modules
   await sql`INSERT INTO course_module (id, course_id, title, "order") VALUES
     ('cm-cissp-1', ${cissp}, 'Security and Risk Management', 1),
     ('cm-cissp-2', ${cissp}, 'Asset Security', 2)
   ON CONFLICT (id) DO NOTHING`;
 
-  // Sections
   await sql`INSERT INTO course_section (id, module_id, title, "order") VALUES
     ('cs-cissp-1-1', 'cm-cissp-1', 'Introduction', 1),
     ('cs-cissp-1-2', 'cm-cissp-1', 'Risk Concepts', 2),
@@ -28,7 +31,6 @@ async function seedLessons() {
     ('cs-cissp-2-2', 'cm-cissp-2', 'Data Lifecycle', 2)
   ON CONFLICT (id) DO NOTHING`;
 
-  // Lessons
   await sql`INSERT INTO course_lesson (id, section_id, title, "order", type, duration, content, video_url) VALUES
     ('cl-cissp-1', 'cs-cissp-1-1', 'Welcome to CISSP', 1, 'article', 5, ${cisspWelcomeContent}, NULL),
     ('cl-cissp-2', 'cs-cissp-1-1', 'CIA Triad Overview', 2, 'article', 10, ${cisspCiaTriadContent}, NULL),
@@ -40,7 +42,6 @@ async function seedLessons() {
     ('cl-cissp-8', 'cs-cissp-2-2', 'Asset Security Quiz', 2, 'mixed', 10, ${cisspAssetQuizContent}, NULL)
   ON CONFLICT (id) DO NOTHING`;
 
-  // Quiz questions for CISSP
   await sql`INSERT INTO quiz_question (id, lesson_id, question_text, type, options, hint, "order") VALUES
     ('qq-cissp-1', 'cl-cissp-4', 'What does the "C" in CIA triad stand for?', 'multiple_choice', ${JSON.stringify(
       [
@@ -149,10 +150,8 @@ async function seedLessons() {
     )}, 'VLANs logically segment the network.', 2)
   ON CONFLICT (id) DO NOTHING`;
 
-  // Also add content to existing comptia-security lessons
+  // Update existing comptia-security lesson content (only if null)
   await sql`UPDATE course_lesson SET content = ${securityWhatIsContent} WHERE id = 'l2' AND content IS NULL`;
-
-  console.log("Seed complete!");
 }
 
 // ─── Markdown Content ───────────────────────────────────
@@ -458,8 +457,6 @@ Key areas to review:
 
 Answer the questions below to complete this module.`;
 
-// ─── CompTIA Network+ Content ───────────────────────────
-
 const networkOsiContent = `# The OSI Model
 
 The **Open Systems Interconnection (OSI)** model is a conceptual framework that standardizes the functions of a networking system into **seven layers**.
@@ -477,38 +474,6 @@ Remember: **A**ll **P**eople **S**eem **T**o **N**eed **D**ata **P**rocessing
 | 3 | **Network** | Routing and logical addressing | IP, ICMP, OSPF |
 | 2 | **Data Link** | Physical addressing and framing | Ethernet, Wi-Fi, ARP |
 | 1 | **Physical** | Bits on the wire | Cables, hubs, signals |
-
-## Layer Details
-
-### Layer 7 - Application
-This is the layer closest to the end user. It provides network services directly to applications.
-
-\`\`\`
-GET /index.html HTTP/1.1
-Host: www.example.com
-\`\`\`
-
-### Layer 4 - Transport
-Responsible for end-to-end communication:
-
-- **TCP** (Transmission Control Protocol) - Connection-oriented, reliable
-- **UDP** (User Datagram Protocol) - Connectionless, faster but unreliable
-
-### Layer 3 - Network
-Handles logical addressing and routing:
-
-\`\`\`
-Source IP: 192.168.1.10
-Destination IP: 10.0.0.1
-\`\`\`
-
-### Layer 2 - Data Link
-Handles physical addressing:
-
-\`\`\`
-Source MAC: AA:BB:CC:DD:EE:FF
-Destination MAC: 11:22:33:44:55:66
-\`\`\`
 
 ## Encapsulation
 
@@ -540,38 +505,11 @@ The **TCP/IP model** is the practical networking model used on the internet. It 
 - Reliable delivery with acknowledgments
 - Flow control and congestion management
 
-\`\`\`
-SYN  →
-     ← SYN-ACK
-ACK  →
-[Connection Established]
-\`\`\`
-
 ### UDP (User Datagram Protocol)
 - Connectionless
 - No delivery guarantee
 - Lower overhead, faster
-- Used for: DNS queries, streaming, gaming
-
-### IP (Internet Protocol)
-- Logical addressing (IPv4 and IPv6)
-- Routing between networks
-- Best-effort delivery (no guarantee)
-
-## Port Numbers
-
-Common well-known ports:
-
-| Port | Protocol | Service |
-|------|----------|---------|
-| 20/21 | TCP | FTP |
-| 22 | TCP | SSH |
-| 23 | TCP | Telnet |
-| 25 | TCP | SMTP |
-| 53 | TCP/UDP | DNS |
-| 80 | TCP | HTTP |
-| 443 | TCP | HTTPS |
-| 3389 | TCP | RDP |`;
+- Used for: DNS queries, streaming, gaming`;
 
 const networkModelsQuizContent = `# Network Models Quiz
 
@@ -614,14 +552,7 @@ These addresses are **not routable** on the public internet:
 |-------|-------|------|
 | A | 10.0.0.0 - 10.255.255.255 | 10.0.0.0/8 |
 | B | 172.16.0.0 - 172.31.255.255 | 172.16.0.0/12 |
-| C | 192.168.0.0 - 192.168.255.255 | 192.168.0.0/16 |
-
-## Special Addresses
-
-- **0.0.0.0** - Default route / unspecified
-- **127.0.0.1** - Loopback (localhost)
-- **255.255.255.255** - Broadcast
-- **169.254.x.x** - APIPA (Automatic Private IP Addressing)`;
+| C | 192.168.0.0 - 192.168.255.255 | 192.168.0.0/16 |`;
 
 const networkSubnettingContent = `# Subnetting Basics
 
@@ -644,35 +575,7 @@ Subnet Mask:   255.255.255.0
 Network:       192.168.1.0
 Host:          .100
 Broadcast:     192.168.1.255
-\`\`\`
-
-## CIDR Notation
-
-CIDR (Classless Inter-Domain Routing) uses a slash notation:
-
-| CIDR | Subnet Mask | Hosts |
-|------|-------------|-------|
-| /24 | 255.255.255.0 | 254 |
-| /25 | 255.255.255.128 | 126 |
-| /26 | 255.255.255.192 | 62 |
-| /27 | 255.255.255.224 | 30 |
-| /28 | 255.255.255.240 | 14 |
-| /30 | 255.255.255.252 | 2 |
-
-## Subnetting Example
-
-Given: **192.168.10.0/24**, create 4 subnets.
-
-We need 2 extra bits (2² = 4 subnets), so the new mask is **/26**:
-
-| Subnet | Network Address | First Host | Last Host | Broadcast |
-|--------|----------------|------------|-----------|-----------|
-| 1 | 192.168.10.0 | 192.168.10.1 | 192.168.10.62 | 192.168.10.63 |
-| 2 | 192.168.10.64 | 192.168.10.65 | 192.168.10.126 | 192.168.10.127 |
-| 3 | 192.168.10.128 | 192.168.10.129 | 192.168.10.190 | 192.168.10.191 |
-| 4 | 192.168.10.192 | 192.168.10.193 | 192.168.10.254 | 192.168.10.255 |
-
-Each subnet has **62 usable host addresses** (64 - 2 for network and broadcast).`;
+\`\`\``;
 
 const networkRoutersContent = `# How Routers Work
 
@@ -683,13 +586,6 @@ A **router** is a Layer 3 (Network) device that forwards packets between differe
 ### Routing Table
 Every router maintains a routing table that maps destination networks to interfaces or next-hop addresses.
 
-\`\`\`
-Destination     Gateway         Interface
-192.168.1.0/24  Connected       eth0
-10.0.0.0/8      192.168.1.1     eth0
-0.0.0.0/0       203.0.113.1     eth1    (default route)
-\`\`\`
-
 ### How a Router Forwards a Packet
 
 1. Receives a frame on an interface
@@ -697,21 +593,7 @@ Destination     Gateway         Interface
 3. Looks up the destination IP in the routing table
 4. Finds the best match (longest prefix)
 5. Creates a new Layer 2 frame for the outgoing interface
-6. Forwards the frame out the appropriate interface
-
-## Routing Protocols
-
-| Protocol | Type | Description |
-|----------|------|-------------|
-| **RIP** | Distance Vector | Simple, max 15 hops |
-| **OSPF** | Link State | Faster convergence, uses areas |
-| **EIGRP** | Hybrid | Cisco proprietary (now open) |
-| **BGP** | Path Vector | Internet backbone routing |
-
-## Static vs Dynamic Routing
-
-**Static Routes** - Manually configured, good for small networks
-**Dynamic Routes** - Automatically learned via routing protocols`;
+6. Forwards the frame out the appropriate interface`;
 
 const networkVlansContent = `# VLANs and Trunking
 
@@ -724,40 +606,9 @@ A **VLAN (Virtual Local Area Network)** is a logical grouping of devices on the 
 - **Flexibility** - Group users by function, not location
 - **Cost** - Reduce the need for additional hardware
 
-## VLAN Configuration Example
-
-\`\`\`
-Switch(config)# vlan 10
-Switch(config-vlan)# name SALES
-Switch(config)# vlan 20
-Switch(config-vlan)# name ENGINEERING
-Switch(config)# interface fa0/1
-Switch(config-if)# switchport mode access
-Switch(config-if)# switchport access vlan 10
-\`\`\`
-
 ## Trunk Ports
 
-Trunk ports carry traffic for **multiple VLANs** between switches using **802.1Q tagging**.
-
-\`\`\`
-Switch(config)# interface gi0/1
-Switch(config-if)# switchport mode trunk
-Switch(config-if)# switchport trunk allowed vlan 10,20,30
-\`\`\`
-
-## Inter-VLAN Routing
-
-Devices in different VLANs need a **Layer 3 device** (router or Layer 3 switch) to communicate.
-
-### Router-on-a-Stick
-Uses a single router interface with sub-interfaces for each VLAN:
-
-\`\`\`
-Router(config)# interface gi0/0.10
-Router(config-subif)# encapsulation dot1q 10
-Router(config-subif)# ip address 192.168.10.1 255.255.255.0
-\`\`\``;
+Trunk ports carry traffic for **multiple VLANs** between switches using **802.1Q tagging**.`;
 
 const networkWifiContent = `# Wi-Fi Standards
 
@@ -767,22 +618,9 @@ Wireless networking uses the **IEEE 802.11** family of standards.
 
 | Standard | Wi-Fi Gen | Frequency | Max Speed | Range |
 |----------|-----------|-----------|-----------|-------|
-| 802.11a | - | 5 GHz | 54 Mbps | ~35m |
-| 802.11b | - | 2.4 GHz | 11 Mbps | ~38m |
-| 802.11g | - | 2.4 GHz | 54 Mbps | ~38m |
 | 802.11n | Wi-Fi 4 | 2.4/5 GHz | 600 Mbps | ~70m |
 | 802.11ac | Wi-Fi 5 | 5 GHz | 6.9 Gbps | ~35m |
 | 802.11ax | Wi-Fi 6 | 2.4/5 GHz | 9.6 Gbps | ~35m |
-| 802.11ax | Wi-Fi 6E | 6 GHz | 9.6 Gbps | ~35m |
-
-## 2.4 GHz vs 5 GHz
-
-| Feature | 2.4 GHz | 5 GHz |
-|---------|---------|-------|
-| Range | Longer | Shorter |
-| Speed | Slower | Faster |
-| Interference | More (microwaves, Bluetooth) | Less |
-| Channels | 3 non-overlapping (1, 6, 11) | 23+ non-overlapping |
 
 ## Wireless Security
 
@@ -827,14 +665,4 @@ A layered approach to security:
 
 ## Least Privilege
 
-Users should have only the minimum level of access needed to perform their job functions.
-
-## Security Models
-
-Various security models help organizations implement these principles effectively:
-
-- **Bell-LaPadula** - Focuses on confidentiality (no read up, no write down)
-- **Biba** - Focuses on integrity (no read down, no write up)
-- **Clark-Wilson** - Focuses on integrity through well-formed transactions`;
-
-seedLessons().catch(console.error);
+Users should have only the minimum level of access needed to perform their job functions.`;
