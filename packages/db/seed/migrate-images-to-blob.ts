@@ -133,20 +133,3 @@ export async function migrateImagesToBlob(): Promise<boolean> {
   console.log(`  [migrate-images] Updated ${updated} row(s).`);
   return true;
 }
-
-// Run standalone when executed directly (e.g. bun run db:seed:migrate-images)
-if (import.meta.main) {
-  migrateImagesToBlob()
-    .then((ok) => {
-      if (!ok) {
-        console.error(
-          "BLOB_READ_WRITE_TOKEN is required. Set it in .env.local and re-run."
-        );
-        process.exit(1);
-      }
-    })
-    .catch((err) => {
-      console.error("Migration failed:", err);
-      process.exit(1);
-    });
-}
