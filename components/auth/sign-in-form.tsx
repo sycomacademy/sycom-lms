@@ -3,8 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { signIn } from "@/packages/auth/auth-client";
+import { authClient, signIn } from "@/packages/auth/auth-client";
 import { type SignInInput, signInSchema } from "@/packages/schema/auth";
 
 function getSignInErrorMessage(error: {
@@ -53,10 +53,14 @@ function getSignInErrorMessage(error: {
   return error.message || "Failed to sign in. Please try again.";
 }
 
-export function SignInForm() {
+interface SignInFormProps {
+  callbackUrl?: string;
+}
+
+export function SignInForm({ callbackUrl }: SignInFormProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
+  const lastMethod = authClient.getLastUsedLoginMethod();
 
   const form = useForm<SignInInput>({
     resolver: zodResolver(signInSchema),
@@ -67,26 +71,6 @@ export function SignInForm() {
     },
     mode: "onBlur",
   });
-
-  // Show verification message if coming from sign-up (useRef avoids double toast in Strict Mode)
-  const toastShownForRef = useRef<string | null>(null);
-  useEffect(() => {
-    const verified = searchParams.get("verified");
-    if (!verified || verified === toastShownForRef.current) {
-      return;
-    }
-    toastShownForRef.current = verified;
-    if (verified === "pending") {
-      toast.info(
-        "Please check your email to verify your account before signing in.",
-        { duration: 6000 }
-      );
-    } else if (verified === "success") {
-      toast.success("Email verified successfully! You can now sign in.", {
-        duration: 4000,
-      });
-    }
-  }, [searchParams]);
 
   async function onSubmit(data: SignInInput) {
     setIsLoading(true);
@@ -107,8 +91,8 @@ export function SignInForm() {
 
       toast.success("Welcome back!", { duration: 2000 });
 
-      // Redirect to dashboard
-      router.push("/dashboard");
+      // Redirect to callback URL or dashboard
+      router.push(callbackUrl ?? "/dashboard");
       router.refresh();
     } catch (error) {
       if (error instanceof Error) {
@@ -189,10 +173,21 @@ export function SignInForm() {
               Signing In...
             </>
           ) : (
-            "Sign In"
+            <SignInButtonLabel lastMethod={lastMethod} />
           )}
         </Button>
       </form>
     </Form>
   );
+}
+
+function SignInButtonLabel({
+  lastMethod,
+}: {
+  lastMethod: string | null | undefined;
+}) {
+  if (lastMethod === "email") {
+    return "Sign In (Last used)";
+  }
+  return "Sign In";
 }

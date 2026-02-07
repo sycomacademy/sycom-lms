@@ -1,6 +1,7 @@
 import { BookOpenIcon, ClockIcon, StarIcon, UsersIcon } from "lucide-react";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { CourseActions } from "@/components/course/course-actions";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import {
@@ -119,12 +120,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Button className="w-full" size="lg">
-                    Enroll Now
-                  </Button>
-                  <Button className="w-full" size="lg" variant="outline">
-                    Add to Wishlist
-                  </Button>
+                  <CourseActions courseId={course.id} courseSlug={slug} />
                   <Separator />
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center gap-2">

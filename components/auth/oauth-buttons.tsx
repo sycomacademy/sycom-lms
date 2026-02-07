@@ -3,8 +3,9 @@
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { signIn } from "@/packages/auth/auth-client";
+import { authClient, signIn } from "@/packages/auth/auth-client";
 import { cn } from "@/packages/utils/cn";
 
 type OAuthProvider = "google" | "linkedin";
@@ -69,6 +70,7 @@ interface OAuthButtonProps {
   provider: OAuthProvider;
   isLoading?: boolean;
   disabled?: boolean;
+  isLastUsed?: boolean;
   onClick: () => void;
   className?: string;
 }
@@ -77,6 +79,7 @@ function OAuthButton({
   provider,
   isLoading,
   disabled,
+  isLastUsed,
   onClick,
   className,
 }: OAuthButtonProps) {
@@ -88,7 +91,7 @@ function OAuthButton({
       disabled={disabled || isLoading}
       onClick={onClick}
       type="button"
-      variant="outline"
+      variant={isLastUsed ? "default" : "outline"}
     >
       {isLoading ? (
         <Loader2Icon className="h-5 w-5 animate-spin" />
@@ -96,14 +99,25 @@ function OAuthButton({
         config.logo
       )}
       <span>Continue with {config.label}</span>
+      {isLastUsed && (
+        <Badge className="ml-auto" variant="secondary">
+          Last used
+        </Badge>
+      )}
     </Button>
   );
 }
 
-export function OAuthButtons() {
+interface OAuthButtonsProps {
+  callbackUrl?: string;
+}
+
+export function OAuthButtons({ callbackUrl }: OAuthButtonsProps) {
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(
     null
   );
+
+  const lastMethod = authClient.getLastUsedLoginMethod();
 
   async function handleOAuthSignIn(provider: OAuthProvider) {
     setLoadingProvider(provider);
@@ -111,7 +125,7 @@ export function OAuthButtons() {
     try {
       await signIn.social({
         provider,
-        callbackURL: "/dashboard",
+        callbackURL: callbackUrl ?? "/dashboard",
       });
     } catch (error) {
       if (error instanceof Error) {
@@ -127,12 +141,14 @@ export function OAuthButtons() {
     <div className="space-y-3">
       <OAuthButton
         disabled={loadingProvider !== null}
+        isLastUsed={lastMethod === "google"}
         isLoading={loadingProvider === "google"}
         onClick={() => handleOAuthSignIn("google")}
         provider="google"
       />
       <OAuthButton
         disabled={loadingProvider !== null}
+        isLastUsed={lastMethod === "linkedin"}
         isLoading={loadingProvider === "linkedin"}
         onClick={() => handleOAuthSignIn("linkedin")}
         provider="linkedin"
