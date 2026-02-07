@@ -71,7 +71,7 @@ export function SignUpForm() {
         { duration: 5000 }
       );
 
-      router.push("/sign-in?verified=pending");
+      router.push("/sign-in");
     } catch (error) {
       toast.error(
         error instanceof Error

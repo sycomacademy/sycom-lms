@@ -1,12 +1,14 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
+import { lastLoginMethod } from "better-auth/plugins";
 import { nanoid } from "nanoid";
 import { db, schema } from "@/packages/db";
 import { createProfile } from "@/packages/db/queries/profile";
 import { env } from "@/packages/env/server";
 import { getWebsiteUrl } from "@/packages/env/utils";
 
+//move to email package
 async function sendEmail({
   to,
   subject,
@@ -127,7 +129,7 @@ export const auth = betterAuth({
       clientSecret: env.LINKEDIN_CLIENT_SECRET,
     },
   },
-  plugins: [nextCookies()],
+  plugins: [nextCookies(), lastLoginMethod()],
   databaseHooks: {
     user: {
       create: {

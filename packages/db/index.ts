@@ -10,8 +10,10 @@ import {
   courseReview,
   courseSection,
 } from "./schema/course";
+import { enrollment, wishlist } from "./schema/enrollment";
 import { faq } from "./schema/faq";
 import { feature } from "./schema/feature";
+import { fileMetadata } from "./schema/file-metadata";
 import { instructor } from "./schema/instructor";
 import { pathway, pathwayCourse } from "./schema/pathway";
 import { profile } from "./schema/profile";
@@ -35,12 +37,15 @@ export const schema = {
   courseSection,
   courseLesson,
   courseReview,
+  enrollment,
+  wishlist,
   pathway,
   pathwayCourse,
   author,
   blogPost,
   faq,
   feature,
+  fileMetadata,
   testimonial,
 };
 export const db = drizzle(sql, { schema });

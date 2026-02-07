@@ -17,7 +17,7 @@ export function useUser() {
     enabled: isSignedIn,
   });
 
-  const user = meData?.user ?? session?.user ?? null;
+  const user = meData?.user ?? null;
   const profile = meData?.profile ?? null;
   const isLoading = isSessionLoading || (isSignedIn && isMeLoading);
 
