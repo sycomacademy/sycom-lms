@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 import { db, schema } from "@/packages/db";
 import { createProfile } from "@/packages/db/queries/profile";
 import { env } from "@/packages/env/server";
+import { getWebsiteUrl } from "@/packages/env/util";
 
 async function sendEmail({
   to,
@@ -66,6 +67,7 @@ export const auth = betterAuth({
     provider: "pg",
     schema,
   }),
+  baseURL: getWebsiteUrl(),
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,

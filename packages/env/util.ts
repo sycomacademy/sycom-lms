@@ -6,7 +6,10 @@ export function getWebsiteUrl() {
     return `https://${process.env.VERCEL_URL}`; //replace with the actual domain
   }
 
-  if (process.env.VERCEL_ENV === "preview") {
+  if (
+    process.env.VERCEL_ENV === "preview" ||
+    process.env.VERCEL_ENV === "staging"
+  ) {
     return `https://${process.env.VERCEL_URL}`;
   }
 
