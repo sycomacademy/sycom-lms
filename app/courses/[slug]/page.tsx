@@ -21,28 +21,38 @@ import {
 import { SectionLabel } from "@/components/ui/section-label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { courses, instructors } from "@/mock-db";
+import {
+  getAllCourseSlugs,
+  getCourseBySlug,
+  getCourseWithModules,
+  getInstructorForCourse,
+  getReviewsForCourse,
+} from "@/packages/db/queries/course";
 
 interface CoursePageProps {
   params: Promise<{ slug: string }>;
 }
 
 export async function generateStaticParams() {
-  return courses.map((course) => ({
-    slug: course.slug,
-  }));
+  const slugs = await getAllCourseSlugs();
+  return slugs.map((s) => ({ slug: s.slug }));
 }
 
 export default async function CoursePage({ params }: CoursePageProps) {
   const { slug } = await params;
-  const course = courses.find((c) => c.slug === slug);
+  const course = await getCourseBySlug(slug);
 
   if (!course) {
     notFound();
   }
 
-  const instructor = instructors.find((i) => i.id === course.instructorId);
-  const totalLessons = course.modules.reduce(
+  const [instructor, modules, reviews] = await Promise.all([
+    getInstructorForCourse(course.instructorId),
+    getCourseWithModules(course.id),
+    getReviewsForCourse(course.id),
+  ]);
+
+  const totalLessons = modules.reduce(
     (acc, module) =>
       acc +
       module.sections.reduce(
@@ -168,7 +178,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                         What You'll Learn
                       </h3>
                       <ul className="list-disc space-y-1 pl-6 text-sm">
-                        {course.whatYoullLearn.map((item) => (
+                        {(course.whatYoullLearn as string[])?.map((item) => (
                           <li key={item}>{item}</li>
                         ))}
                       </ul>
@@ -179,7 +189,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                         Prerequisites
                       </h3>
                       <ul className="list-disc space-y-1 pl-6 text-sm">
-                        {course.prerequisites.map((item) => (
+                        {(course.prerequisites as string[])?.map((item) => (
                           <li key={item}>{item}</li>
                         ))}
                       </ul>
@@ -190,7 +200,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                         Who This Course Is For
                       </h3>
                       <ul className="list-disc space-y-1 pl-6 text-sm">
-                        {course.whoIsThisFor.map((item) => (
+                        {(course.whoIsThisFor as string[])?.map((item) => (
                           <li key={item}>{item}</li>
                         ))}
                       </ul>
@@ -201,7 +211,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                         Course Highlights
                       </h3>
                       <ul className="list-disc space-y-1 pl-6 text-sm">
-                        {course.highlights.map((item) => (
+                        {(course.highlights as string[])?.map((item) => (
                           <li key={item}>{item}</li>
                         ))}
                       </ul>
@@ -215,15 +225,15 @@ export default async function CoursePage({ params }: CoursePageProps) {
                   <CardHeader>
                     <CardTitle>Course Curriculum</CardTitle>
                     <CardDescription>
-                      {course.modules.length} modules • {totalLessons} lessons
+                      {modules.length} modules • {totalLessons} lessons
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {course.modules.length === 0 ? (
+                    {modules.length === 0 ? (
                       <p className="text-sm">Curriculum coming soon.</p>
                     ) : (
                       <Accordion className="w-full">
-                        {course.modules.map((module, index) => (
+                        {modules.map((module, index) => (
                           <AccordionItem
                             key={module.id}
                             value={`module-${index}`}
@@ -322,13 +332,13 @@ export default async function CoursePage({ params }: CoursePageProps) {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {course.reviews.length === 0 ? (
+                    {reviews.length === 0 ? (
                       <p className="text-sm">
                         No reviews yet. Be the first to review this course!
                       </p>
                     ) : (
                       <div className="space-y-6">
-                        {course.reviews.map((review) => (
+                        {reviews.map((review) => (
                           <div className="space-y-2" key={review.id}>
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
@@ -360,7 +370,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                               </span>
                             </div>
                             <p className="text-sm">{review.comment}</p>
-                            {review !== course.reviews.at(-1) && <Separator />}
+                            {review !== reviews.at(-1) && <Separator />}
                           </div>
                         ))}
                       </div>
@@ -400,8 +410,8 @@ export default async function CoursePage({ params }: CoursePageProps) {
                             {instructor.name}
                           </h3>
                           <p className="text-xs">
-                            {instructor.credentials.join(" • ")} •{" "}
-                            {instructor.experience}
+                            {(instructor.credentials as string[])?.join(" • ")}{" "}
+                            • {instructor.experience}
                           </p>
                           <p className="text-sm">{instructor.bio}</p>
                         </div>

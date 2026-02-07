@@ -5,6 +5,7 @@ import {
   InstagramIcon,
   TwitterIcon,
 } from "@/components/icons/social-icons";
+import { ModeSwitcher } from "./mode-switcher";
 
 const popularCourses = [
   { href: "/courses/isc2-cc", label: "ISC2 Certified in Cybersecurity" },
@@ -144,6 +145,7 @@ export function Footer() {
             © Copyright Sycom Solutions
           </p>
           <div className="flex items-center gap-4">
+            <ModeSwitcher />
             <span className="font-sans text-muted-foreground text-sm">
               Call Center:
             </span>
