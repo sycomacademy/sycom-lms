@@ -79,8 +79,14 @@ async function migrate() {
   const pathToBlobUrl: Record<string, string> = {};
   for (const rel of relativePaths) {
     const fullPath = join(PUBLIC_IMAGES_DIR, rel);
-    const body = await readFile(fullPath);
-    const { url } = await uploadFile(rel, body, { pathPrefix: "images" });
+    const buf = await readFile(fullPath);
+    const arrayBuffer = buf.buffer.slice(
+      buf.byteOffset,
+      buf.byteOffset + buf.byteLength
+    );
+    const { url } = await uploadFile(rel, arrayBuffer, {
+      pathPrefix: "images",
+    });
     const oldPublicPath = `/images/${rel}`;
     pathToBlobUrl[oldPublicPath] = url;
     console.log(`  Uploaded images/${rel} -> ${url}`);
