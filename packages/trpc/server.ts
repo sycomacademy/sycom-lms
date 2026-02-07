@@ -11,7 +11,7 @@ import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
 import { cookies, headers } from "next/headers";
 import { NextRequest } from "next/server";
 import React, { cache } from "react";
-import { getWebsiteUrl } from "@/packages/env/server";
+import { getWebsiteUrl } from "@/packages/env/utils";
 import { createContext } from "@/packages/trpc/core/context";
 import { makeQueryClient } from "@/packages/trpc/query-client";
 import type { AppRouter } from "@/packages/trpc/routers";

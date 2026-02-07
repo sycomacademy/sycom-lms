@@ -1,7 +1,7 @@
 "use client";
 
 import { createAuthClient } from "better-auth/react";
-import { getWebsiteUrl } from "@/packages/env/client";
+import { getWebsiteUrl } from "@/packages/env/utils";
 
 export const authClient = createAuthClient({
   baseURL: getWebsiteUrl(),

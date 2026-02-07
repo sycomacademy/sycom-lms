@@ -4,7 +4,8 @@ import { nextCookies } from "better-auth/next-js";
 import { nanoid } from "nanoid";
 import { db, schema } from "@/packages/db";
 import { createProfile } from "@/packages/db/queries/profile";
-import { env, getWebsiteUrl } from "@/packages/env/server";
+import { env } from "@/packages/env/server";
+import { getWebsiteUrl } from "@/packages/env/utils";
 
 async function sendEmail({
   to,
