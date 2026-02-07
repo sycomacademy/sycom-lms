@@ -1,7 +1,5 @@
 /**
- * Seed script: migrate public images to Vercel Blob and update DB rows.
- *
- * Run with: bun run db:seed:migrate-images
+ * Migrate public images to Vercel Blob and update DB rows.
  *
  * Requires: DATABASE_URL, BLOB_READ_WRITE_TOKEN (e.g. from .env.local)
  *
@@ -9,8 +7,8 @@
  * 2. Updates instructor, course, author, blog_post, testimonial rows where
  *    photo_url / thumbnail_url / featured_image_url match a migrated path.
  *
- * Safe to re-run: re-uploads and overwrites blob; updates only rows that still
- * have the old public path (idempotent for already-migrated rows).
+ * Idempotent: re-uploads overwrite blob; updates only rows that still have
+ * the old public path (already-migrated rows are unchanged).
  */
 import "dotenv/config";
 import { config } from "dotenv";
@@ -23,23 +21,13 @@ import { neon } from "@neondatabase/serverless";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/neon-http";
 import { uploadFile } from "@/packages/storage/upload";
-import { author, blogPost } from "./schema/blog";
-import { course } from "./schema/course";
-import { instructor } from "./schema/instructor";
-import { testimonial } from "./schema/testimonial";
+import { author, blogPost } from "../schema/blog";
+import { course } from "../schema/course";
+import { instructor } from "../schema/instructor";
+import { testimonial } from "../schema/testimonial";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
-
-if (!DATABASE_URL) {
-  throw new Error("DATABASE_URL is not set");
-}
-if (!BLOB_TOKEN) {
-  throw new Error("BLOB_READ_WRITE_TOKEN is not set");
-}
-
-const sql = neon(DATABASE_URL);
-const db = drizzle(sql);
 
 const PUBLIC_IMAGES_DIR = join(process.cwd(), "public", "images");
 
@@ -62,20 +50,28 @@ async function listImagePaths(
   return acc;
 }
 
-async function migrate() {
-  console.log("Migrating public/images to Vercel Blob and updating DB...\n");
+export async function migrateImagesToBlob(): Promise<boolean> {
+  if (!DATABASE_URL) {
+    throw new Error("DATABASE_URL is not set");
+  }
+  if (!BLOB_TOKEN) {
+    return false;
+  }
 
-  // 1. List all files under public/images
+  const sql = neon(DATABASE_URL);
+  const db = drizzle(sql);
+
+  console.log("  [migrate-images] Migrating public/images to Vercel Blob...");
+
   const relativePaths = await listImagePaths(
     PUBLIC_IMAGES_DIR,
     PUBLIC_IMAGES_DIR
   );
   if (relativePaths.length === 0) {
-    console.log("No files found under public/images. Exiting.");
-    return;
+    console.log("  [migrate-images] No files under public/images. Skipping.");
+    return true;
   }
 
-  // 2. Upload each to blob and build oldPath -> newUrl map
   const pathToBlobUrl: Record<string, string> = {};
   for (const rel of relativePaths) {
     const fullPath = join(PUBLIC_IMAGES_DIR, rel);
@@ -89,19 +85,10 @@ async function migrate() {
     });
     const oldPublicPath = `/images/${rel}`;
     pathToBlobUrl[oldPublicPath] = url;
-    console.log(`  Uploaded images/${rel} -> ${url}`);
   }
 
-  const entries = Object.entries(pathToBlobUrl);
-  if (entries.length === 0) {
-    console.log("No uploads. Exiting.");
-    return;
-  }
-
-  // 3. Update DB rows for each (oldPath, newUrl)
   let updated = 0;
-
-  for (const [oldPath, newUrl] of entries) {
+  for (const [oldPath, newUrl] of Object.entries(pathToBlobUrl)) {
     const r1 = await db
       .update(instructor)
       .set({ photoUrl: newUrl })
@@ -143,13 +130,23 @@ async function migrate() {
     }
   }
 
-  console.log(`\nDone. Updated ${updated} row(s).`);
-  console.log(
-    "Rows that still reference /images/... paths not under public/images were left unchanged (add those files and re-run to migrate them)."
-  );
+  console.log(`  [migrate-images] Updated ${updated} row(s).`);
+  return true;
 }
 
-migrate().catch((err) => {
-  console.error("Migration failed:", err);
-  process.exit(1);
-});
+// Run standalone when executed directly (e.g. bun run db:seed:migrate-images)
+if (import.meta.main) {
+  migrateImagesToBlob()
+    .then((ok) => {
+      if (!ok) {
+        console.error(
+          "BLOB_READ_WRITE_TOKEN is required. Set it in .env.local and re-run."
+        );
+        process.exit(1);
+      }
+    })
+    .catch((err) => {
+      console.error("Migration failed:", err);
+      process.exit(1);
+    });
+}

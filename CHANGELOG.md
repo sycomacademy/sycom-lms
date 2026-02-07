@@ -9,9 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `packages/db/seed/` folder with all seed scripts: `main.ts` (core data), `lessons.ts` (CISSP/Network+ content), `migrate-images-to-blob.ts` (optional image migration). Single command `bun run db:seed` runs all seeds in order; all seeds are idempotent (safe to run multiple times).
+
 - Drizzle ORM schemas for all entities: `instructor`, `course` (with `course_module`, `course_section`, `course_lesson`, `course_review`), `pathway` (with `pathway_course` junction), `author`, `blog_post`, `faq`, `feature`, `testimonial` in `packages/db/schema/`
 - Database migration (`0001_mushy_carmella_unuscione.sql`) creating all new tables in Neon Postgres
-- Seed script (`packages/db/seed.ts`) to populate the database with initial data from the former mock-db; added `bun run db:seed` script to `package.json`
 - Query functions in `packages/db/queries/` for all entities: `instructor`, `course`, `pathway`, `blog`, `faq`, `feature`, `testimonial`
 - `instructor.user_id` FK to `user` table (nullable) for future instructor portal support
 - Extracted `CoursesContent` client component from courses page for client-side filtering while keeping data fetching server-side
@@ -21,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - GitHub Actions workflows: Neon workflow and reset-staging workflow in `.github/workflows/`
 
 ### Changed
+
+- Seed scripts consolidated into `packages/db/seed/`; `bun run db:seed` now runs main, lessons, and optional image migration; `db:seed:migrate-images` remains for running image migration only.
 
 - All pages (`app/page.tsx`, `app/courses/page.tsx`, `app/courses/[slug]/page.tsx`, `app/blog/page.tsx`, `app/blog/[slug]/page.tsx`, `app/pathway/page.tsx`, `app/pathway/[slug]/page.tsx`) now fetch data from Neon Postgres via Drizzle queries in React Server Components instead of importing from mock-db
 - `packages/db/index.ts` updated to export all new schemas

@@ -32,7 +32,7 @@ Learn cybersecurity with hands-on labs, certification prep, and career-focused t
 | `bun run db:migrate` | Apply pending migrations | After pulling new migrations or in deployment |
 | `bun run db:studio` | Open Drizzle Studio UI | When you need to inspect or edit data |
 | `bun prepare` | Install Lefthook git hooks | Once after clone (or when adding the repo) |
-| `bun run db:seed` | Seed the database with initial data | After running migrations on a fresh DB |
+| `bun run db:seed` | Seed the database (main + lessons + optional image migration) | After running migrations on a fresh DB |
 
 **DB scripts:** Set `DATABASE_URL` (e.g. from a `.env` in the repo root). For `db:generate` / `db:push` / `db:migrate` / `db:studio` you can run e.g. `dotenv -e .env -- bun run db:generate` if your env is in `.env`.
 
@@ -66,7 +66,15 @@ All query functions live in `packages/db/queries/` and are used directly in Reac
 
 ### Seeding
 
-Run `bun run db:seed` to populate the database with initial data. The seed script is idempotent (uses `ON CONFLICT DO NOTHING`).
+Run `bun run db:seed` to populate the database. This runs all seeds in `packages/db/seed/`:
+
+1. **main** — instructors, courses, pathways, authors, blog posts, FAQs, features, testimonials  
+2. **lessons** — CISSP and Network+ course content, quiz questions  
+3. **migrate-images** — uploads `public/images/` to Vercel Blob and updates DB (skipped if `BLOB_READ_WRITE_TOKEN` is not set)
+
+All seeds are **idempotent**: safe to run multiple times (uses `ON CONFLICT DO NOTHING` and conditional updates).
+
+To run only the image migration: `bun run db:seed:migrate-images` (requires `BLOB_READ_WRITE_TOKEN`).
 
 ### Migrations
 

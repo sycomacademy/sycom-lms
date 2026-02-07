@@ -28,6 +28,7 @@ export async function uploadFile(
 
   const blob = await put(pathname, body, {
     access,
+    allowOverwrite: true,
   });
 
   return {

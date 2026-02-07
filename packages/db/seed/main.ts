@@ -1,25 +1,24 @@
 /**
- * Seed script — run with: bun run db:seed
+ * Main seed: instructors, courses, pathways, authors, blog posts, FAQs, features, testimonials.
  *
- * Populates the Neon database with initial data migrated from mock-db/.
- * Safe to re-run: uses ON CONFLICT DO NOTHING so existing rows are skipped.
+ * Idempotent: uses ON CONFLICT DO NOTHING so existing rows are skipped.
  */
 import "dotenv/config";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { author, blogPost } from "./schema/blog";
+import { author, blogPost } from "../schema/blog";
 import {
   course,
   courseLesson,
   courseModule,
   courseReview,
   courseSection,
-} from "./schema/course";
-import { faq } from "./schema/faq";
-import { feature } from "./schema/feature";
-import { instructor } from "./schema/instructor";
-import { pathway, pathwayCourse } from "./schema/pathway";
-import { testimonial } from "./schema/testimonial";
+} from "../schema/course";
+import { faq } from "../schema/faq";
+import { feature } from "../schema/feature";
+import { instructor } from "../schema/instructor";
+import { pathway, pathwayCourse } from "../schema/pathway";
+import { testimonial } from "../schema/testimonial";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
@@ -682,7 +681,7 @@ const testimonialData = [
   {
     id: "1",
     quote:
-      "The CompTIA Security+ course exceeded my expectations. The hands-on labs and expert instruction helped me pass the exam on my first attempt. I've already recommended it to several colleagues.",
+      "The CompTIA Security+ course exceeded my expectations. The hands-on labs and expert instruction helped me pass the exam on the first attempt. I've already recommended it to several colleagues.",
     name: "Alex Thompson",
     role: "IT Security Analyst",
     company: "TechCorp Solutions",
@@ -748,25 +747,20 @@ const testimonialData = [
 ];
 
 // ---------------------------------------------------------------------------
-// Seed functions
+// Seed
 // ---------------------------------------------------------------------------
 
-async function seed() {
-  console.log("Seeding database...\n");
-
-  // 1. Instructors
-  console.log("  Inserting instructors...");
+export async function seedMain() {
+  console.log("  [main] Inserting instructors...");
   await db.insert(instructor).values(instructorData).onConflictDoNothing();
 
-  // 2. Courses (flat data only)
-  console.log("  Inserting courses...");
+  console.log("  [main] Inserting courses...");
   for (const c of courseData) {
     const { modules: _m, reviews: _r, ...courseRow } = c;
     await db.insert(course).values(courseRow).onConflictDoNothing();
   }
 
-  // 3. Modules, sections, lessons, reviews
-  console.log("  Inserting modules, sections, lessons, reviews...");
+  console.log("  [main] Inserting modules, sections, lessons, reviews...");
   for (const c of courseData) {
     for (const mod of c.modules) {
       await db
@@ -778,7 +772,6 @@ async function seed() {
           order: mod.order,
         })
         .onConflictDoNothing();
-
       for (const sec of mod.sections) {
         await db
           .insert(courseSection)
@@ -789,7 +782,6 @@ async function seed() {
             order: sec.order,
           })
           .onConflictDoNothing();
-
         for (const les of sec.lessons) {
           await db
             .insert(courseLesson)
@@ -807,7 +799,6 @@ async function seed() {
         }
       }
     }
-
     for (const rev of c.reviews) {
       await db
         .insert(courseReview)
@@ -823,15 +814,13 @@ async function seed() {
     }
   }
 
-  // 4. Pathways
-  console.log("  Inserting pathways...");
+  console.log("  [main] Inserting pathways...");
   for (const p of pathwayData) {
     const { courseIds: _ci, ...pathwayRow } = p;
     await db.insert(pathway).values(pathwayRow).onConflictDoNothing();
   }
 
-  // 5. Pathway courses (junction table)
-  console.log("  Inserting pathway-course links...");
+  console.log("  [main] Inserting pathway-course links...");
   for (const p of pathwayData) {
     for (let i = 0; i < p.courseIds.length; i++) {
       await db
@@ -846,30 +835,18 @@ async function seed() {
     }
   }
 
-  // 6. Authors
-  console.log("  Inserting authors...");
+  console.log("  [main] Inserting authors...");
   await db.insert(author).values(authorData).onConflictDoNothing();
 
-  // 7. Blog posts
-  console.log("  Inserting blog posts...");
+  console.log("  [main] Inserting blog posts...");
   await db.insert(blogPost).values(blogPostData).onConflictDoNothing();
 
-  // 8. FAQs
-  console.log("  Inserting FAQs...");
+  console.log("  [main] Inserting FAQs...");
   await db.insert(faq).values(faqData).onConflictDoNothing();
 
-  // 9. Features
-  console.log("  Inserting features...");
+  console.log("  [main] Inserting features...");
   await db.insert(feature).values(featureData).onConflictDoNothing();
 
-  // 10. Testimonials
-  console.log("  Inserting testimonials...");
+  console.log("  [main] Inserting testimonials...");
   await db.insert(testimonial).values(testimonialData).onConflictDoNothing();
-
-  console.log("\nSeed complete!");
 }
-
-seed().catch((err) => {
-  console.error("Seed failed:", err);
-  process.exit(1);
-});
