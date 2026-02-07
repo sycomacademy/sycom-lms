@@ -71,6 +71,22 @@ export const courseLesson = pgTable("course_lesson", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const quizQuestion = pgTable("quiz_question", {
+  id: text("id").primaryKey(),
+  lessonId: text("lesson_id")
+    .notNull()
+    .references(() => courseLesson.id, { onDelete: "cascade" }),
+  questionText: text("question_text").notNull(),
+  type: text("type").notNull(), // "multiple_choice" | "multiselect"
+  options: jsonb("options")
+    .$type<{ id: string; label: string; isCorrect: boolean }[]>()
+    .notNull(),
+  hint: text("hint"), // optional hint for the question
+  order: integer("order").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const courseReview = pgTable("course_review", {
   id: text("id").primaryKey(),
   courseId: text("course_id")

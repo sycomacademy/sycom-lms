@@ -3,12 +3,15 @@ import {
   ClockIcon,
   GraduationCapIcon,
   HeartIcon,
+  RouteIcon,
+  TrendingUpIcon,
   TrophyIcon,
 } from "lucide-react";
 import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { EnrollmentsList } from "@/components/dashboard/enrollments-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,6 +43,14 @@ export default async function DashboardPage() {
   ).length;
   const inProgressCount = enrollments.length - completedCount;
 
+  const overallProgress =
+    enrollments.length > 0
+      ? Math.round(
+          enrollments.reduce((acc, e) => acc + e.enrollment.progress, 0) /
+            enrollments.length
+        )
+      : 0;
+
   return (
     <div className="space-y-8">
       {/* Welcome */}
@@ -53,7 +64,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardContent className="flex items-center gap-4 p-6">
             <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
@@ -61,7 +72,7 @@ export default async function DashboardPage() {
             </div>
             <div>
               <p className="font-semibold text-2xl">{enrollments.length}</p>
-              <p className="text-muted-foreground text-sm">Enrolled Courses</p>
+              <p className="text-muted-foreground text-sm">Enrolled</p>
             </div>
           </CardContent>
         </Card>
@@ -98,82 +109,69 @@ export default async function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="flex items-center gap-4 p-6">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+              <TrendingUpIcon className="size-5 text-primary" />
+            </div>
+            <div>
+              <p className="font-semibold text-2xl">{overallProgress}%</p>
+              <p className="text-muted-foreground text-sm">Avg Progress</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Continue Learning */}
       <section>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-semibold text-lg">Continue Learning</h2>
-          {enrollments.length > 0 && (
-            <Button
-              nativeButton={false}
-              render={<Link href="/courses" />}
-              size="sm"
-              variant="ghost"
-            >
-              Browse courses
-            </Button>
-          )}
-        </div>
         {enrollments.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center gap-4 py-12">
-              <GraduationCapIcon className="size-10 text-muted-foreground" />
-              <div className="text-center">
-                <p className="font-medium">No courses yet</p>
-                <p className="mt-1 text-muted-foreground text-sm">
-                  Explore our course catalog to start learning
-                </p>
-              </div>
-              <Button nativeButton={false} render={<Link href="/courses" />}>
-                Browse Courses
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {enrollments.map(({ enrollment: enr, course: c }) => (
-              <Card className="group overflow-hidden" key={enr.id}>
-                <div className="relative aspect-video bg-secondary">
-                  {c.thumbnailUrl ? (
-                    <Image
-                      alt={c.title}
-                      className="object-cover"
-                      fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      src={c.thumbnailUrl}
-                    />
-                  ) : null}
+          <div>
+            <h2 className="mb-4 font-semibold text-lg">Continue Learning</h2>
+            <Card>
+              <CardContent className="flex flex-col items-center gap-4 py-12">
+                <GraduationCapIcon className="size-10 text-muted-foreground" />
+                <div className="text-center">
+                  <p className="font-medium">No courses yet</p>
+                  <p className="mt-1 text-muted-foreground text-sm">
+                    Explore our course catalog to start learning
+                  </p>
                 </div>
-                <CardContent className="p-4">
-                  <div className="mb-2 flex items-center gap-2">
-                    <Badge variant="outline">{c.category}</Badge>
-                    <Badge variant="secondary">{c.level}</Badge>
-                  </div>
-                  <h3 className="mb-1 font-semibold text-sm transition-colors group-hover:text-primary">
-                    <Link href={`/courses/${c.slug}`}>{c.title}</Link>
-                  </h3>
-                  <div className="mt-3">
-                    <div className="mb-1 flex justify-between text-muted-foreground text-xs">
-                      <span>Progress</span>
-                      <span>{enr.progress}%</span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-primary transition-all"
-                        style={{ width: `${enr.progress}%` }}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                <Button nativeButton={false} render={<Link href="/courses" />}>
+                  Browse Courses
+                </Button>
+              </CardContent>
+            </Card>
           </div>
+        ) : (
+          <EnrollmentsList enrollments={enrollments} />
         )}
       </section>
 
-      {/* Wishlist */}
+      {/* Explore Pathways CTA */}
       <section>
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="flex flex-col items-center gap-4 p-8 sm:flex-row sm:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10">
+                <RouteIcon className="size-6 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Explore Learning Pathways</h3>
+                <p className="mt-0.5 text-muted-foreground text-sm">
+                  Follow structured journeys from beginner to certified
+                  professional
+                </p>
+              </div>
+            </div>
+            <Button nativeButton={false} render={<Link href="/pathway" />}>
+              View Pathways
+            </Button>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Wishlist */}
+      <section id="wishlist">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-semibold text-lg">Your Wishlist</h2>
         </div>
