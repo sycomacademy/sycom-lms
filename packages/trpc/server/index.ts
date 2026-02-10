@@ -49,11 +49,14 @@ async function getServerTrpcClient() {
   });
 }
 
-export const trpc = createTRPCOptionsProxy<AppRouter>({
-  client: await getServerTrpcClient(),
-  router: appRouter,
-  queryClient: getQueryClient(),
-});
+export async function getServerTrpc() {
+  const client = await getServerTrpcClient();
+  return createTRPCOptionsProxy<AppRouter>({
+    client,
+    router: appRouter,
+    queryClient: getQueryClient(),
+  });
+}
 
 export async function prefetch(queryOptions: TRPCPrefetchOptions) {
   const queryClient = getQueryClient();
