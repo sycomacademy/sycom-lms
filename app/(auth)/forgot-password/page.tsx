@@ -1,34 +1,31 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+
+export const metadata: Metadata = {
+  title: "Forgot password",
+  description: "Reset your password",
+};
 
 export default function ForgotPasswordPage() {
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="space-y-1 text-center">
-        <CardTitle className="font-semibold text-2xl">
-          Forgot Password
-        </CardTitle>
-        <CardDescription>
-          Enter your email address and we&apos;ll send you a link to reset your
-          password.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ForgotPasswordForm />
-      </CardContent>
-      <CardFooter className="flex justify-center">
-        <Link className="text-primary text-sm hover:underline" href="/sign-in">
+    <div className="auth-entrance flex w-full max-w-md flex-col gap-8">
+      <div className="space-y-2 text-center">
+        <h1 className="font-semibold text-2xl tracking-tight">
+          Forgot password
+        </h1>
+        <p className="text-muted-foreground text-sm">
+          Enter your email and we&apos;ll send you a reset link.
+        </p>
+      </div>
+
+      <ForgotPasswordForm />
+
+      <p className="text-center text-muted-foreground text-xs">
+        <Link className="text-foreground hover:underline" href="/sign-in">
           Back to sign in
         </Link>
-      </CardFooter>
-    </Card>
+      </p>
+    </div>
   );
 }

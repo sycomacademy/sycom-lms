@@ -116,6 +116,22 @@
   --sidebar-ring: oklch(0.55 0.15 264);
 }
 
+/* Auth pages: Linear-style entrance (opacity + translateY, 300ms ease, 470ms delay) */
+@keyframes auth-entrance {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.auth-entrance {
+  animation: auth-entrance 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.47s both;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
