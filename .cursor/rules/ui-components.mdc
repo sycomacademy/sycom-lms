@@ -13,6 +13,7 @@ This project uses **Base UI** with shadcn (not Radix UI). Follow Base UI syntax 
 
 - **Use `render`, not `asChild`.** Base UI uses the `render` prop to customize the root element; Radix uses `asChild`. Never use `asChild` on components from `components/ui/`.
 - When composing triggers, buttons, or custom root elements, pass a React element to `render`, e.g. `render={<Button variant="outline" />}`.
+- **For link-style buttons, use `nativeButton={false}` with `render`.** Example: `render={<Link href="/sign-in" />}` with the label passed as the button’s children, matching the pattern in `app/page.tsx`.
 - **Accordion: use single expansion by default.** Base UI Accordion uses the `multiple` boolean prop (Radix uses `type="Multiple"`). Do not pass `multiple` unless multiple panels must be open at once; the default is single expansion (one item open at a time).
 - **ResizablePanelGroup: use `orientation`, not `direction`.** The component wraps `react-resizable-panels`, which uses `orientation?: "horizontal" | "vertical"` (defaults to `"horizontal"`).
 - If unsure, open the component in `components/ui/` and confirm the actual prop name (e.g. `render`) and supported props before writing code.

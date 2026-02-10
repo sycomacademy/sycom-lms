@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { ClientComponent } from "@/app/client";
+import { Button } from "@/components/ui/button";
 import {
   getQueryClient,
   getServerTrpc,
@@ -15,6 +17,12 @@ export default async function HomePage() {
       <main className="p-6">
         <h1>Hello World</h1>
         <ClientComponent />
+        <Button nativeButton={false} render={<Link href="/sign-in" />}>
+          Sign In
+        </Button>
+        <Button nativeButton={false} render={<Link href="/sign-up" />}>
+          Sign Up
+        </Button>
       </main>
     </HydrateClient>
   );

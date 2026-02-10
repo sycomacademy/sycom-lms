@@ -46,13 +46,10 @@ if [ ! -f "$ENV_FILE" ]; then
   exit 0
 fi
 
-# Replace the DATABASE_URL line in-place
-if grep -q '^DATABASE_URL=' "$ENV_FILE"; then
-  # Use a different delimiter since connection strings contain /
-  sed -i.bak "s|^DATABASE_URL=.*|DATABASE_URL='${CONNECTION_STRING}'|" "$ENV_FILE"
-  rm -f "${ENV_FILE}.bak"
-else
-  echo "DATABASE_URL='${CONNECTION_STRING}'" >> "$ENV_FILE"
-fi
+# Rewrite .env.local: keep all lines except DATABASE_URL, then append the new one
+TMPFILE=$(mktemp)
+grep -v '^DATABASE_URL=' "$ENV_FILE" > "$TMPFILE" || true
+echo "DATABASE_URL='${CONNECTION_STRING}'" >> "$TMPFILE"
+mv "$TMPFILE" "$ENV_FILE"
 
 echo "[db-switch] Switched to Neon branch '$NEON_BRANCH' (git: $GIT_BRANCH)"
