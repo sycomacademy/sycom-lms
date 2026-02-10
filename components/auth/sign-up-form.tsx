@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -210,13 +211,14 @@ export function SignUpForm() {
 
       <p className="text-center text-muted-foreground text-sm">
         Already have an account?{" "}
-        <button
-          className="font-medium text-foreground underline-offset-4 transition-colors hover:underline"
-          onClick={() => router.push("/sign-in?mode=sign-in")}
-          type="button"
+        <Button
+          className={"px-0"}
+          nativeButton={false}
+          render={<Link href="/sign-in" />}
+          variant="link"
         >
           Sign in
-        </button>
+        </Button>
       </p>
     </div>
   );

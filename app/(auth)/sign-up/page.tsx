@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SignInForm } from "@/components/auth/sign-in-form";
+import { SignUpForm } from "@/components/auth/sign-up-form";
 
 export const metadata: Metadata = {
-  title: "Sign In | Sycom LMS",
-  description: "Sign in to your Sycom account or create a new one.",
+  title: "Sign Up | Sycom LMS",
+  description: "Create a new Sycom account.",
 };
 
-export default async function SignInPage() {
+export default async function SignUpPage() {
   return (
     <div className="flex h-full w-full flex-col">
       <div className="flex h-full w-full items-center justify-center">
-        <SignInForm />
+        <SignUpForm />
       </div>
 
       <div className="mt-auto pt-6 text-center">

@@ -180,13 +180,14 @@ export function SignInForm() {
       {/* Toggle to sign-up */}
       <p className="text-center text-muted-foreground text-sm">
         Don&apos;t have an account?{" "}
-        <button
-          className="font-medium text-foreground underline-offset-4 transition-colors hover:underline"
-          onClick={() => router.push("/sign-in?mode=sign-up")}
-          type="button"
+        <Button
+          className={"px-0"}
+          nativeButton={false}
+          render={<Link href="/sign-up" />}
+          variant="link"
         >
           Create account
-        </button>
+        </Button>
       </p>
     </div>
   );
