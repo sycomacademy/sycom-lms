@@ -1,38 +1,9 @@
 {
-  "editor.defaultFormatter": "biomejs.biome",
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
   "typescript.tsdk": "node_modules/typescript/lib",
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
   "emmet.showExpandedAbbreviation": "never",
-  "files.exclude": {
-    "**/.DS_Store": true,
-    "**/.agents": false,
-    "**/.claude": false,
-    "**/.cursor": false,
-    "**/.git": true,
-    "**/.gitignore": false,
-    "**/.hg": true,
-    "**/.idea": false,
-    "**/.next": false,
-    "**/.opencode": false,
-    "**/.svn": true,
-    "**/.vscode": false,
-    "**/node_modules": false,
-    "**/Thumbs.db": true,
-    "**/biome.json": false,
-    "**/bun.lock": false,
-    "**/CHANGELOG.md": false,
-    "**/components.json": false,
-    "**/lefthook.yml": false,
-    "**/next-env.d.ts": false,
-    "**/next.config.ts": false,
-    "**/postcss.config.mjs": false,
-    "**/README.md": false,
-    "**/tsconfig.json": false
-  },
-  "files.associations": {
-    "*.css": "tailwindcss"
-  },
   "[javascript]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
@@ -54,10 +25,19 @@
   "[html]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
+  "[vue]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[svelte]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
   "[css]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
   "[yaml]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[graphql]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
   "[markdown]": {
@@ -67,7 +47,10 @@
     "editor.defaultFormatter": "biomejs.biome"
   },
   "editor.codeActionsOnSave": {
-    "source.fixAll.biome": "always",
-    "source.organizeImports.biome": "always"
+    "source.fixAll.biome": "explicit",
+    "source.organizeImports.biome": "explicit"
+  },
+  "files.associations": {
+    "*.css": "tailwindcss"
   }
 }
