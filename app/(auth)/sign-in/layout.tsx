@@ -1,13 +1,20 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AuthLeftPanel } from "@/components/auth/left-panel";
 import { LoginTestimonials } from "@/components/auth/testimonials";
+import { getSession } from "@/packages/auth/helper";
 
-export default function AuthLayout({
+export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getSession();
+
+  if (session) {
+    redirect("/dashboard");
+  }
   return (
     <div className="flex min-h-svh bg-background p-1">
       <div className="relative hidden overflow-hidden bg-[#0C0C0C] lg:flex lg:w-1/2">

@@ -1,10 +1,17 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getSession } from "@/packages/auth/helper";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getSession();
+
+  if (!session) {
+    redirect("/");
+  }
   return (
     <div className="flex min-h-screen flex-col">
       <header className="border-border border-b px-6 py-4">

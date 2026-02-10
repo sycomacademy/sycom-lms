@@ -7,6 +7,7 @@ import {
   InfoIcon,
   LoaderCircleIcon,
   TriangleAlertIcon,
+  XIcon,
 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/packages/utils/cn";
@@ -127,8 +128,8 @@ function Toasts({ position = "bottom-right" }: { position: ToastPosition }) {
               }
               toast={toast}
             >
-              <Toast.Content className="pointer-events-auto flex items-center justify-between gap-1.5 overflow-hidden px-3.5 py-3 text-sm transition-opacity duration-250 data-behind:not-data-expanded:pointer-events-none data-behind:opacity-0 data-expanded:opacity-100">
-                <div className="flex gap-2">
+              <Toast.Content className="pointer-events-auto flex items-center gap-1.5 overflow-hidden py-3 pr-2 pl-3.5 text-sm transition-opacity duration-250 data-behind:not-data-expanded:pointer-events-none data-behind:opacity-0 data-expanded:opacity-100">
+                <div className="flex flex-1 gap-2">
                   {Icon && (
                     <div
                       className="[&>svg]:h-lh [&>svg]:w-4 [&_svg]:pointer-events-none [&_svg]:shrink-0"
@@ -149,14 +150,25 @@ function Toasts({ position = "bottom-right" }: { position: ToastPosition }) {
                     />
                   </div>
                 </div>
-                {toast.actionProps && (
-                  <Toast.Action
-                    className={buttonVariants({ size: "xs" })}
-                    data-slot="toast-action"
+                <div className="flex shrink-0 items-center gap-1">
+                  {toast.actionProps && (
+                    <Toast.Action
+                      className={buttonVariants({ size: "xs" })}
+                      data-slot="toast-action"
+                    >
+                      {toast.actionProps.children}
+                    </Toast.Action>
+                  )}
+                  <Toast.Close
+                    className={buttonVariants({
+                      variant: "ghost",
+                      size: "icon-xs",
+                    })}
+                    data-slot="toast-close"
                   >
-                    {toast.actionProps.children}
-                  </Toast.Action>
-                )}
+                    <XIcon />
+                  </Toast.Close>
+                </div>
               </Toast.Content>
             </Toast.Root>
           );
@@ -219,8 +231,8 @@ function AnchoredToasts() {
                     <Toast.Title data-slot="toast-title" />
                   </Toast.Content>
                 ) : (
-                  <Toast.Content className="pointer-events-auto flex items-center justify-between gap-1.5 overflow-hidden px-3.5 py-3 text-sm">
-                    <div className="flex gap-2">
+                  <Toast.Content className="pointer-events-auto flex items-center gap-1.5 overflow-hidden py-3 pr-2 pl-3.5 text-sm">
+                    <div className="flex flex-1 gap-2">
                       {Icon && (
                         <div
                           className="[&>svg]:h-lh [&>svg]:w-4 [&_svg]:pointer-events-none [&_svg]:shrink-0"
@@ -241,14 +253,25 @@ function AnchoredToasts() {
                         />
                       </div>
                     </div>
-                    {toast.actionProps && (
-                      <Toast.Action
-                        className={buttonVariants({ size: "xs" })}
-                        data-slot="toast-action"
+                    <div className="flex shrink-0 items-center gap-1">
+                      {toast.actionProps && (
+                        <Toast.Action
+                          className={buttonVariants({ size: "xs" })}
+                          data-slot="toast-action"
+                        >
+                          {toast.actionProps.children}
+                        </Toast.Action>
+                      )}
+                      <Toast.Close
+                        className={buttonVariants({
+                          variant: "ghost",
+                          size: "icon-xs",
+                        })}
+                        data-slot="toast-close"
                       >
-                        {toast.actionProps.children}
-                      </Toast.Action>
-                    )}
+                        <XIcon />
+                      </Toast.Close>
+                    </div>
                   </Toast.Content>
                 )}
               </Toast.Root>
