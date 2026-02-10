@@ -32,12 +32,6 @@ export default function RootLayout({
             strategy="beforeInteractive"
           />
         )}
-        {process.env.NODE_ENV === "development" && (
-          <Script
-            src="//unpkg.com/@react-grab/cursor/dist/client.global.js"
-            strategy="lazyOnload"
-          />
-        )}
       </head>
       <body className={`${sans.variable} ${mono.variable} antialiased`}>
         <Providers>{children}</Providers>
