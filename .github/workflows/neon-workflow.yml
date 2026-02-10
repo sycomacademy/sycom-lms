@@ -67,8 +67,7 @@ jobs:
     if: |
       github.event_name == 'pull_request' &&
       github.event.action == 'closed' &&
-      github.event.pull_request.merged == true &&
-      (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'staging')
+      github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout merged code
@@ -94,6 +93,6 @@ jobs:
 
       - name: Run migrations
         if: steps.diff.outputs.changed == 'true'
-        run: bun run db:migrate
+        run: bun run db:generate && bun run db:migrate
         env:
           DATABASE_URL: ${{ github.event.pull_request.base.ref == 'main' && secrets.DATABASE_URL_MAIN || secrets.DATABASE_URL_STAGING }}
