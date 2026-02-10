@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "bunx @react-grab/cursor@latest && next dev",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "check": "ultracite check",
@@ -68,6 +68,7 @@
     "superjson": "^2.2.6",
     "tailwind-merge": "^3.4.0",
     "vaul": "^1.1.2",
+    "vercel": "^50.14.0",
     "ws": "^8.19.0",
     "zod": "^4.3.6"
   },
