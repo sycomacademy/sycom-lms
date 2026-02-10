@@ -1,29 +1,27 @@
 import Link from "next/link";
-import { ClientComponent } from "@/app/client";
 import { Button } from "@/components/ui/button";
-import {
-  getQueryClient,
-  getServerTrpc,
-  HydrateClient,
-} from "@/packages/trpc/server";
 
-export default async function HomePage() {
-  const queryClient = getQueryClient();
-  const trpc = await getServerTrpc();
-  await queryClient.prefetchQuery(trpc.healthCheck.queryOptions());
-
+export default function HomePage() {
   return (
-    <HydrateClient>
-      <main className="p-6">
-        <h1>Hello World</h1>
-        <ClientComponent />
+    <main className="flex min-h-screen flex-col items-center justify-center gap-8 p-6">
+      <div className="flex max-w-md flex-col items-center gap-4 text-center">
+        <h1 className="font-semibold text-2xl tracking-tight">Sycom LMS</h1>
+        <p className="text-muted-foreground text-sm">
+          Learn cybersecurity with hands-on labs and certification prep.
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center justify-center gap-3">
         <Button nativeButton={false} render={<Link href="/sign-in" />}>
-          Sign In
+          Sign in
         </Button>
-        <Button nativeButton={false} render={<Link href="/sign-up" />}>
-          Sign Up
+        <Button
+          nativeButton={false}
+          render={<Link href="/dashboard" />}
+          variant="outline"
+        >
+          Dashboard
         </Button>
-      </main>
-    </HydrateClient>
+      </div>
+    </main>
   );
 }

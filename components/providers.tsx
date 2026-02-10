@@ -1,18 +1,19 @@
 "use client";
 
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { AnchoredToastProvider, ToastProvider } from "@/components/ui/toast";
 import { TRPCReactProvider } from "@/packages/trpc/client";
 import { ThemeProvider } from "./layout/theme-provider";
-import { Toaster } from "./ui/sonner";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <TRPCReactProvider>
       <ThemeProvider attribute="class" defaultTheme="light">
-        {children}
+        <ToastProvider>
+          <AnchoredToastProvider>{children}</AnchoredToastProvider>
+        </ToastProvider>
       </ThemeProvider>
       <ReactQueryDevtools />
-      <Toaster richColors />
     </TRPCReactProvider>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { FlickeringGrid } from "../magicui/flickering-grid";
+import { FlickeringGrid } from "../layout/flickering-grid";
 
 export function AuthLeftPanel() {
   return (

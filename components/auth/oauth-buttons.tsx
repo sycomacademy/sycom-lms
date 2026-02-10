@@ -2,7 +2,6 @@
 
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import {
   Accordion,
   AccordionContent,
@@ -11,6 +10,7 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { toastManager } from "@/components/ui/toast";
 import { authClient } from "@/packages/auth/auth-client";
 import { cn } from "@/packages/utils/cn";
 
@@ -142,7 +142,11 @@ export function OAuthButtons({ callbackUrl }: OAuthButtonsProps) {
     });
 
     if (error) {
-      toast.error(error.message ?? "Failed to sign in. Please try again.");
+      toastManager.add({
+        description: error.message ?? "Failed to sign in. Please try again.",
+        title: "Sign in failed",
+        type: "error",
+      });
       setLoadingProvider(null);
       return;
     }
