@@ -9,7 +9,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <TRPCReactProvider>
       <ThemeProvider attribute="class" defaultTheme="light">
-        <ToastProvider>
+        <ToastProvider timeout={3000}>
           <AnchoredToastProvider>{children}</AnchoredToastProvider>
         </ToastProvider>
       </ThemeProvider>

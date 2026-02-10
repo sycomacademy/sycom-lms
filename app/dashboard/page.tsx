@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/card";
 import { getSession } from "@/packages/auth/helper";
 import { SignOutButton } from "./sign-out-button";
+import { TestToast } from "./test-toast";
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -36,17 +37,7 @@ export default async function DashboardPage() {
       </Card>
 
       <Card className="max-w-md">
-        <CardHeader>
-          <CardTitle>Getting started</CardTitle>
-          <CardDescription>
-            Mock placeholder. Courses and progress will be listed here.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-xs">
-            No courses yet. Content will be added when the app is wired to data.
-          </p>
-        </CardContent>
+        <TestToast />
       </Card>
     </div>
   );

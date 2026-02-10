@@ -52,3 +52,9 @@ const muted: React.CSSProperties = {
   color: "#8c8c8c",
   margin: "24px 0 0",
 };
+
+export default ResetPasswordEmail;
+ResetPasswordEmail.PreviewProps = {
+  name: "John Doe",
+  resetUrl: "https://example.com/reset?token=abc123",
+} as ResetPasswordEmailProps;

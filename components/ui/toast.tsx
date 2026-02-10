@@ -1,19 +1,39 @@
 "use client";
 
-import { Toast } from "@base-ui/react/toast";
+import {
+  Toast,
+  type ToastManager,
+  type ToastManagerAddOptions,
+} from "@base-ui/react/toast";
 import {
   CircleAlertIcon,
   CircleCheckIcon,
   InfoIcon,
   LoaderCircleIcon,
   TriangleAlertIcon,
-  XIcon,
 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/packages/utils/cn";
 
-const toastManager = Toast.createToastManager();
-const anchoredToastManager = Toast.createToastManager();
+type ToastType = "success" | "error" | "info" | "warning" | "loading";
+
+type TypedToastAddOptions<Data extends object> = Omit<
+  ToastManagerAddOptions<Data>,
+  "type"
+> & {
+  type?: ToastType;
+};
+
+type TypedToastManager = Omit<ToastManager, "add"> & {
+  add: <Data extends object>(options: TypedToastAddOptions<Data>) => string;
+};
+
+const _toastManager = Toast.createToastManager();
+const _anchoredToastManager = Toast.createToastManager();
+
+// Typed wrappers for external use — narrows `type` to known toast types
+const toastManager: TypedToastManager = _toastManager;
+const anchoredToastManager: TypedToastManager = _anchoredToastManager;
 
 const TOAST_ICONS = {
   error: CircleAlertIcon,
@@ -41,7 +61,7 @@ function ToastProvider({
   ...props
 }: ToastProviderProps) {
   return (
-    <Toast.Provider toastManager={toastManager} {...props}>
+    <Toast.Provider toastManager={_toastManager} {...props}>
       {children}
       <Toasts position={position} />
     </Toast.Provider>
@@ -76,7 +96,7 @@ function Toasts({ position = "bottom-right" }: { position: ToastPosition }) {
           return (
             <Toast.Root
               className={cn(
-                "absolute z-[calc(9999-var(--toast-index))] h-(--toast-calc-height) w-full select-none rounded-lg border bg-popover not-dark:bg-clip-padding text-popover-foreground shadow-lg/5 [transition:transform_.5s_cubic-bezier(.22,1,.36,1),opacity_.5s,height_.15s] before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] before:shadow-[0_1px_--theme(--color-black/4%)] dark:before:shadow-[0_-1px_--theme(--color-white/6%)]",
+                "absolute z-[calc(9999-var(--toast-index))] h-(--toast-calc-height) w-full select-none border bg-popover not-dark:bg-clip-padding text-popover-foreground shadow-lg/5 [transition:transform_.5s_cubic-bezier(.22,1,.36,1),opacity_.5s,height_.15s] before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] before:shadow-[0_1px_--theme(--color-black/4%)] dark:before:shadow-[0_-1px_--theme(--color-white/6%)]",
                 // Base positioning using data-position
                 "data-[position*=right]:right-0 data-[position*=right]:left-auto",
                 "data-[position*=left]:right-auto data-[position*=left]:left-0",
@@ -121,15 +141,15 @@ function Toasts({ position = "bottom-right" }: { position: ToastPosition }) {
               swipeDirection={
                 position.includes("center")
                   ? [isTop ? "up" : "down"]
-                  : // biome-ignore lint/style/noNestedTernary: false positive
+                  : // biome-ignore lint/style/noNestedTernary: idgaf
                     position.includes("left")
                     ? ["left", isTop ? "up" : "down"]
                     : ["right", isTop ? "up" : "down"]
               }
               toast={toast}
             >
-              <Toast.Content className="pointer-events-auto flex items-center gap-1.5 overflow-hidden py-3 pr-2 pl-3.5 text-sm transition-opacity duration-250 data-behind:not-data-expanded:pointer-events-none data-behind:opacity-0 data-expanded:opacity-100">
-                <div className="flex flex-1 gap-2">
+              <Toast.Content className="pointer-events-auto flex items-center justify-between gap-1.5 overflow-hidden px-3.5 py-3 text-sm transition-opacity duration-250 data-behind:not-data-expanded:pointer-events-none data-behind:opacity-0 data-expanded:opacity-100">
+                <div className="flex gap-2">
                   {Icon && (
                     <div
                       className="[&>svg]:h-lh [&>svg]:w-4 [&_svg]:pointer-events-none [&_svg]:shrink-0"
@@ -150,25 +170,14 @@ function Toasts({ position = "bottom-right" }: { position: ToastPosition }) {
                     />
                   </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  {toast.actionProps && (
-                    <Toast.Action
-                      className={buttonVariants({ size: "xs" })}
-                      data-slot="toast-action"
-                    >
-                      {toast.actionProps.children}
-                    </Toast.Action>
-                  )}
-                  <Toast.Close
-                    className={buttonVariants({
-                      variant: "ghost",
-                      size: "icon-xs",
-                    })}
-                    data-slot="toast-close"
+                {toast.actionProps && (
+                  <Toast.Action
+                    className={buttonVariants({ size: "xs" })}
+                    data-slot="toast-action"
                   >
-                    <XIcon />
-                  </Toast.Close>
-                </div>
+                    {toast.actionProps.children}
+                  </Toast.Action>
+                )}
               </Toast.Content>
             </Toast.Root>
           );
@@ -180,7 +189,7 @@ function Toasts({ position = "bottom-right" }: { position: ToastPosition }) {
 
 function AnchoredToastProvider({ children, ...props }: Toast.Provider.Props) {
   return (
-    <Toast.Provider toastManager={anchoredToastManager} {...props}>
+    <Toast.Provider toastManager={_anchoredToastManager} {...props}>
       {children}
       <AnchoredToasts />
     </Toast.Provider>
@@ -231,8 +240,8 @@ function AnchoredToasts() {
                     <Toast.Title data-slot="toast-title" />
                   </Toast.Content>
                 ) : (
-                  <Toast.Content className="pointer-events-auto flex items-center gap-1.5 overflow-hidden py-3 pr-2 pl-3.5 text-sm">
-                    <div className="flex flex-1 gap-2">
+                  <Toast.Content className="pointer-events-auto flex items-center justify-between gap-1.5 overflow-hidden px-3.5 py-3 text-sm">
+                    <div className="flex gap-2">
                       {Icon && (
                         <div
                           className="[&>svg]:h-lh [&>svg]:w-4 [&_svg]:pointer-events-none [&_svg]:shrink-0"
@@ -253,25 +262,14 @@ function AnchoredToasts() {
                         />
                       </div>
                     </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      {toast.actionProps && (
-                        <Toast.Action
-                          className={buttonVariants({ size: "xs" })}
-                          data-slot="toast-action"
-                        >
-                          {toast.actionProps.children}
-                        </Toast.Action>
-                      )}
-                      <Toast.Close
-                        className={buttonVariants({
-                          variant: "ghost",
-                          size: "icon-xs",
-                        })}
-                        data-slot="toast-close"
+                    {toast.actionProps && (
+                      <Toast.Action
+                        className={buttonVariants({ size: "xs" })}
+                        data-slot="toast-action"
                       >
-                        <XIcon />
-                      </Toast.Close>
-                    </div>
+                        {toast.actionProps.children}
+                      </Toast.Action>
+                    )}
                   </Toast.Content>
                 )}
               </Toast.Root>
@@ -286,6 +284,7 @@ function AnchoredToasts() {
 export {
   ToastProvider,
   type ToastPosition,
+  type ToastType,
   toastManager,
   AnchoredToastProvider,
   anchoredToastManager,

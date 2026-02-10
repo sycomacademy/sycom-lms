@@ -51,7 +51,7 @@ export function SignInForm() {
       return;
     }
     setIsLoading(false);
-    router.push("/");
+    router.push("/dashboard");
   };
 
   return (

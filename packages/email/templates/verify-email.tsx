@@ -52,3 +52,9 @@ const muted: React.CSSProperties = {
   color: "#8c8c8c",
   margin: "24px 0 0",
 };
+
+export default VerifyEmail;
+VerifyEmail.PreviewProps = {
+  name: "John Doe",
+  verifyUrl: "https://example.com/verify?token=abc123",
+} as VerifyEmailProps;

@@ -9,7 +9,7 @@ import {
   Section,
   Text,
 } from "@react-email/components";
-
+import { getWebsiteUrl } from "@/packages/env/utils";
 /**
  * Shared email layout. Wraps every transactional email with a consistent
  * header (logo), content area, and footer.
@@ -32,7 +32,7 @@ export function EmailLayout({
             <Img
               alt="Sycom LMS"
               height={28}
-              src="https://sycom.dev/sycom-logo.png"
+              src={`${getWebsiteUrl()}/sycom-logo.png`}
               width={28}
             />
           </Section>
