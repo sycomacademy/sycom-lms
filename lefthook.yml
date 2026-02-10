@@ -11,3 +11,8 @@ pre-push:
         - "*.css"
       stage_fixed: true
     - run: bun x tsc --noEmit
+
+post-checkout:
+  jobs:
+    - name: Switch Neon DB branch
+      run: bash scripts/switch-db-branch.sh

@@ -84,6 +84,115 @@ bun run db:generate   # Generate migration SQL
 bun run db:migrate    # Apply to the database
 ```
 
+## CI/CD Pipeline
+
+### Overview
+
+The project uses three platforms working together:
+
+- **GitHub Actions** — Automates Neon database branch lifecycle and migrations
+- **Vercel** — Builds and deploys the app (Production from `main`, Preview from `staging` and feature branches)
+- **Neon** — Database branching mirrors the git branching model
+
+### Git branching model
+
+```
+feature/new-login ──► staging ──► main
+       │                 │           │
+   Neon: feature-new-login   Neon: staging   Neon: production
+```
+
+| Git branch | Neon branch | Vercel environment | Lifecycle |
+|---|---|---|---|
+| `main` | `production` | Production | Permanent |
+| `staging` | `staging` | Preview | Permanent |
+| `feature/*`, `fix/*`, etc. | `feature-*`, `fix-*`, etc. | Preview | Created/deleted automatically |
+
+### What happens automatically
+
+| Event | GitHub Action | Neon | Vercel |
+|---|---|---|---|
+| Push new branch | Creates Neon branch from `staging` | New branch appears | Preview deploy |
+| PR merged into `staging` | Runs `db:generate` + `db:migrate` against staging DB | Schema updated | Preview deploy |
+| PR merged into `main` | Runs `db:generate` + `db:migrate` against production DB | Schema updated | Production deploy |
+| Branch deleted (without merge) | Deletes matching Neon branch | Branch removed | Preview removed |
+
+### Local database switching
+
+When you check out a git branch, a `post-checkout` hook automatically updates `DATABASE_URL` in `.env.local` to point at the matching Neon branch. This is handled by `scripts/switch-db-branch.sh` via Lefthook.
+
+```
+git checkout staging          # .env.local → Neon "staging" connection string
+git checkout feature/new-login # .env.local → Neon "feature-new-login" connection string
+git checkout main             # .env.local → Neon "production" connection string
+```
+
+**Note:** When you first create a branch locally (`git checkout -b feature/x`), the Neon branch doesn't exist yet — it's created on the first `git push`. During that window, your `.env.local` keeps its current `DATABASE_URL` (which is correct since the Neon branch will be forked from the same data). After pushing, run `bash scripts/switch-db-branch.sh` or switch away and back to pick up the new connection string.
+
+### Setup for new developers
+
+1. **Clone and install dependencies**
+
+   ```bash
+   git clone <repo-url> && cd sycom-lms
+   bun install
+   ```
+
+2. **Install the Neon CLI**
+
+   ```bash
+   bun add -g neonctl
+   ```
+
+3. **Authenticate with Neon** (opens browser)
+
+   ```bash
+   neonctl auth
+   ```
+
+4. **Create your `.env.local`** with the required variables:
+
+   ```
+   DATABASE_URL='<will be managed by the post-checkout hook>'
+   BETTER_AUTH_SECRET='<ask a team member or generate with: openssl rand -base64 32>'
+   BLOB_READ_WRITE_TOKEN='<from Vercel dashboard → Storage>'
+   NEXT_PUBLIC_APP_URL='http://localhost:3000'
+   ```
+
+5. **Install git hooks**
+
+   ```bash
+   bun run prep
+   ```
+
+   This registers the `pre-push` (lint + typecheck) and `post-checkout` (DB switch) hooks.
+
+6. **Switch to your branch** to populate the correct `DATABASE_URL`:
+
+   ```bash
+   git checkout staging
+   ```
+
+### Required GitHub secrets and variables
+
+Configured in **GitHub → Repo → Settings → Secrets and variables → Actions**:
+
+| Type | Name | Value |
+|---|---|---|
+| Secret | `NEON_API_KEY` | Neon API key |
+| Secret | `DATABASE_URL_MAIN` | Pooled connection string for the `production` Neon branch |
+| Secret | `DATABASE_URL_STAGING` | Pooled connection string for the `staging` Neon branch |
+| Variable | `NEON_PROJECT_ID` | Neon project ID |
+
+### Vercel environment variables
+
+| Variable | Production | Preview |
+|---|---|---|
+| `DATABASE_URL` | Production Neon connection string | Staging Neon connection string |
+| `BETTER_AUTH_SECRET` | Production secret | Staging secret |
+| `NEXT_PUBLIC_APP_URL` | Production URL | Staging/preview URL |
+| `BLOB_READ_WRITE_TOKEN` | All environments | All environments |
+
 ## Image / file storage
 
 Image and video URLs are stored as `text` columns in the database. Actual files are served from the `/public/images/` directory during development.
