@@ -40,6 +40,15 @@ Pre-commit (Lefthook) also runs `ultracite fix` on staged files; running `bun fi
 - **Compose, don’t edit.** Use existing shadcn components as-is; wrap or combine them in feature-specific components (e.g. in `components/` outside `ui/`) to achieve the desired UI.
 - **If a change truly requires editing a shadcn component:** stop and inform the user: “This would require changing the [ComponentName] in `components/ui/`. Should I modify it, or would you prefer a wrapper/alternative approach?” Do not modify `components/ui/` without explicit approval.
 
+## Toasts / Notifications
+
+- **Use the coss/ui toast system.** Use `toastManager` and `anchoredToastManager` from `components/ui/toast` for all toast-style notifications (see [`Toast - coss ui`](https://coss.com/ui/docs/components/toast) for reference).
+- **Do not use Sonner.** Do not import from `"sonner"` or use `toast.*` helpers from Sonner; the project has fully migrated to the coss/ui toast primitives.
+- **Consistent API usage.**
+  - For standard toasts, call `toastManager.add({ title, description?, type?: "success" | "error" | "info" | "warning" | "loading", ... })`.
+  - For anchored toasts (e.g. button-relative messages), use `anchoredToastManager.add({ title, positionerProps: { anchor, ... }, ... })` via the existing `AnchoredToastProvider`.
+  - Prefer short, descriptive `title` text and optional `description` for longer context instead of embedding long strings in `title` alone.
+
 ## Summary
 
 | Area        | Rule |
