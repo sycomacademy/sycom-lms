@@ -9,8 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- `packages/db/seed/` folder with all seed scripts: `main.ts` (core data), `lessons.ts` (CISSP/Network+ content), `migrate-images-to-blob.ts` (optional image migration). Single command `bun run db:seed` runs all seeds in order; all seeds are idempotent (safe to run multiple times).
-
+- Login feature: sign-in flow and protected dashboard (PR #15)
+- tRPC integration: server context, router, and client in `packages/trpc/` with API route at `app/api/trpc/[trpc]/route.ts`
+- Dashboard: overview page with stat cards, overview chart, recent activity, and shell layout; analytics, courses, settings, and users sections; sign-out button and coss/ui toast test component
+- `packages/db/seed/` folder with all seed scripts: `main.ts` (core data), `lessons.ts` (CISSP/Network+ content), `migrate-images-to-blob.ts` (optional image migration). Single command `bun run db:seed` runs all seeds in order; all seeds are idempotent (safe to run multiple times)
 - Drizzle ORM schemas for all entities: `instructor`, `course` (with `course_module`, `course_section`, `course_lesson`, `course_review`), `pathway` (with `pathway_course` junction), `author`, `blog_post`, `faq`, `feature`, `testimonial` in `packages/db/schema/`
 - Database migration (`0001_mushy_carmella_unuscione.sql`) creating all new tables in Neon Postgres
 - Query functions in `packages/db/queries/` for all entities: `instructor`, `course`, `pathway`, `blog`, `faq`, `feature`, `testimonial`
@@ -23,8 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- Seed scripts consolidated into `packages/db/seed/`; `bun run db:seed` now runs main, lessons, and optional image migration; `db:seed:migrate-images` remains for running image migration only.
-
+- Image upload refactored to use ArrayBuffer for improved performance and compatibility
+- Next.js config: new image source for Vercel storage
+- Authentication UI and functionality enhanced; new database seed command added
+- Dashboard styling and layout
+- Seed scripts consolidated into `packages/db/seed/`; `bun run db:seed` now runs main, lessons, and optional image migration; `db:seed:migrate-images` remains for running image migration only
 - All pages (`app/page.tsx`, `app/courses/page.tsx`, `app/courses/[slug]/page.tsx`, `app/blog/page.tsx`, `app/blog/[slug]/page.tsx`, `app/pathway/page.tsx`, `app/pathway/[slug]/page.tsx`) now fetch data from Neon Postgres via Drizzle queries in React Server Components instead of importing from mock-db
 - `packages/db/index.ts` updated to export all new schemas
 - `generateStaticParams` in dynamic route pages now queries the database for slugs

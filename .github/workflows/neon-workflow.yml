@@ -7,7 +7,7 @@ on:
       - staging
   delete:
   pull_request:
-    types: [closed]
+    types: [opened, synchronize, closed]
     branches:
       - staging
       - main
@@ -35,6 +35,28 @@ jobs:
         id: branch
         run: |
           RAW="${GITHUB_REF#refs/heads/}"
+          echo "name=$(echo "$RAW" | tr '/' '-')" >> "$GITHUB_OUTPUT"
+
+      - name: Create Neon branch from staging
+        uses: neondatabase/create-branch-action@v6
+        with:
+          project_id: ${{ env.NEON_PROJECT_ID }}
+          branch_name: ${{ steps.branch.outputs.name }}
+          parent_branch: staging
+          api_key: ${{ env.NEON_API_KEY }}
+
+  # ── Create Neon branch when a PR is opened/updated (so it exists for the PR) ──
+  create_neon_branch_on_pr:
+    name: Create Neon Branch (PR)
+    if: |
+      github.event_name == 'pull_request' &&
+      (github.event.action == 'opened' || github.event.action == 'synchronize')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract and sanitize branch name
+        id: branch
+        run: |
+          RAW="${{ github.head_ref || github.event.pull_request.head.ref }}"
           echo "name=$(echo "$RAW" | tr '/' '-')" >> "$GITHUB_OUTPUT"
 
       - name: Create Neon branch from staging
