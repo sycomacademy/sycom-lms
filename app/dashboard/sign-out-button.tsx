@@ -11,14 +11,17 @@ export function SignOutButton() {
 
   async function handleSignOut() {
     setPending(true);
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          router.push("/");
+    try {
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            router.push("/");
+          },
         },
-      },
-    });
-    setPending(false);
+      });
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
