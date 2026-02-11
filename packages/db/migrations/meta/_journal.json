@@ -8,6 +8,13 @@
       "when": 1770775131580,
       "tag": "0000_motionless_slapstick",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1770806767686,
+      "tag": "0001_famous_rictor",
+      "breakpoints": true
     }
   ]
 }

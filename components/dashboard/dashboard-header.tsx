@@ -1,50 +1,19 @@
 "use client";
 
-import { MessageSquareIcon } from "lucide-react";
-import Link from "next/link";
-import { DashboardUserMenu } from "@/components/dashboard/dashboard-user-menu";
-import type { getSession } from "@/packages/auth/helper";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { cn } from "@/packages/utils/cn";
+import { FeedbackPopover } from "./feedback-popover";
 
-type DashboardHeaderUser = NonNullable<
-  Awaited<ReturnType<typeof getSession>>
->["user"];
-
-interface DashboardHeaderProps {
-  title: string;
-  description?: string;
-  user: DashboardHeaderUser;
-}
-
-export function DashboardHeader({
-  title,
-  description,
-  user,
-}: DashboardHeaderProps) {
+export function DashboardHeader() {
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-border border-b px-4">
+    <header
+      className={cn(
+        "flex h-14 shrink-0 items-center justify-between gap-2 border-b px-4"
+      )}
+    >
       <SidebarTrigger />
-      <Separator className="h-6" orientation="vertical" />
-      <div className="flex flex-1 flex-col gap-0.5">
-        <h1 className="font-semibold text-foreground text-sm tracking-tight">
-          {title}
-        </h1>
-        {description ? (
-          <p className="text-muted-foreground text-xs">{description}</p>
-        ) : null}
-      </div>
       <div className="flex items-center gap-2">
-        <Button
-          render={<Link href="/dashboard/feedback" />}
-          size="sm"
-          variant="ghost"
-        >
-          <MessageSquareIcon />
-          <span className="hidden sm:inline">Feedback</span>
-        </Button>
-        <DashboardUserMenu user={user} />
+        <FeedbackPopover />
       </div>
     </header>
   );

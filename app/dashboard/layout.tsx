@@ -19,7 +19,7 @@ export default async function DashboardLayout({
 
   return (
     <HydrateClient>
-      <DashboardShell user={session.user}>{children}</DashboardShell>
+      <DashboardShell>{children}</DashboardShell>
     </HydrateClient>
   );
 }

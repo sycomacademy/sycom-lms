@@ -12,6 +12,12 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -23,16 +29,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-type AppSidebarUser = NonNullable<
-  Awaited<ReturnType<typeof import("@/packages/auth/helper").getSession>>
->["user"];
 
 const mainNavItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
@@ -54,17 +50,17 @@ const adminNavItem = {
   icon: ShieldCheckIcon,
 } as const;
 
-interface AppSidebarProps {
-  user: AppSidebarUser;
-}
-
-export function AppSidebar({ user }: AppSidebarProps) {
+export function AppSidebar() {
   const pathname = usePathname();
-  const isInstructor = user?.role === "instructor";
-  const isAdmin = user?.role === "admin";
+  const isInstructor = false;
+  const isAdmin = false;
 
   return (
-    <Sidebar collapsible="icon" variant="inset">
+    <Sidebar
+      className="border-sidebar-border border-r"
+      collapsible="icon"
+      variant="inset"
+    >
       <SidebarHeader className="border-sidebar-border border-b">
         <Link
           className="flex items-center gap-2 px-2 py-2 font-semibold text-sidebar-foreground"
@@ -147,7 +143,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
               </SidebarMenuButton>
             }
           />
-          <DropdownMenuContent side="right" align="start" sideOffset={4}>
+          <DropdownMenuContent align="start" side="right" sideOffset={4}>
             <DropdownMenuItem render={<Link href="/dashboard/help" />}>
               Help
             </DropdownMenuItem>
