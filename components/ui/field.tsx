@@ -55,11 +55,11 @@ const fieldVariants = cva(
   {
     variants: {
       orientation: {
-        vertical: "flex-col [&>*]:w-full [&>.sr-only]:w-auto",
+        vertical: "flex-col *:w-full [&>.sr-only]:w-auto",
         horizontal:
-          "flex-row items-center has-[>[data-slot=field-content]]:items-start [&>[data-slot=field-label]]:flex-auto has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px",
+          "flex-row items-center has-[>[data-slot=field-content]]:items-start *:data-[slot=field-label]:flex-auto has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px",
         responsive:
-          "@md/field-group:flex-row flex-col @md/field-group:items-center @md/field-group:has-[>[data-slot=field-content]]:items-start @md/field-group:[&>*]:w-auto [&>*]:w-full [&>.sr-only]:w-auto @md/field-group:[&>[data-slot=field-label]]:flex-auto @md/field-group:has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px",
+          "@md/field-group:flex-row flex-col @md/field-group:items-center *:w-full @md/field-group:*:w-auto @md/field-group:has-[>[data-slot=field-content]]:items-start @md/field-group:*:data-[slot=field-label]:flex-auto [&>.sr-only]:w-auto @md/field-group:has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px",
       },
     },
     defaultVariants: {
@@ -177,9 +177,11 @@ function FieldError({
   className,
   children,
   errors,
+  reserveSpace = false,
   ...props
 }: React.ComponentProps<"div"> & {
   errors?: Array<{ message?: string } | undefined>;
+  reserveSpace?: boolean;
 }) {
   const content = useMemo(() => {
     if (children) {
@@ -208,13 +210,16 @@ function FieldError({
     );
   }, [children, errors]);
 
-  if (!content) {
+  if (!(content || reserveSpace)) {
     return null;
   }
 
   return (
     <div
-      className={cn("font-normal text-destructive text-xs/relaxed", className)}
+      className={cn(
+        "min-h-lh font-normal text-destructive text-xs/relaxed",
+        className
+      )}
       data-slot="field-error"
       role="alert"
       {...props}
