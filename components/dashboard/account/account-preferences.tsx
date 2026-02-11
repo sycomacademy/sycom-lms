@@ -31,7 +31,9 @@ export function AccountPreferences() {
             </div>
             <Select
               onValueChange={(v) => {
-                if (v) setTheme(v);
+                if (v) {
+                  setTheme(v);
+                }
               }}
               value={theme ?? "system"}
             >
