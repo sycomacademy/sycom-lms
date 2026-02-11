@@ -11,6 +11,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { MenuIcon } from "@/components/icons/menu-icon";
 import { PanelLeftCloseIcon } from "@/components/icons/panel-left-close";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -269,7 +270,7 @@ function SidebarTrigger({
   onClick,
   ...props
 }: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, isMobile } = useSidebar();
 
   return (
     <Button
@@ -284,7 +285,7 @@ function SidebarTrigger({
       variant="ghost"
       {...props}
     >
-      <PanelLeftCloseIcon />
+      {isMobile ? <MenuIcon /> : <PanelLeftCloseIcon />}
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );

@@ -21,12 +21,13 @@ export function FeedbackPopover() {
         onMouseEnter={() => iconRef.current?.startAnimation()}
         onMouseLeave={() => iconRef.current?.stopAnimation()}
         render={
-          <Button size="icon" variant="ghost">
+          <Button variant="ghost">
             <MessageSquareMoreIcon ref={iconRef} size={20} />
+            Feedback
           </Button>
         }
       />
-      <PopoverContent className="w-80" side="top">
+      <PopoverContent align="end" className="w-80" side="top">
         <div className="space-y-1">
           <h3 className="font-medium text-foreground text-sm">Send feedback</h3>
           <p className="text-muted-foreground text-xs">
