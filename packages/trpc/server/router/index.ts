@@ -1,5 +1,6 @@
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { publicProcedure, router } from "../init";
+import { dashboardRouter } from "./dashboard";
 
 const emptyRouter = router({});
 
@@ -12,6 +13,7 @@ export const appRouter = router({
     return "OK";
   }),
   auth: authRouter,
+  dashboard: dashboardRouter,
   enrollment: enrollmentRouter,
   lesson: lessonRouter,
 });

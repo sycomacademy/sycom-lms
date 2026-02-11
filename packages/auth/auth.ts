@@ -4,6 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import { admin as adminPlugin, lastLoginMethod } from "better-auth/plugins";
 import { db } from "@/packages/db";
 import { schema } from "@/packages/db/schema";
+import { profile } from "@/packages/db/schema/profile";
 import { render } from "@/packages/email/render";
 import { sendEmail } from "@/packages/email/sendgrid";
 import { ResetPasswordEmail } from "@/packages/email/templates/reset-password";
@@ -17,6 +18,22 @@ export const auth = betterAuth({
     schema,
   }),
   baseURL: getWebsiteUrl(),
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          await db
+            .insert(profile)
+            .values({
+              id: crypto.randomUUID(),
+              userId: user.id,
+              bio: "",
+            })
+            .onConflictDoNothing({ target: profile.userId });
+        },
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,

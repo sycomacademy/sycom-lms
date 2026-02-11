@@ -1,21 +1,18 @@
 "use client";
 
 import {
-  BarChart3Icon,
   BookOpenIcon,
+  HeadphonesIcon,
   LayoutDashboardIcon,
-  LogOutIcon,
-  SettingsIcon,
-  UsersIcon,
+  LibraryIcon,
+  ShieldCheckIcon,
+  UserIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -24,54 +21,39 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { authClient } from "@/packages/auth/auth-client";
 
-function SidebarSignOut() {
-  const router = useRouter();
-  const [pending, setPending] = useState(false);
+type AppSidebarUser = NonNullable<
+  Awaited<ReturnType<typeof import("@/packages/auth/helper").getSession>>
+>["user"];
 
-  async function handleSignOut() {
-    setPending(true);
-    try {
-      await authClient.signOut({
-        fetchOptions: {
-          onSuccess: () => router.push("/"),
-        },
-      });
-    } finally {
-      setPending(false);
-    }
-  }
-
-  return (
-    <div className="flex w-full items-center justify-end px-2 py-2 group-data-[collapsible=icon]:justify-center">
-      <Button
-        aria-label="Sign out"
-        className="w-full justify-start gap-2 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
-        disabled={pending}
-        onClick={handleSignOut}
-        size="sm"
-        variant="ghost"
-      >
-        <LogOutIcon className="size-4 shrink-0" />
-        <span className="group-data-[collapsible=icon]:hidden">
-          {pending ? "Signing out…" : "Sign out"}
-        </span>
-      </Button>
-    </div>
-  );
-}
-
-const navItems = [
+const mainNavItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
-  { href: "/dashboard/courses", label: "Courses", icon: BookOpenIcon },
-  { href: "/dashboard/users", label: "Users", icon: UsersIcon },
-  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3Icon },
-  { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
+  { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
+  { href: "/dashboard/journey", label: "My journey", icon: BookOpenIcon },
+  { href: "/dashboard/support", label: "Support", icon: HeadphonesIcon },
+  { href: "/dashboard/account", label: "Account", icon: UserIcon },
 ] as const;
 
-export function AppSidebar() {
+const myCoursesNavItem = {
+  href: "/dashboard/courses",
+  label: "My courses",
+  icon: BookOpenIcon,
+} as const;
+
+const adminNavItem = {
+  href: "/dashboard/admin",
+  label: "Admin",
+  icon: ShieldCheckIcon,
+} as const;
+
+interface AppSidebarProps {
+  user: AppSidebarUser;
+}
+
+export function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname();
+  const isInstructor = user.role === "instructor";
+  const isAdmin = user.role === "admin";
 
   return (
     <Sidebar collapsible="icon" variant="inset">
@@ -90,10 +72,10 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Admin</SidebarGroupLabel>
+          <SidebarGroupLabel>Main</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map(({ href, label, icon: Icon }) => (
+              {mainNavItems.map(({ href, label, icon: Icon }) => (
                 <SidebarMenuItem key={href}>
                   <SidebarMenuButton
                     isActive={pathname === href}
@@ -108,10 +90,45 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {isInstructor ? (
+          <SidebarGroup>
+            <SidebarGroupLabel>Instructor</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={pathname === myCoursesNavItem.href}
+                    render={<Link href={myCoursesNavItem.href} />}
+                    tooltip={myCoursesNavItem.label}
+                  >
+                    <BookOpenIcon />
+                    <span>{myCoursesNavItem.label}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ) : null}
+        {isAdmin ? (
+          <SidebarGroup>
+            <SidebarGroupLabel>Admin</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={pathname === adminNavItem.href}
+                    render={<Link href={adminNavItem.href} />}
+                    tooltip={adminNavItem.label}
+                  >
+                    <ShieldCheckIcon />
+                    <span>{adminNavItem.label}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ) : null}
       </SidebarContent>
-      <SidebarFooter className="border-sidebar-border border-t">
-        <SidebarSignOut />
-      </SidebarFooter>
     </Sidebar>
   );
 }
