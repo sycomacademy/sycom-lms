@@ -15,15 +15,11 @@ export default async function DashboardLayout({
   }
 
   const trpc = await getServerTrpc();
-  await prefetch(
-    trpc.dashboard.me.queryOptions() as Parameters<typeof prefetch>[0]
-  );
+  prefetch(trpc.profile.getProfile.queryOptions());
 
   return (
     <HydrateClient>
-      <DashboardShell session={session as NonNullable<typeof session>}>
-        {children}
-      </DashboardShell>
+      <DashboardShell user={session.user}>{children}</DashboardShell>
     </HydrateClient>
   );
 }

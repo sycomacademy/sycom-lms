@@ -1,12 +1,12 @@
+/** biome-ignore-all lint/complexity/noVoid: so that the prefetch function works from the guide */
+/** biome-ignore-all lint/suspicious/noExplicitAny: so that the prefetch function works from the guide */
 import "server-only";
-
-import type {
-  FetchInfiniteQueryOptions,
-  FetchQueryOptions,
-} from "@tanstack/react-query";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
-import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
+import {
+  createTRPCOptionsProxy,
+  type TRPCQueryOptions,
+} from "@trpc/tanstack-react-query";
 import { cookies, headers } from "next/headers";
 import { NextRequest } from "next/server";
 import React, { cache } from "react";
@@ -16,15 +16,6 @@ import { createContext } from "@/packages/trpc/server/context";
 import type { AppRouter } from "@/packages/trpc/server/router";
 import { appRouter } from "@/packages/trpc/server/router";
 import { makeQueryClient } from "@/packages/trpc/shared";
-
-/** Options returned by tRPC query or infiniteQuery procedures (from getTrpc()). */
-type TRPCPrefetchOptions = FetchQueryOptions | FetchInfiniteQueryOptions;
-
-function isInfiniteQueryOptions(
-  options: TRPCPrefetchOptions
-): options is FetchInfiniteQueryOptions {
-  return "initialPageParam" in options || "getNextPageParam" in options;
-}
 
 export const getQueryClient = cache(makeQueryClient);
 
@@ -58,22 +49,28 @@ export async function getServerTrpc() {
   });
 }
 
-export async function prefetch(queryOptions: TRPCPrefetchOptions) {
+export function prefetch<T extends ReturnType<TRPCQueryOptions<any>>>(
+  queryOptions: T
+) {
   const queryClient = getQueryClient();
-  if (isInfiniteQueryOptions(queryOptions)) {
-    await queryClient.prefetchInfiniteQuery(queryOptions);
+
+  if (queryOptions.queryKey[1]?.type === "infinite") {
+    void queryClient.prefetchInfiniteQuery(queryOptions as any);
   } else {
-    await queryClient.prefetchQuery(queryOptions);
+    void queryClient.prefetchQuery(queryOptions);
   }
 }
 
-export async function batchPrefetch(queryOptionsArray: TRPCPrefetchOptions[]) {
+export function batchPrefetch<T extends ReturnType<TRPCQueryOptions<any>>>(
+  queryOptionsArray: T[]
+) {
   const queryClient = getQueryClient();
+
   for (const queryOptions of queryOptionsArray) {
-    if (isInfiniteQueryOptions(queryOptions)) {
-      await queryClient.prefetchInfiniteQuery(queryOptions);
+    if (queryOptions.queryKey[1]?.type === "infinite") {
+      void queryClient.prefetchInfiniteQuery(queryOptions as any);
     } else {
-      await queryClient.prefetchQuery(queryOptions);
+      void queryClient.prefetchQuery(queryOptions);
     }
   }
 }

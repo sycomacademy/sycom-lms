@@ -1,95 +1,43 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { AppSidebar } from "@/components/dashboard/app-sidebar";
-import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import type React from "react";
+import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import type { getSession } from "@/packages/auth/helper";
+import { AppSidebar } from "./app-sidebar";
+import { DashboardHeader } from "./dashboard-header";
 
-/** Session shape from getSession() after redirect (non-null): has user and session. */
-type DashboardSession = NonNullable<
-  Awaited<ReturnType<typeof import("@/packages/auth/helper").getSession>>
->;
-
-const pathnameToTitle: Record<string, { title: string; description?: string }> =
-  {
-    "/dashboard": {
-      title: "Overview",
-      description: "Your learning platform at a glance",
-    },
-    "/dashboard/library": {
-      title: "Library",
-      description: "Browse learning content",
-    },
-    "/dashboard/journey": {
-      title: "My journey",
-      description: "Your progress and pathways",
-    },
-    "/dashboard/support": {
-      title: "Support",
-      description: "Get help and resources",
-    },
-    "/dashboard/account": {
-      title: "Account",
-      description: "Profile and preferences",
-    },
-    "/dashboard/courses": {
-      title: "Courses",
-      description: "Manage courses and content",
-    },
-    "/dashboard/users": {
-      title: "Users",
-      description: "Learners and instructors",
-    },
-    "/dashboard/analytics": {
-      title: "Analytics",
-      description: "Reports and insights",
-    },
-    "/dashboard/settings": {
-      title: "Settings",
-      description: "Platform configuration",
-    },
-    "/dashboard/feedback": {
-      title: "Feedback",
-      description: "Send us your feedback",
-    },
-    "/dashboard/help": {
-      title: "Help",
-      description: "Documentation and support",
-    },
-    "/dashboard/admin": {
-      title: "Admin",
-      description: "Administration",
-    },
-  };
-
-function getHeaderForPath(pathname: string) {
-  return (
-    pathnameToTitle[pathname] ?? {
-      title: "Dashboard",
-      description: undefined,
-    }
-  );
-}
+type DashboardShellUser = NonNullable<
+  Awaited<ReturnType<typeof getSession>>
+>["user"];
 
 interface DashboardShellProps {
   children: React.ReactNode;
-  session: DashboardSession;
+  user: DashboardShellUser;
+  title?: string;
+  description?: string;
 }
 
-export function DashboardShell({ children, session }: DashboardShellProps) {
-  const pathname = usePathname();
-  const { title, description } = getHeaderForPath(pathname);
-
+export function DashboardShell({
+  children,
+  user,
+  title = "Dashboard",
+  description,
+}: DashboardShellProps) {
   return (
     <SidebarProvider>
-      <AppSidebar user={session.user} />
-      <SidebarInset>
+      <AppSidebar user={user} />
+      <SidebarInset
+        className="flex flex-col md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-0"
+        role="main"
+      >
         <DashboardHeader
-          description={description}
           title={title}
-          user={session.user}
+          description={description}
+          user={user}
         />
-        <div className="flex flex-1 flex-col p-4 md:p-6">{children}</div>
+        <Separator aria-hidden="true" className="bg-secondary" />
+        <div className="flex-1 overflow-auto p-4">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

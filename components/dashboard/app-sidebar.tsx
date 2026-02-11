@@ -3,6 +3,7 @@
 import {
   BookOpenIcon,
   HeadphonesIcon,
+  HelpCircleIcon,
   LayoutDashboardIcon,
   LibraryIcon,
   ShieldCheckIcon,
@@ -13,6 +14,7 @@ import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -21,6 +23,12 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type AppSidebarUser = NonNullable<
   Awaited<ReturnType<typeof import("@/packages/auth/helper").getSession>>
@@ -52,8 +60,8 @@ interface AppSidebarProps {
 
 export function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname();
-  const isInstructor = user.role === "instructor";
-  const isAdmin = user.role === "admin";
+  const isInstructor = user?.role === "instructor";
+  const isAdmin = user?.role === "admin";
 
   return (
     <Sidebar collapsible="icon" variant="inset">
@@ -129,6 +137,29 @@ export function AppSidebar({ user }: AppSidebarProps) {
           </SidebarGroup>
         ) : null}
       </SidebarContent>
+      <SidebarFooter>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <SidebarMenuButton tooltip="Help & support">
+                <HelpCircleIcon />
+                <span>Help</span>
+              </SidebarMenuButton>
+            }
+          />
+          <DropdownMenuContent side="right" align="start" sideOffset={4}>
+            <DropdownMenuItem render={<Link href="/dashboard/help" />}>
+              Help
+            </DropdownMenuItem>
+            <DropdownMenuItem render={<Link href="/dashboard/support" />}>
+              Contact us
+            </DropdownMenuItem>
+            <DropdownMenuItem render={<Link href="/dashboard/help#faq" />}>
+              FAQ
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }

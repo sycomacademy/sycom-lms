@@ -88,21 +88,15 @@ function SidebarProvider({
         _setOpen(openState);
       }
 
-      // This sets the cookie to keep the sidebar state.
-      // document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
-      const expiresMs = Date.now() + SIDEBAR_COOKIE_MAX_AGE * 1000;
-      cookieStore
-        .set({
-          name: SIDEBAR_COOKIE_NAME,
-          value: String(openState),
-          path: "/",
-          expires: expiresMs,
-        })
-        .catch((err) => {
-          if (process.env.NODE_ENV === "development") {
-            console.warn("Sidebar state cookie could not be set:", err);
-          }
-        });
+      // Persist sidebar state in a cookie (client-safe; next/headers cookies() is server-only).
+      try {
+        // biome-ignore lint/suspicious/noDocumentCookie: client-only sidebar state; Cookie Store API not needed here
+        document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+      } catch (err) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("Sidebar state cookie could not be set:", err);
+        }
+      }
     },
     [setOpenProp, open]
   );

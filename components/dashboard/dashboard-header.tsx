@@ -3,12 +3,13 @@
 import { MessageSquareIcon } from "lucide-react";
 import Link from "next/link";
 import { DashboardUserMenu } from "@/components/dashboard/dashboard-user-menu";
+import type { getSession } from "@/packages/auth/helper";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 type DashboardHeaderUser = NonNullable<
-  Awaited<ReturnType<typeof import("@/packages/auth/helper").getSession>>
+  Awaited<ReturnType<typeof getSession>>
 >["user"];
 
 interface DashboardHeaderProps {
