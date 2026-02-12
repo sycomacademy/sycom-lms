@@ -1,25 +1,24 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
+import { Icon } from "@/components/icons";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  MessageSquareMoreIcon,
-  type MessageSquareMoreIconHandle,
-} from "../icons/feedback";
+import { useAnimatedIcon } from "@/packages/hooks/use-animated-icon";
 import { Button } from "../ui/button";
 import { FeedbackForm } from "./feedback-form";
 
+const { MessageSquareMoreIcon } = Icon;
+
 export function FeedbackPopover() {
-  const iconRef = useRef<MessageSquareMoreIconHandle>(null);
   const [open, setOpen] = useState(false);
+  const [iconRef, iconHover] = useAnimatedIcon();
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger
-        onMouseEnter={() => iconRef.current?.startAnimation()}
-        onMouseLeave={() => iconRef.current?.stopAnimation()}
+        {...iconHover}
         render={
           <Button variant="ghost">
             <MessageSquareMoreIcon ref={iconRef} size={20} />
@@ -28,10 +27,10 @@ export function FeedbackPopover() {
         }
       />
       <PopoverContent align="end" className="w-80" side="top">
-        <div className="space-y-1">
+        <div className="mb-2 w-full space-y-1">
           <h3 className="font-medium text-foreground text-sm">Send feedback</h3>
           <p className="text-muted-foreground text-xs">
-            Help us improve Sycom by sharing your thoughts.
+            Help us improve by sharing your thoughts.
           </p>
         </div>
         <FeedbackForm onSubmitted={() => setOpen(false)} />

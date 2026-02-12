@@ -6,11 +6,11 @@ import { useTRPC } from "@/packages/trpc/client";
 
 export function useUserQuery() {
   const trpc = useTRPC();
+  const { data: session, isPending: sessionIsPending } =
+    authClient.useSession();
   const { data: profile, isPending: profileIsPending } = useSuspenseQuery(
     trpc.profile.getProfile.queryOptions()
   );
-  const { data: session, isPending: sessionIsPending } =
-    authClient.useSession();
   return {
     profile,
     session,

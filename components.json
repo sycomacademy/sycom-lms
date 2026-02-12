@@ -18,7 +18,7 @@
     "components": "@/components",
     "utils": "@/packages/utils/cn.ts",
     "ui": "@/components/ui",
-    "lib": "@/packages",
+    "lib": "@/packages/utils",
     "hooks": "@/packages/hooks"
   },
   "registries": {

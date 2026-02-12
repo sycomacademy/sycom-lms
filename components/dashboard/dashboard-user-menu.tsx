@@ -1,19 +1,11 @@
 "use client";
 
 import { Facehash } from "facehash";
-import {
-  HelpCircleIcon,
-  HomeIcon,
-  LogOutIcon,
-  MoonIcon,
-  PaletteIcon,
-  SettingsIcon,
-  SunIcon,
-  UserIcon,
-} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
+import { useState } from "react";
+import { Icon } from "@/components/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,42 +14,61 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { authClient } from "@/packages/auth/auth-client";
+import { useAnimatedIcon } from "@/packages/hooks/use-animated-icon";
 import { useUserQuery } from "@/packages/hooks/use-user";
 import { Skeleton } from "../ui/skeleton";
-import { toastManager } from "../ui/toast";
+import { KEYBOARD_SHORTCUTS } from "./dashboard-keyboard-shortcuts";
+
+const {
+  UserIcon,
+  SettingsIcon,
+  HomeIcon,
+  LogoutIcon,
+  CircleHelpIcon,
+  ThemeToggleIcon,
+} = Icon;
 
 export function DashboardUserMenu() {
-  const { user, isPending } = useUserQuery();
-  const { theme, setTheme } = useTheme();
   const router = useRouter();
+  const { user, isPending } = useUserQuery();
+  const { setTheme, resolvedTheme } = useTheme();
+  const [signOutPending, setSignOutPending] = useState(false);
+  const [userIconRef, userHover] = useAnimatedIcon();
+  const [settingsIconRef, settingsHover] = useAnimatedIcon();
+  const [homeIconRef, homeHover] = useAnimatedIcon();
+  const [helpIconRef, helpHover] = useAnimatedIcon();
+  const [logoutIconRef, logoutHover] = useAnimatedIcon();
+
+  const toggleTheme = () => {
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
+  };
+
   async function handleSignOut() {
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => router.push("/"),
-        onError: (error) => {
-          toastManager.add({
-            title: "Error",
-            description: error.error.message,
-            type: "error",
-          });
+    setSignOutPending(true);
+    try {
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            router.push("/");
+          },
         },
-      },
-    });
+      });
+    } finally {
+      setSignOutPending(false);
+    }
   }
 
   if (!user) {
     return <Skeleton className="size-10 rounded-none" />;
   }
-  const facehashName = user.email;
+  const facehashName = `${user.name} ${user.email}`;
+  const logoutDisabled = isPending || signOutPending;
+  const logoutLabel = signOutPending ? "Signing out…" : "Log out";
 
   return (
     <DropdownMenu>
@@ -93,62 +104,64 @@ export function DashboardUserMenu() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem render={<Link href="/dashboard/account" />}>
-            <UserIcon />
-            <span>Profile</span>
+          <DropdownMenuItem
+            {...userHover}
+            render={<Link href="/dashboard/account" />}
+          >
+            <UserIcon ref={userIconRef} />
+            <span className="flex-1">Profile</span>
           </DropdownMenuItem>
-          <DropdownMenuItem render={<Link href="/dashboard/settings" />}>
-            <SettingsIcon />
-            <span>Settings</span>
+          <DropdownMenuItem
+            {...settingsHover}
+            render={<Link href="/dashboard/settings" />}
+          >
+            <SettingsIcon ref={settingsIconRef} />
+            <span className="flex-1">Settings</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <PaletteIcon />
-            <span>Theme</span>
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent>
-            <DropdownMenuRadioGroup
-              onValueChange={(v) => setTheme(v)}
-              value={theme ?? "system"}
-            >
-              <DropdownMenuRadioItem value="light">
-                <SunIcon />
-                <span>Light</span>
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="dark">
-                <MoonIcon />
-                <span>Dark</span>
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="system">
-                <PaletteIcon />
-                <span>System</span>
-              </DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
+        <DropdownMenuItem
+          className="py-2"
+          closeOnClick={false}
+          onClick={toggleTheme}
+        >
+          <ThemeToggleIcon
+            className="size-3.5"
+            theme={resolvedTheme === "dark" ? "dark" : "light"}
+          />
+          <span className="flex">Switch theme</span>
+          <DropdownMenuShortcut>
+            {KEYBOARD_SHORTCUTS.TOGGLE_THEME}
+          </DropdownMenuShortcut>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem render={<Link href="/" />}>
-            <HomeIcon />
+          <DropdownMenuItem {...homeHover} render={<Link href="/" />}>
+            <HomeIcon ref={homeIconRef} />
             <span>Homepage</span>
           </DropdownMenuItem>
-          <DropdownMenuItem render={<Link href="/dashboard/help" />}>
-            <HelpCircleIcon />
+          <DropdownMenuItem
+            {...helpHover}
+            render={<Link href="/dashboard/help" />}
+          >
+            <CircleHelpIcon ref={helpIconRef} />
             <span>Help</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          disabled={isPending}
+          disabled={logoutDisabled}
           onSelect={(e) => {
             e.preventDefault();
             handleSignOut();
           }}
           variant="destructive"
+          {...logoutHover}
         >
-          <LogOutIcon />
-          <span>{isPending ? "Signing out…" : "Log out"}</span>
+          <LogoutIcon ref={logoutIconRef} />
+          <span>{logoutLabel}</span>
+          <DropdownMenuShortcut>
+            {KEYBOARD_SHORTCUTS.LOGOUT}
+          </DropdownMenuShortcut>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -11,8 +11,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { MenuIcon } from "@/components/icons/menu-icon";
-import { PanelLeftCloseIcon } from "@/components/icons/panel-left-close";
+import { Icon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -48,6 +47,8 @@ interface SidebarContextProps {
   isMobile: boolean;
   toggleSidebar: () => void;
 }
+
+const { MenuIcon, PanelLeftCloseIcon } = Icon;
 
 const SidebarContext = createContext<SidebarContextProps | null>(null);
 
