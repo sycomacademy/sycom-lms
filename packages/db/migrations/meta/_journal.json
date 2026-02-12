@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1770775131580,
-      "tag": "0000_motionless_slapstick",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1770806767686,
-      "tag": "0001_famous_rictor",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1739376000000,
-      "tag": "0002_add_feedback_email",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1770914637143,
-      "tag": "0003_graceful_lenny_balinger",
+      "when": 1770916309482,
+      "tag": "0000_ancient_magma",
       "breakpoints": true
     }
   ]

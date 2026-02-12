@@ -7,6 +7,7 @@ import { useTheme } from "next-themes";
 import { useState } from "react";
 import { Icon } from "@/components/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,10 +19,12 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/packages/auth/auth-client";
 import { useAnimatedIcon } from "@/packages/hooks/use-animated-icon";
 import { useUserQuery } from "@/packages/hooks/use-user";
-import { Skeleton } from "../ui/skeleton";
+import { capitalize } from "@/packages/utils/string";
+import { toastManager } from "../ui/toast";
 import { KEYBOARD_SHORTCUTS } from "./dashboard-keyboard-shortcuts";
 
 const {
@@ -50,23 +53,26 @@ export function DashboardUserMenu() {
 
   async function handleSignOut() {
     setSignOutPending(true);
-    try {
-      await authClient.signOut({
-        fetchOptions: {
-          onSuccess: () => {
-            router.push("/");
-          },
+    const { error } = await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          router.push("/");
         },
+      },
+    });
+    if (error) {
+      toastManager.add({
+        title: "Error",
+        description: error.message ?? "Something went wrong. Please try again.",
+        type: "error",
       });
-    } finally {
-      setSignOutPending(false);
     }
   }
 
   if (!user) {
     return <Skeleton className="size-10 rounded-none" />;
   }
-  const facehashName = `${user.name} ${user.email}`;
+  const facehashName = `${user.name}`;
   const logoutDisabled = isPending || signOutPending;
   const logoutLabel = signOutPending ? "Signing out…" : "Log out";
 
@@ -104,6 +110,9 @@ export function DashboardUserMenu() {
                 </p>
               ) : null}
             </div>
+            <Badge className="mt-2 text-[10px]" variant="outline">
+              {capitalize(user.role ?? "student")}
+            </Badge>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -152,10 +161,7 @@ export function DashboardUserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           disabled={logoutDisabled}
-          onSelect={(e) => {
-            e.preventDefault();
-            handleSignOut();
-          }}
+          onClick={handleSignOut}
           variant="destructive"
           {...logoutHover}
         >

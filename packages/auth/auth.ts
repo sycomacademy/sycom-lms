@@ -6,7 +6,7 @@ import { db } from "@/packages/db";
 import { schema } from "@/packages/db/schema";
 import { profile } from "@/packages/db/schema/profile";
 import { render } from "@/packages/email/render";
-import { sendEmail } from "@/packages/email/sendgrid";
+import { sendEmail } from "@/packages/email/resend";
 import { ResetPasswordEmail } from "@/packages/email/templates/reset-password";
 import { VerifyEmail } from "@/packages/email/templates/verify-email";
 import { getWebsiteUrl } from "../env/utils";

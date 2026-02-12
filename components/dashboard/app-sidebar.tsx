@@ -57,20 +57,17 @@ export function AppSidebar() {
 
   return (
     <Sidebar
-      className="border-sidebar-border border-r"
+      className="border-sidebar-border"
       collapsible="icon"
       variant="inset"
     >
-      <SidebarHeader className="border-sidebar-border border-b">
+      <SidebarHeader className="border-sidebar-border">
         <Link
-          className="flex items-center gap-2 px-2 py-2 font-semibold text-sidebar-foreground"
+          className="flex items-center gap-2 font-semibold text-sidebar-foreground"
           href="/dashboard"
         >
-          <span className="flex size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+          <span className="flex size-10 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
             S
-          </span>
-          <span className="group-data-[collapsible=icon]:hidden">
-            Sycom LMS
           </span>
         </Link>
       </SidebarHeader>

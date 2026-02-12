@@ -47,11 +47,15 @@ export function SignInForm() {
         title: "Sign in failed",
         type: "error",
       });
-      setIsLoading(false);
-      return;
+    } else {
+      toastManager.add({
+        description: "Signed in successfully",
+        title: "Signed in",
+        type: "success",
+      });
+      router.push("/dashboard");
     }
     setIsLoading(false);
-    router.push("/dashboard");
   };
 
   return (

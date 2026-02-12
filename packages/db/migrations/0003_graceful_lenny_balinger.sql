@@ -1,1 +1,0 @@
-ALTER TABLE "feedback" ADD COLUMN "email" text NOT NULL;

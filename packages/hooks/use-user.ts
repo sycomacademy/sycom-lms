@@ -4,10 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { authClient } from "@/packages/auth/auth-client";
 import { useTRPC } from "@/packages/trpc/client";
-import { createClientLoggerWithContext } from "@/packages/utils/client-logger";
+import { createLoggerWithContext } from "../utils/logger";
 import { isValidTimezone } from "../utils/timezone";
 
-const useUserLogger = createClientLoggerWithContext("use-user");
+const useUserLogger = createLoggerWithContext("use-user");
 
 export function useUserQuery() {
   const trpc = useTRPC();
@@ -25,6 +25,7 @@ export function useUserQuery() {
 
   const ipAddress = session?.session.ipAddress;
   const userAgent = session?.session.userAgent;
+  const role = session?.user?.role;
   // Track if we've already attempted detection in this session
   const hasAttemptedDetection = useRef(false);
   const [detectedTimezone, setDetectedTimezone] = useState<string | null>(null);
@@ -56,5 +57,6 @@ export function useUserQuery() {
     ipAddress,
     userAgent,
     timezone: detectedTimezone,
+    role,
   };
 }

@@ -4,16 +4,12 @@ import { redirect } from "next/navigation";
 import { AuthLeftPanel } from "@/components/auth/left-panel";
 import { LoginTestimonials } from "@/components/auth/testimonials";
 import { getSession } from "@/packages/auth/helper";
-import { createLoggerWithContext } from "@/packages/utils/logger";
-
-const layoutLogger = createLoggerWithContext("auth:layout");
 
 export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  layoutLogger.info("requesting session");
   const session = await getSession();
 
   if (session) {
