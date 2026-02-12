@@ -20,12 +20,15 @@ interface PanelLeftCloseIconProps extends HTMLAttributes<HTMLDivElement> {
 
 const DEFAULT_TRANSITION: Transition = {
   times: [0, 0.4, 1],
-  duration: 0.5,
+  duration: 0.8,
 };
 
 const PATH_VARIANTS: Variants = {
   normal: { x: 0 },
-  animate: { x: [0, -1.5, 0] },
+  animate: {
+    x: [0, -1.5, 0],
+    transition: { ...DEFAULT_TRANSITION, repeat: Number.POSITIVE_INFINITY },
+  },
 };
 
 const PanelLeftCloseIcon = forwardRef<

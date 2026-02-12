@@ -59,3 +59,18 @@ export const createProfileSchema = updateProfileSchema.extend({
 });
 
 export type CreateProfileInput = z.infer<typeof createProfileSchema>;
+
+export const submitFeedbackSchema = z.object({
+  message: z
+    .string()
+    .min(1, "Feedback is required")
+    .max(2000, "Feedback must be less than 2000 characters"),
+});
+
+export type SubmitFeedbackInput = z.infer<typeof submitFeedbackSchema>;
+
+export const getProfileByUserIdSchema = z.object({
+  userId: z.string().min(1, "User ID is required"),
+});
+
+export type GetProfileByUserIdInput = z.infer<typeof getProfileByUserIdSchema>;

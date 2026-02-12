@@ -1,17 +1,26 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
+import { treeifyError, ZodError } from "zod";
 import type { Context } from "./context";
 
 export const t = initTRPC.context<Context>().create({
   transformer: superjson,
+  errorFormatter({ shape, error }) {
+    return {
+      ...shape,
+      data: {
+        ...shape.data,
+        zodError:
+          error.cause instanceof ZodError ? treeifyError(error.cause) : null,
+      },
+    };
+  },
 });
 
 export const router = t.router;
 export const callerFactory = t.createCallerFactory;
 
-export const publicProcedure = t.procedure;
-
-export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+const protectedMiddleware = t.middleware(async ({ next, ctx }) => {
   if (!ctx.session) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
@@ -26,3 +35,7 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
     },
   });
 });
+
+export const publicProcedure = t.procedure;
+
+export const protectedProcedure = t.procedure.use(protectedMiddleware);

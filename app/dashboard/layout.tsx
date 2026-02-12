@@ -2,12 +2,16 @@ import { redirect } from "next/navigation";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { getSession } from "@/packages/auth/helper";
 import { getServerTrpc, HydrateClient, prefetch } from "@/packages/trpc/server";
+import { createLoggerWithContext } from "@/packages/utils/logger";
+
+const layoutLogger = createLoggerWithContext("dashboard:layout");
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  layoutLogger.debug("requesting session");
   const session = await getSession();
 
   if (!session) {
@@ -15,7 +19,7 @@ export default async function DashboardLayout({
   }
 
   const trpc = await getServerTrpc();
-  prefetch(trpc.profile.getProfile.queryOptions());
+  await prefetch(trpc.profile.getProfile.queryOptions());
 
   return (
     <HydrateClient>

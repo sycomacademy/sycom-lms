@@ -4,12 +4,16 @@ import { redirect } from "next/navigation";
 import { AuthLeftPanel } from "@/components/auth/left-panel";
 import { LoginTestimonials } from "@/components/auth/testimonials";
 import { getSession } from "@/packages/auth/helper";
+import { createLoggerWithContext } from "@/packages/utils/logger";
+
+const layoutLogger = createLoggerWithContext("auth:layout");
 
 export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  layoutLogger.debug("requesting session");
   const session = await getSession();
 
   if (session) {
@@ -17,7 +21,7 @@ export default async function AuthLayout({
   }
   return (
     <div className="flex min-h-svh bg-background p-1">
-      <div className="relative hidden overflow-hidden bg-[#0C0C0C] lg:flex lg:w-1/2">
+      <div className="relative hidden overflow-hidden bg-foreground lg:flex lg:w-1/2">
         {/* Particles background (client component) */}
         <AuthLeftPanel />
 
@@ -47,7 +51,8 @@ export default async function AuthLayout({
         <div
           className="pointer-events-none absolute inset-x-0 top-0 z-10 h-32"
           style={{
-            background: "linear-gradient(to bottom, #0C0C0C, transparent)",
+            background:
+              "linear-gradient(to bottom, var(--foreground), transparent)",
           }}
         />
 
@@ -55,7 +60,8 @@ export default async function AuthLayout({
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-32"
           style={{
-            background: "linear-gradient(to top, #0C0C0C, transparent)",
+            background:
+              "linear-gradient(to top, var(--foreground), transparent)",
           }}
         />
       </div>

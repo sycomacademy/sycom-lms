@@ -1,15 +1,19 @@
 import type { NextRequest } from "next/server";
 import { cache } from "react";
-import { auth } from "@/packages/auth/auth";
+import { getSession } from "@/packages/auth/helper";
 import { db } from "@/packages/db";
+import { createLoggerWithContext } from "@/packages/utils/logger";
+
+const contextLogger = createLoggerWithContext("trpc:context");
 
 export const createContext = cache(async (req: NextRequest) => {
-  const session = await auth.api.getSession({
-    headers: req.headers,
-  });
+  contextLogger.debug("createContext invoked");
+  const headers = req.headers;
+  const session = await getSession();
   return {
     session,
     db,
+    headers,
   };
 });
 

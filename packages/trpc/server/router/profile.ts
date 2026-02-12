@@ -1,4 +1,5 @@
-import { getProfileByUserId } from "@/packages/db/queries/profile";
+import { TRPCError } from "@trpc/server";
+import { getProfileByUserId } from "@/packages/db/queries";
 import { protectedProcedure, router } from "../init";
 
 export const profileRouter = router({

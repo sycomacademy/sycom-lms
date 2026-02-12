@@ -91,7 +91,7 @@ export function DashboardUserMenu() {
           </Button>
         }
       />
-      <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col gap-0.5">
@@ -99,7 +99,9 @@ export function DashboardUserMenu() {
                 {user.name ?? "User"}
               </p>
               {user.email ? (
-                <p className="text-muted-foreground text-xs">{user.email}</p>
+                <p className="truncate text-muted-foreground text-xs">
+                  {user.email}
+                </p>
               ) : null}
             </div>
           </DropdownMenuLabel>

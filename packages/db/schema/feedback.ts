@@ -8,6 +8,7 @@ export const feedback = pgTable("feedback", {
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+  email: text("email").notNull(),
   message: text("message").notNull(),
   createdAt,
   updatedAt,

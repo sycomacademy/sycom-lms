@@ -16,9 +16,9 @@
   "menuAccent": "subtle",
   "aliases": {
     "components": "@/components",
-    "utils": "@/packages/utils/cn.ts",
+    "utils": "@/packages/utils/cn",
     "ui": "@/components/ui",
-    "lib": "@/packages/utils",
+    "lib": "@/packages",
     "hooks": "@/packages/hooks"
   },
   "registries": {

@@ -16,8 +16,11 @@ import { createContext } from "@/packages/trpc/server/context";
 import type { AppRouter } from "@/packages/trpc/server/router";
 import { appRouter } from "@/packages/trpc/server/router";
 import { makeQueryClient } from "@/packages/trpc/shared";
+import { createLoggerWithContext } from "@/packages/utils/logger";
 
 export const getQueryClient = cache(makeQueryClient);
+
+const prefetchLogger = createLoggerWithContext("trpc:prefetch");
 
 async function getServerTrpcClient() {
   const cookieStore = await cookies();
@@ -49,37 +52,40 @@ export async function getServerTrpc() {
   });
 }
 
-export function prefetch<T extends ReturnType<TRPCQueryOptions<any>>>(
+/**
+ * Prefetch and await completion. Use when you need data in cache before first paint.
+ * Adds verification logging in development.
+ */
+export async function prefetch<T extends ReturnType<TRPCQueryOptions<any>>>(
   queryOptions: T
 ) {
   const queryClient = getQueryClient();
+  const path = String(queryOptions.queryKey?.[0] ?? "?");
+  prefetchLogger.debug("prefetch start", { path });
 
   if (queryOptions.queryKey[1]?.type === "infinite") {
-    void queryClient.prefetchInfiniteQuery(queryOptions as any);
+    await queryClient.prefetchInfiniteQuery(queryOptions as any);
   } else {
-    void queryClient.prefetchQuery(queryOptions);
+    await queryClient.prefetchQuery(queryOptions);
   }
-}
 
-export function batchPrefetch<T extends ReturnType<TRPCQueryOptions<any>>>(
-  queryOptionsArray: T[]
-) {
-  const queryClient = getQueryClient();
-
-  for (const queryOptions of queryOptionsArray) {
-    if (queryOptions.queryKey[1]?.type === "infinite") {
-      void queryClient.prefetchInfiniteQuery(queryOptions as any);
-    } else {
-      void queryClient.prefetchQuery(queryOptions);
-    }
-  }
+  const state = queryClient.getQueryState(queryOptions.queryKey);
+  prefetchLogger.debug("prefetch complete", {
+    path,
+    status: state?.status,
+    hasData: !!state?.data,
+  });
 }
 
 export function HydrateClient(props: { children: React.ReactNode }) {
   const queryClient = getQueryClient();
+  const dehydrated = dehydrate(queryClient);
+  prefetchLogger.debug("HydrateClient dehydrate", {
+    queries: dehydrated.queries?.length ?? 0,
+  });
   return React.createElement(
     HydrationBoundary,
-    { state: dehydrate(queryClient) },
+    { state: dehydrated },
     props.children
   );
 }

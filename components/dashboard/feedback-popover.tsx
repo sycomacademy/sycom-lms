@@ -19,6 +19,7 @@ export function FeedbackPopover() {
     <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger
         {...iconHover}
+        className="hidden md:flex"
         render={
           <Button variant="ghost">
             <MessageSquareMoreIcon ref={iconRef} size={20} />

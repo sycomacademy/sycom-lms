@@ -19,7 +19,7 @@ const KEYBOARD_ICON = {
 
 export const KEYBOARD_SHORTCUTS = {
   TOGGLE_THEME: `${KEYBOARD_ICON.CMD_MAC} D`,
-  LOGOUT: `${KEYBOARD_ICON.CMD_MAC} L`,
+  LOGOUT: `${KEYBOARD_ICON.CTRL_MAC} L`,
 };
 
 export function DashboardKeyboardShortcuts() {

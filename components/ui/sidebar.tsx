@@ -28,6 +28,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAnimatedIcon } from "@/packages/hooks/use-animated-icon";
 import { useIsMobile } from "@/packages/hooks/use-mobile";
 import { cn } from "@/packages/utils/cn";
 
@@ -272,9 +273,11 @@ function SidebarTrigger({
   ...props
 }: React.ComponentProps<typeof Button>) {
   const { toggleSidebar, isMobile } = useSidebar();
+  const [iconRef, iconHover] = useAnimatedIcon();
 
   return (
     <Button
+      {...iconHover}
       className={cn(className)}
       data-sidebar="trigger"
       data-slot="sidebar-trigger"
@@ -286,7 +289,7 @@ function SidebarTrigger({
       variant="ghost"
       {...props}
     >
-      {isMobile ? <MenuIcon /> : <PanelLeftCloseIcon />}
+      {isMobile ? <MenuIcon /> : <PanelLeftCloseIcon ref={iconRef} />}
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );
