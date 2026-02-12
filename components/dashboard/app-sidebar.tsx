@@ -29,6 +29,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useUserQuery } from "@/packages/hooks/use-user";
 
 const mainNavItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
@@ -51,9 +52,10 @@ const adminNavItem = {
 } as const;
 
 export function AppSidebar() {
+  const { role } = useUserQuery();
   const pathname = usePathname();
-  const isInstructor = false;
-  const isAdmin = false;
+  const isInstructor = role === "instructor";
+  const isAdmin = role === "admin";
 
   return (
     <Sidebar
@@ -63,7 +65,7 @@ export function AppSidebar() {
     >
       <SidebarHeader className="border-sidebar-border">
         <Link
-          className="flex items-center gap-2 font-semibold text-sidebar-foreground"
+          className="flex items-center gap-2 font-semibold text-sidebar-foreground text-sm"
           href="/dashboard"
         >
           <span className="flex size-10 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
@@ -79,8 +81,10 @@ export function AppSidebar() {
               {mainNavItems.map(({ href, label, icon: Icon }) => (
                 <SidebarMenuItem key={href}>
                   <SidebarMenuButton
+                    className="text-sm"
                     isActive={pathname === href}
                     render={<Link href={href} />}
+                    size="lg"
                     tooltip={label}
                   >
                     <Icon />
@@ -98,8 +102,10 @@ export function AppSidebar() {
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton
+                    className="text-sm [&_svg]:size-5"
                     isActive={pathname === myCoursesNavItem.href}
                     render={<Link href={myCoursesNavItem.href} />}
+                    size="lg"
                     tooltip={myCoursesNavItem.label}
                   >
                     <BookOpenIcon />
@@ -117,8 +123,10 @@ export function AppSidebar() {
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton
+                    className="text-sm [&_svg]:size-5"
                     isActive={pathname === adminNavItem.href}
                     render={<Link href={adminNavItem.href} />}
+                    size="lg"
                     tooltip={adminNavItem.label}
                   >
                     <ShieldCheckIcon />
@@ -134,7 +142,11 @@ export function AppSidebar() {
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <SidebarMenuButton tooltip="Help & support">
+              <SidebarMenuButton
+                className="text-sm [&_svg]:size-5"
+                size="lg"
+                tooltip="Help & support"
+              >
                 <HelpCircleIcon />
                 <span>Help</span>
               </SidebarMenuButton>

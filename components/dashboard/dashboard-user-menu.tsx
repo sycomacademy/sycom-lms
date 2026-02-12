@@ -124,7 +124,7 @@ export function DashboardUserMenu() {
           </DropdownMenuItem>
           <DropdownMenuItem
             {...settingsHover}
-            render={<Link href="/dashboard/settings" />}
+            render={<Link href="/dashboard/account/settings" />}
           >
             <SettingsIcon ref={settingsIconRef} />
             <span className="flex-1">Settings</span>

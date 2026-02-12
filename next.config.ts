@@ -5,6 +5,7 @@ import "@/packages/env/client";
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
+  typedRoutes: true,
   images: {
     remotePatterns: [
       {

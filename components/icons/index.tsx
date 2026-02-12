@@ -10,6 +10,10 @@ import {
   PanelLeftCloseIcon,
   type PanelLeftCloseIconHandle,
 } from "./panel-left-close";
+import {
+  PanelLeftOpenIcon,
+  type PanelLeftOpenIconHandle,
+} from "./panel-left-open";
 import { SettingsIcon, type SettingsIconHandle } from "./settings";
 import { ThemeToggleIcon, type ThemeToggleIconHandle } from "./theme-toggle";
 import { UserIcon, type UserIconHandle } from "./user";
@@ -17,6 +21,7 @@ import { UserIcon, type UserIconHandle } from "./user";
 interface IconHandles {
   MessageSquareMoreIcon: MessageSquareMoreIconHandle;
   PanelLeftCloseIcon: PanelLeftCloseIconHandle;
+  PanelLeftOpenIcon: PanelLeftOpenIconHandle;
   HomeIcon: HomeIconHandle;
   CircleHelpIcon: CircleHelpIconHandle;
   LogoutIcon: LogoutIconHandle;
@@ -29,6 +34,7 @@ interface IconHandles {
 const Icons = {
   MessageSquareMoreIcon,
   PanelLeftCloseIcon,
+  PanelLeftOpenIcon,
   HomeIcon,
   CircleHelpIcon,
   LogoutIcon,
