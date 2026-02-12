@@ -7,7 +7,7 @@ import { createLoggerWithContext } from "@/packages/utils/logger";
 const contextLogger = createLoggerWithContext("trpc:context");
 
 export const createContext = cache(async (req: NextRequest) => {
-  contextLogger.debug("createContext invoked");
+  contextLogger.info("createContext invoked");
   const headers = req.headers;
   const session = await getSession();
   return {

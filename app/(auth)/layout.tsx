@@ -13,7 +13,7 @@ export default async function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  layoutLogger.debug("requesting session");
+  layoutLogger.info("requesting session");
   const session = await getSession();
 
   if (session) {

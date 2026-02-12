@@ -15,6 +15,20 @@
       "when": 1770806767686,
       "tag": "0001_famous_rictor",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1739376000000,
+      "tag": "0002_add_feedback_email",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1770914637143,
+      "tag": "0003_graceful_lenny_balinger",
+      "breakpoints": true
     }
   ]
 }
