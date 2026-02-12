@@ -103,13 +103,13 @@ const UserIcon = forwardRef<UserIconHandle, UserIconProps>(
           />
 
           <motion.path
-            animate={controls}
+            // animate={controls}
             d="M20 21a8 8 0 0 0-16 0"
-            transition={{
-              delay: 0.2,
-              duration: 0.4,
-            }}
-            variants={PATH_VARIANT}
+            // transition={{
+            //   delay: 0.2,
+            //   duration: 0.4,
+            // }}
+            // variants={PATH_VARIANT}
           />
         </svg>
       </div>
