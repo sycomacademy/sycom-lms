@@ -1,4 +1,3 @@
-import { TRPCError } from "@trpc/server";
 import { getProfileByUserId } from "@/packages/db/queries";
 import { protectedProcedure, router } from "../init";
 
