@@ -4,12 +4,10 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./app-sidebar";
 import { DashboardHeader } from "./dashboard-header";
-import { DashboardKeyboardShortcuts } from "./dashboard-keyboard-shortcuts";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
-      <DashboardKeyboardShortcuts />
       <AppSidebar />
       <SidebarInset
         className="flex flex-col md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-0"

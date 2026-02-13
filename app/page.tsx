@@ -21,6 +21,9 @@ export default function HomePage() {
         >
           Dashboard
         </Button>
+        <Button nativeButton={false} render={<Link href="/style-guide" />}>
+          Style Guide
+        </Button>
       </div>
     </main>
   );

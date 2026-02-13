@@ -24,8 +24,8 @@ import { authClient } from "@/packages/auth/auth-client";
 import { useAnimatedIcon } from "@/packages/hooks/use-animated-icon";
 import { useUserQuery } from "@/packages/hooks/use-user";
 import { capitalize } from "@/packages/utils/string";
+import { useKeyboardShortcutLabels } from "../layout/keyboard-shortcuts";
 import { toastManager } from "../ui/toast";
-import { KEYBOARD_SHORTCUTS } from "./dashboard-keyboard-shortcuts";
 
 const {
   UserIcon,
@@ -40,6 +40,7 @@ export function DashboardUserMenu() {
   const router = useRouter();
   const { user, isPending } = useUserQuery();
   const { setTheme, resolvedTheme } = useTheme();
+  const shortcuts = useKeyboardShortcutLabels();
   const [signOutPending, setSignOutPending] = useState(false);
   const [userIconRef, userHover] = useAnimatedIcon();
   const [settingsIconRef, settingsHover] = useAnimatedIcon();
@@ -140,9 +141,7 @@ export function DashboardUserMenu() {
             theme={resolvedTheme === "dark" ? "dark" : "light"}
           />
           <span className="flex">Switch theme</span>
-          <DropdownMenuShortcut>
-            {KEYBOARD_SHORTCUTS.TOGGLE_THEME}
-          </DropdownMenuShortcut>
+          <DropdownMenuShortcut>{shortcuts.TOGGLE_THEME}</DropdownMenuShortcut>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
@@ -167,9 +166,7 @@ export function DashboardUserMenu() {
         >
           <LogoutIcon ref={logoutIconRef} />
           <span>{logoutLabel}</span>
-          <DropdownMenuShortcut>
-            {KEYBOARD_SHORTCUTS.LOGOUT}
-          </DropdownMenuShortcut>
+          <DropdownMenuShortcut>{shortcuts.LOGOUT}</DropdownMenuShortcut>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
