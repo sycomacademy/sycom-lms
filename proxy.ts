@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { AUTH_COOKIE } from "./packages/auth/helper";
 
 /**
  * Optimistic cookie-based auth check.
@@ -8,11 +9,11 @@ import { NextResponse } from "next/server";
  * - Dashboard routes: redirect to /sign-in if cookie is missing.
  * - Auth routes: redirect to /dashboard if cookie is present.
  *
- * The dashboard layout guard (`getSession()` + redirect) remains the secure
+ * The dashboardGuard helper function remains the secure
  * fallback that actually validates the session against the database.
+ * and removes the session cookie if it is invalid.
+ *
  */
-
-const AUTH_COOKIE = "better-auth.session_token";
 
 /** Routes that require authentication */
 const PROTECTED_PREFIXES = ["/dashboard"];

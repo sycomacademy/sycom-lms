@@ -1,8 +1,8 @@
-import AuthCheck from "@/components/auth/auth-check";
 import { AccountSecurity } from "@/components/dashboard/settings/account-security";
+import { dashboardGuard } from "@/packages/auth/helper";
 
-export default function AccountSecurityPage() {
-  <AuthCheck isOnLoggedInPage={true} />;
+export default async function AccountSecurityPage() {
+  await dashboardGuard();
   return (
     <div className="flex flex-col gap-6">
       <AccountSecurity />

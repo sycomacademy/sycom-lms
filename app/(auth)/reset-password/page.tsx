@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import AuthCheck from "@/components/auth/auth-check";
 import { ResetPasswordForm } from "@/components/auth/reset-password-form";
 import { Button } from "@/components/ui/button";
+import { signInGuard } from "@/packages/auth/helper";
 
 export const metadata: Metadata = {
   title: "Reset Password | Sycom LMS",
@@ -14,7 +14,7 @@ export default async function ResetPasswordPage({
 }: {
   searchParams: Promise<{ token?: string; error?: string }>;
 }) {
-  <AuthCheck isOnLoggedInPage={false} />;
+  await signInGuard();
   const { token, error } = await searchParams;
 
   if (error === "INVALID_TOKEN" || !token) {

@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
-import AuthCheck from "@/components/auth/auth-check";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import { dashboardGuard } from "@/packages/auth/helper";
 import { HydrateClient, prefetch, trpc } from "@/packages/trpc/server";
 
 export default async function DashboardLayout({
@@ -8,7 +8,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  <AuthCheck isOnLoggedInPage={true} />;
+  await dashboardGuard();
   const cookieStore = await cookies();
   const sidebarState = cookieStore.get("sidebar_state");
   const open = sidebarState?.value === "true";

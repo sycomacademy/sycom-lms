@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import AuthCheck from "@/components/auth/auth-check";
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
 import { Button } from "@/components/ui/button";
+import { signInGuard } from "@/packages/auth/helper";
 
 export const metadata: Metadata = {
   title: "Forgot Password | Sycom LMS",
   description: "Reset your Sycom LMS password.",
 };
 
-export default function ForgotPasswordPage() {
-  <AuthCheck isOnLoggedInPage={false} />;
+export default async function ForgotPasswordPage() {
+  await signInGuard();
   return (
     <div className="flex h-full w-full flex-col">
       <div className="flex h-full w-full items-center justify-center">

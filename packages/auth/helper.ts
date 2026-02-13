@@ -1,9 +1,12 @@
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { cache } from "react";
 import { auth } from "@/packages/auth/auth";
 import { createLoggerWithContext } from "@/packages/utils/logger";
 
 const authLogger = createLoggerWithContext("auth:getSession");
+
+export const AUTH_COOKIE = "better-auth.session_token";
 
 /**
  * Session for the current request. Cached per-request so multiple
@@ -16,3 +19,18 @@ export const getSession = cache(async () => {
   authLogger.debug("session resolved", { hasSession: !!session?.user });
   return session;
 });
+
+export const dashboardGuard = async () => {
+  const session = await getSession();
+  if (!session) {
+    // Clear invalid cookie via Route Handler (cannot mutate cookies in RSC), then redirect to sign-in.
+    redirect("/api/auth/clear-session?redirect=/sign-in");
+  }
+};
+
+export const signInGuard = async () => {
+  const session = await getSession();
+  if (session) {
+    redirect("/dashboard");
+  }
+};

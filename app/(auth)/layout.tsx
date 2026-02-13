@@ -1,15 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
-import AuthCheck from "@/components/auth/auth-check";
 import { AuthLeftPanel } from "@/components/auth/left-panel";
 import { LoginTestimonials } from "@/components/auth/testimonials";
+import { signInGuard } from "@/packages/auth/helper";
 
 export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  <AuthCheck isOnLoggedInPage={false} />;
+  await signInGuard();
   return (
     <div className="flex min-h-svh bg-background p-1">
       <div className="relative hidden overflow-hidden bg-foreground lg:flex lg:w-1/2">
