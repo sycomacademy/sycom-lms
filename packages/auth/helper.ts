@@ -23,8 +23,7 @@ export const getSession = cache(async () => {
 export const dashboardGuard = async () => {
   const session = await getSession();
   if (!session) {
-    // Clear invalid cookie via Route Handler (cannot mutate cookies in RSC), then redirect to sign-in.
-    redirect("/api/auth/clear-session?redirect=/sign-in");
+    redirect("/sign-in");
   }
 };
 
