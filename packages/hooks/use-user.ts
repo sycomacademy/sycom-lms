@@ -55,5 +55,6 @@ export function useUserQuery() {
     timezone: detectedTimezone,
     ipAddress: session.ipAddress,
     userAgent: session.userAgent,
+    role: user.role,
   };
 }
