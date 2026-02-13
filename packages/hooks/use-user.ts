@@ -7,7 +7,7 @@ import { useTRPC } from "@/packages/trpc/client";
 import { createLoggerWithContext } from "../utils/logger";
 import { isValidTimezone } from "../utils/timezone";
 
-const useUserLogger = createLoggerWithContext("use-user");
+const useUserLogger = createLoggerWithContext("client:use-user");
 
 export function useUserQuery() {
   const trpc = useTRPC();

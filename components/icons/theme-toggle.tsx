@@ -1,5 +1,5 @@
-/** biome-ignore-all lint/a11y/noNoninteractiveElementInteractions: <foff> */
-/** biome-ignore-all lint/a11y/noStaticElementInteractions: <foff> */
+/** biome-ignore-all lint/a11y/noNoninteractiveElementInteractions: <This is an icon> */
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <This is an icon> */
 "use client";
 
 import type { Variants } from "motion/react";

@@ -166,7 +166,9 @@ export function DashboardUserMenu() {
         >
           <LogoutIcon ref={logoutIconRef} />
           <span>{logoutLabel}</span>
-          <DropdownMenuShortcut>{shortcuts.LOGOUT}</DropdownMenuShortcut>
+          <DropdownMenuShortcut className="text-destructive group-focus/dropdown-menu-item:text-destructive">
+            {shortcuts.LOGOUT}
+          </DropdownMenuShortcut>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

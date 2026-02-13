@@ -47,8 +47,7 @@ export default async function AuthLayout({
         <div
           className="pointer-events-none absolute inset-x-0 top-0 z-10 h-32"
           style={{
-            background:
-              "linear-gradient(to bottom, var(--foreground), transparent)",
+            background: "linear-gradient(to bottom, black, transparent)",
           }}
         />
 
@@ -56,8 +55,7 @@ export default async function AuthLayout({
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-32"
           style={{
-            background:
-              "linear-gradient(to top, var(--foreground), transparent)",
+            background: "linear-gradient(to top, black, transparent)",
           }}
         />
       </div>

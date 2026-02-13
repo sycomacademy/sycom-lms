@@ -4,10 +4,10 @@ import { getSession } from "@/packages/auth/helper";
 import { db } from "@/packages/db";
 import { createLoggerWithContext } from "@/packages/utils/logger";
 
-const contextLogger = createLoggerWithContext("trpc:context");
+const trpcLogger = createLoggerWithContext("trpc:context");
 
 export const createContext = cache(async (req: NextRequest) => {
-  contextLogger.debug("createContext invoked");
+  trpcLogger.debug("createContext invoked");
   const headers = req.headers;
   const session = await getSession();
   return {

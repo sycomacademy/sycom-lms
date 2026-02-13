@@ -1,5 +1,5 @@
-/** biome-ignore-all lint/a11y/noNoninteractiveElementInteractions: <foff> */
-/** biome-ignore-all lint/a11y/noStaticElementInteractions: <foff> */
+/** biome-ignore-all lint/a11y/noNoninteractiveElementInteractions: <This is an icon> */
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <This is an icon> */
 "use client";
 
 import type { Transition, Variants } from "motion/react";
@@ -20,12 +20,15 @@ interface PanelLeftOpenIconProps extends HTMLAttributes<HTMLDivElement> {
 
 const DEFAULT_TRANSITION: Transition = {
   times: [0, 0.4, 1],
-  duration: 0.5,
+  duration: 0.8,
 };
 
 const PATH_VARIANTS: Variants = {
   normal: { x: 0 },
-  animate: { x: [0, 1.5, 0] },
+  animate: {
+    x: [0, 1.5, 0],
+    transition: { ...DEFAULT_TRANSITION, repeat: Number.POSITIVE_INFINITY },
+  },
 };
 
 const PanelLeftOpenIcon = forwardRef<

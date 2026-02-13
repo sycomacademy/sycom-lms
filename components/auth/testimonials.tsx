@@ -86,8 +86,8 @@ export function LoginTestimonials() {
                 />
               </svg>
             </div>
-            <p className="pl-4 font-sans font-semibold text-2xl/relaxed text-muted/70">
-              <span className="text-secondary">{testimonial?.firstPart}.</span>
+            <p className="pl-4 font-sans font-semibold text-2xl/relaxed text-white/70">
+              <span className="text-white">{testimonial?.firstPart}.</span>
               {testimonial?.secondPart.startsWith(".")
                 ? testimonial.secondPart.slice(1)
                 : testimonial?.secondPart}

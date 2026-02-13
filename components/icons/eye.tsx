@@ -1,53 +1,29 @@
-/** biome-ignore-all lint/a11y/noNoninteractiveElementInteractions: <This is an icon> */
-/** biome-ignore-all lint/a11y/noStaticElementInteractions: <This is an icon> */
+/** biome-ignore-all lint/a11y/noNoninteractiveElementInteractions: This is an icon */
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: This is an icon */
 "use client";
 
-import type { Variants } from "motion/react";
 import { motion, useAnimation } from "motion/react";
 import type { HTMLAttributes } from "react";
 import { forwardRef, useCallback, useImperativeHandle, useRef } from "react";
 
 import { cn } from "@/packages/utils/cn";
 
-export interface UserIconHandle {
+export interface EyeIconHandle {
   startAnimation: () => void;
   stopAnimation: () => void;
 }
 
-interface UserIconProps extends HTMLAttributes<HTMLDivElement> {
+interface EyeIconProps extends HTMLAttributes<HTMLDivElement> {
   size?: number;
 }
 
-// const PATH_VARIANT: Variants = {
-//   normal: { pathLength: 1, opacity: 1, pathOffset: 0 },
-//   animate: {
-//     pathLength: [0, 1],
-//     opacity: [0, 1],
-//     pathOffset: [1, 0],
-//   },
-// };
-
-const CIRCLE_VARIANT: Variants = {
-  normal: {
-    pathLength: 1,
-    pathOffset: 0,
-    scale: 1,
-  },
-  animate: {
-    pathLength: [0, 1],
-    pathOffset: [1, 0],
-    scale: [0.5, 1],
-  },
-};
-
-const UserIcon = forwardRef<UserIconHandle, UserIconProps>(
+const EyeIcon = forwardRef<EyeIconHandle, EyeIconProps>(
   ({ onMouseEnter, onMouseLeave, className, size = 28, ...props }, ref) => {
     const controls = useAnimation();
     const isControlledRef = useRef(false);
 
     useImperativeHandle(ref, () => {
       isControlledRef.current = true;
-
       return {
         startAnimation: () => controls.start("animate"),
         stopAnimation: () => controls.start("normal"),
@@ -75,6 +51,7 @@ const UserIcon = forwardRef<UserIconHandle, UserIconProps>(
       },
       [controls, onMouseLeave]
     );
+
     return (
       <div
         className={cn(className)}
@@ -93,23 +70,27 @@ const UserIcon = forwardRef<UserIconHandle, UserIconProps>(
           width={size}
           xmlns="http://www.w3.org/2000/svg"
         >
-          <title>User</title>
+          <title>Eye</title>
+          <motion.path
+            animate={controls}
+            d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"
+            style={{ originY: "50%" }}
+            transition={{ duration: 0.4, ease: "easeInOut" }}
+            variants={{
+              normal: { scaleY: 1, opacity: 1 },
+              animate: { scaleY: [1, 0.1, 1], opacity: [1, 0.3, 1] },
+            }}
+          />
           <motion.circle
             animate={controls}
             cx="12"
-            cy="8"
-            r="5"
-            variants={CIRCLE_VARIANT}
-          />
-
-          <motion.path
-            // animate={controls}
-            d="M20 21a8 8 0 0 0-16 0"
-            // transition={{
-            //   delay: 0.2,
-            //   duration: 0.4,
-            // }}
-            // variants={PATH_VARIANT}
+            cy="12"
+            r="3"
+            transition={{ duration: 0.4, ease: "easeInOut" }}
+            variants={{
+              normal: { scale: 1, opacity: 1 },
+              animate: { scale: [1, 0.3, 1], opacity: [1, 0.3, 1] },
+            }}
           />
         </svg>
       </div>
@@ -117,6 +98,6 @@ const UserIcon = forwardRef<UserIconHandle, UserIconProps>(
   }
 );
 
-UserIcon.displayName = "UserIcon";
+EyeIcon.displayName = "EyeIcon";
 
-export { UserIcon };
+export { EyeIcon };

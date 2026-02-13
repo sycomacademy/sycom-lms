@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ModeSwitcher } from "@/components/layout/theme-toggle";
 import { componentRegistry } from "@/components/style/component-registry";
 import { ComponentWrapper } from "@/components/style/demo/component-wrapper";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 const uiEntries = Object.entries(componentRegistry).filter(
@@ -29,7 +30,14 @@ export default function StyleGuidePage() {
             </h1>
             <div className="flex items-center gap-2">
               <ModeSwitcher />
-              <Link href="/">home</Link>
+              <Button
+                className={"px-1"}
+                nativeButton={false}
+                render={<Link href="/" />}
+                variant="link"
+              >
+                home
+              </Button>
             </div>
           </div>
           <p className="mt-1 text-muted-foreground text-sm">
@@ -86,6 +94,7 @@ export default function StyleGuidePage() {
                 className="lg:col-span-1"
                 key={slug}
                 name={title}
+                slug={config.href}
               >
                 <Demo />
               </ComponentWrapper>
@@ -99,6 +108,7 @@ export default function StyleGuidePage() {
                 className="lg:col-span-2"
                 key={slug}
                 name={title}
+                slug={config.href}
               >
                 <Demo />
               </ComponentWrapper>
@@ -112,6 +122,7 @@ export default function StyleGuidePage() {
                 className="lg:col-span-2"
                 key={slug}
                 name={title}
+                slug={config.href}
               >
                 <Demo />
               </ComponentWrapper>

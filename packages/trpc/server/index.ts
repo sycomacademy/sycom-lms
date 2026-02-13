@@ -20,7 +20,7 @@ import { createLoggerWithContext } from "@/packages/utils/logger";
 
 export const getQueryClient = cache(makeQueryClient);
 
-const prefetchLogger = createLoggerWithContext("trpc:prefetch");
+const trpcLogger = createLoggerWithContext("trpc:server");
 
 async function getServerTrpcClient() {
   const cookieStore = await cookies();
@@ -61,7 +61,7 @@ export async function prefetch<T extends ReturnType<TRPCQueryOptions<any>>>(
 ) {
   const queryClient = getQueryClient();
   const path = String(queryOptions.queryKey?.[0] ?? "?");
-  prefetchLogger.debug("prefetch start", { path });
+  trpcLogger.debug("prefetch start", { path });
 
   if (queryOptions.queryKey[1]?.type === "infinite") {
     await queryClient.prefetchInfiniteQuery(queryOptions as any);
@@ -70,7 +70,7 @@ export async function prefetch<T extends ReturnType<TRPCQueryOptions<any>>>(
   }
 
   const state = queryClient.getQueryState(queryOptions.queryKey);
-  prefetchLogger.debug("prefetch complete", {
+  trpcLogger.debug("prefetch complete", {
     path,
     status: state?.status,
     hasData: !!state?.data,
@@ -80,7 +80,7 @@ export async function prefetch<T extends ReturnType<TRPCQueryOptions<any>>>(
 export function HydrateClient(props: { children: React.ReactNode }) {
   const queryClient = getQueryClient();
   const dehydrated = dehydrate(queryClient);
-  prefetchLogger.debug("HydrateClient dehydrate", {
+  trpcLogger.debug("HydrateClient dehydrate", {
     queries: dehydrated.queries?.length ?? 0,
   });
   return React.createElement(

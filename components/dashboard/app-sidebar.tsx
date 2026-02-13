@@ -29,7 +29,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useIsMobile } from "@/packages/hooks/use-mobile";
 import { useUserQuery } from "@/packages/hooks/use-user";
+import { cn } from "@/packages/utils/cn";
 
 const mainNavItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
@@ -51,8 +53,20 @@ const adminNavItem = {
   icon: ShieldCheckIcon,
 } as const;
 
+/** Icon size one step up from default (size-4 → size-5) in both states. */
+const menuButtonIconClass = "[&_svg]:size-5";
+
+/** Keep menu button height/padding when collapsed, center icon, hide label to avoid letter peek. */
+const menuButtonCollapseClass =
+  "group-data-[collapsible=icon]:size-auto! group-data-[collapsible=icon]:h-12! group-data-[collapsible=icon]:min-h-12! group-data-[collapsible=icon]:w-full! group-data-[collapsible=icon]:p-2! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:[&>span:last-child]:hidden";
+
+/** Keep group label visible and centered when sidebar is collapsed (no layout shift). */
+const groupLabelCollapseClass =
+  "group-data-[collapsible=icon]:mt-0 group-data-[collapsible=icon]:opacity-100 group-data-[collapsible=icon]:justify-center";
+
 export function AppSidebar() {
   const { role } = useUserQuery();
+  const isMobile = useIsMobile();
   const pathname = usePathname();
   const isInstructor = role === "instructor";
   const isAdmin = role === "admin";
@@ -61,6 +75,7 @@ export function AppSidebar() {
     <Sidebar
       className="border-sidebar-border"
       collapsible="icon"
+      side={isMobile ? "right" : "left"}
       variant="inset"
     >
       <SidebarHeader className="border-sidebar-border">
@@ -75,13 +90,19 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Main</SidebarGroupLabel>
+          <SidebarGroupLabel className={groupLabelCollapseClass}>
+            Main
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNavItems.map(({ href, label, icon: Icon }) => (
                 <SidebarMenuItem key={href}>
                   <SidebarMenuButton
-                    className="text-sm"
+                    className={cn(
+                      "text-sm",
+                      menuButtonIconClass,
+                      menuButtonCollapseClass
+                    )}
                     isActive={pathname === href}
                     render={<Link href={href} />}
                     size="lg"
@@ -97,12 +118,18 @@ export function AppSidebar() {
         </SidebarGroup>
         {isInstructor ? (
           <SidebarGroup>
-            <SidebarGroupLabel>Instructor</SidebarGroupLabel>
+            <SidebarGroupLabel className={groupLabelCollapseClass}>
+              Teach
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    className="text-sm [&_svg]:size-5"
+                    className={cn(
+                      "text-sm",
+                      menuButtonIconClass,
+                      menuButtonCollapseClass
+                    )}
                     isActive={pathname === myCoursesNavItem.href}
                     render={<Link href={myCoursesNavItem.href} />}
                     size="lg"
@@ -118,12 +145,18 @@ export function AppSidebar() {
         ) : null}
         {isAdmin ? (
           <SidebarGroup>
-            <SidebarGroupLabel>Admin</SidebarGroupLabel>
+            <SidebarGroupLabel className={groupLabelCollapseClass}>
+              Admin
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    className="text-sm [&_svg]:size-5"
+                    className={cn(
+                      "text-sm",
+                      menuButtonIconClass,
+                      menuButtonCollapseClass
+                    )}
                     isActive={pathname === adminNavItem.href}
                     render={<Link href={adminNavItem.href} />}
                     size="lg"
@@ -143,7 +176,11 @@ export function AppSidebar() {
           <DropdownMenuTrigger
             render={
               <SidebarMenuButton
-                className="text-sm [&_svg]:size-5"
+                className={cn(
+                  "text-sm",
+                  menuButtonIconClass,
+                  menuButtonCollapseClass
+                )}
                 size="lg"
                 tooltip="Help & support"
               >

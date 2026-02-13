@@ -1,15 +1,20 @@
 "use client";
 
+import Link from "next/link";
 import React from "react";
-
+import { EyeIcon } from "@/components/icons/eye";
 import { cn } from "@/packages/utils/cn";
 
 export function ComponentWrapper({
   className,
   name,
+  slug,
   children,
   ...props
-}: React.ComponentPropsWithoutRef<"div"> & { name: string }) {
+}: React.ComponentPropsWithoutRef<"div"> & {
+  name: string;
+  slug: `/style-guide/${string}`;
+}) {
   return (
     <ComponentErrorBoundary name={name}>
       <div
@@ -22,7 +27,12 @@ export function ComponentWrapper({
         {...props}
       >
         <div className="border-b px-4 py-3">
-          <div className="font-medium text-sm">{getComponentName(name)}</div>
+          <div className="flex items-center gap-2 font-medium text-sm">
+            {getComponentName(name)}
+            <Link href={slug}>
+              <EyeIcon size={16} />
+            </Link>
+          </div>
         </div>
         <div className="flex flex-1 items-center gap-2 p-4">{children}</div>
       </div>
