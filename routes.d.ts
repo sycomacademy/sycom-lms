@@ -25,10 +25,7 @@ type AppRoutes =
   | "/style-guide"
   | "/style-guide/[name]"
   | "/terms";
-type AppRouteHandlerRoutes =
-  | "/api/auth/[...all]"
-  | "/api/auth/clear-session"
-  | "/api/trpc/[trpc]";
+type AppRouteHandlerRoutes = "/api/auth/[...all]" | "/api/trpc/[trpc]";
 type PageRoutes = never;
 type LayoutRoutes = "/" | "/dashboard" | "/dashboard/settings";
 type RedirectRoutes = never;
@@ -44,7 +41,6 @@ type Routes =
 interface ParamMap {
   "/": {};
   "/api/auth/[...all]": { all: string[] };
-  "/api/auth/clear-session": {};
   "/api/trpc/[trpc]": { trpc: string };
   "/dashboard": {};
   "/dashboard/admin": {};
