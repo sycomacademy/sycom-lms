@@ -9,7 +9,7 @@ import { feedback } from "./schema/feedback";
 
 /** Updatable profile columns (no id, userId, createdAt). */
 export type UpdateProfileData = Partial<
-  Pick<typeof profile.$inferInsert, "bio">
+  Pick<typeof profile.$inferInsert, "bio" | "settings">
 >;
 
 export const getProfileByUserId = async (
@@ -21,6 +21,7 @@ export const getProfileByUserId = async (
       id: profile.id,
       userId: profile.userId,
       bio: profile.bio,
+      settings: profile.settings,
       createdAt: profile.createdAt,
       updatedAt: profile.updatedAt,
     })
@@ -42,6 +43,7 @@ export const updateProfileByUserId = async (
       id: profile.id,
       userId: profile.userId,
       bio: profile.bio,
+      settings: profile.settings,
       createdAt: profile.createdAt,
       updatedAt: profile.updatedAt,
     });

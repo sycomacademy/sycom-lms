@@ -6,7 +6,7 @@ export default function AccountLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="max-w-3xl">
+    <div className="mb-10 max-w-3xl md:ml-12">
       <SecondaryMenu
         items={[
           { path: "/dashboard/settings", label: "General" },
@@ -14,7 +14,7 @@ export default function AccountLayout({
           { path: "/dashboard/settings/preferences", label: "Preferences" },
         ]}
       />
-      <main className="mt-8">{children}</main>
+      <section className="mt-6">{children}</section>
     </div>
   );
 }

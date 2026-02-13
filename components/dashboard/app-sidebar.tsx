@@ -93,8 +93,8 @@ const DEFAULT_ROLE: keyof typeof SIDEBAR_NAV_CONFIG = "student";
 export function AppSidebar() {
   const { role } = useUserQuery();
   const { open } = useSidebar();
-  const isMobile = useIsMobile();
   const pathname = usePathname();
+  const isMobile = useIsMobile();
   const isOpen = useDelayedValue(open, 195);
   const roleKey =
     role === "instructor" || role === "admin" ? role : DEFAULT_ROLE;
@@ -104,7 +104,6 @@ export function AppSidebar() {
     <Sidebar
       className="border-sidebar-border"
       collapsible="icon"
-      side={isMobile ? "right" : "left"}
       variant="inset"
     >
       <SidebarHeader className="border-sidebar-border">
@@ -123,7 +122,7 @@ export function AppSidebar() {
             <SidebarGroupLabel
               className={cn(
                 groupLabelCollapseClass,
-                !isOpen && "justify-center"
+                isOpen || isMobile ? "" : "justify-center"
               )}
             >
               {capitalize(groupLabel)}
@@ -137,7 +136,7 @@ export function AppSidebar() {
                         "text-sm",
                         menuButtonIconClass,
                         menuButtonCollapseClass,
-                        !isOpen && "justify-center"
+                        isOpen || isMobile ? "" : "justify-center"
                       )}
                       isActive={pathname === href}
                       render={

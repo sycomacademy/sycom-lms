@@ -85,7 +85,13 @@ export function useUserMutation() {
             }
             const prev = old as {
               user?: { name?: string; email?: string };
-              profile?: { bio?: string };
+              profile?: {
+                bio?: string;
+                settings?: {
+                  useDeviceTimezone?: boolean;
+                  enableFacehash?: boolean;
+                };
+              };
             };
             return {
               ...old,
@@ -94,8 +100,17 @@ export function useUserMutation() {
                   ? { ...prev.user, ...newData }
                   : prev.user,
               profile:
-                newData.bio !== undefined
-                  ? { ...prev.profile, bio: newData.bio }
+                newData.bio !== undefined || newData.settings !== undefined
+                  ? {
+                      ...prev.profile,
+                      ...(newData.bio !== undefined && { bio: newData.bio }),
+                      ...(newData.settings !== undefined && {
+                        settings: {
+                          ...prev.profile?.settings,
+                          ...newData.settings,
+                        },
+                      }),
+                    }
                   : prev.profile,
             } as ProfileData;
           }

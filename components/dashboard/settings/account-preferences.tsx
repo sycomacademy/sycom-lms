@@ -1,6 +1,7 @@
 "use client";
 
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -10,9 +11,68 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { toastManager } from "@/components/ui/toast";
+import { useUserMutation, useUserQuery } from "@/packages/hooks/use-user";
+import { capitalize } from "@/packages/utils/string";
+
+const DEFAULT_USE_DEVICE_TIMEZONE = true;
+const DEFAULT_ENABLE_FACEHASH = true;
 
 export function AccountPreferences() {
   const { theme, setTheme } = useTheme();
+  const { profile } = useUserQuery();
+  const mutation = useUserMutation();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const themeValue = theme ?? "system";
+  const selectValue = mounted ? capitalize(themeValue) : "System";
+
+  const useDeviceTimezone =
+    profile.settings?.useDeviceTimezone ?? DEFAULT_USE_DEVICE_TIMEZONE;
+  const enableFacehash =
+    profile.settings?.enableFacehash ?? DEFAULT_ENABLE_FACEHASH;
+
+  const handleUseDeviceTimezoneChange = (checked: boolean) => {
+    mutation.mutate(
+      {
+        settings: {
+          ...profile?.settings,
+          useDeviceTimezone: checked,
+        },
+      },
+      {
+        onSuccess: () => {
+          toastManager.add({
+            title: "Preferences updated",
+            type: "success",
+          });
+        },
+      }
+    );
+  };
+
+  const handleEnableFacehashChange = (checked: boolean) => {
+    mutation.mutate(
+      {
+        settings: {
+          ...profile?.settings,
+          enableFacehash: checked,
+        },
+      },
+      {
+        onSuccess: () => {
+          toastManager.add({
+            title: "Preferences updated",
+            type: "success",
+          });
+        },
+      }
+    );
+  };
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
@@ -35,7 +95,7 @@ export function AccountPreferences() {
                   setTheme(v);
                 }
               }}
-              value={theme ?? "system"}
+              value={selectValue}
             >
               <SelectTrigger className="w-32 shrink-0">
                 <SelectValue />
@@ -51,7 +111,7 @@ export function AccountPreferences() {
       </Card>
 
       {/* Email Notifications */}
-      <Card>
+      {/* <Card>
         <CardContent>
           <div className="flex flex-col gap-1.5">
             <h3 className="font-medium text-foreground text-sm">
@@ -84,10 +144,10 @@ export function AccountPreferences() {
             />
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Language & Region */}
-      <Card>
+      {/* <Card>
         <CardContent>
           <div className="flex items-center justify-between gap-4">
             <div className="flex flex-col gap-1.5">
@@ -110,88 +170,35 @@ export function AccountPreferences() {
             </Select>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Time zone */}
       <Card>
         <CardContent>
           <div className="flex flex-col gap-1.5">
-            <h3 className="font-medium text-foreground text-sm">Time zone</h3>
+            <h3 className="font-medium text-foreground text-sm">
+              User preferences
+            </h3>
             <p className="text-muted-foreground text-xs">
-              Defines the default time zone used for displaying times in the
-              app.
+              Configure your user preferences.
             </p>
           </div>
           <div className="mt-4">
             <SettingRow
-              defaultChecked
-              description="Automatically use your device's current timezone."
+              checked={useDeviceTimezone}
+              description="Automatically use your device's current timezone. This will be used to personalize the user experience."
+              disabled={mutation.isPending}
+              onCheckedChange={handleUseDeviceTimezoneChange}
               title="Use device timezone"
             />
+            <SettingRow
+              checked={enableFacehash}
+              description="If no profile picture is set, use FaceHash to generate a random profile picture."
+              disabled={mutation.isPending}
+              onCheckedChange={handleEnableFacehashChange}
+              title="Enable FaceHash"
+            />
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Time Display Format */}
-      <Card>
-        <CardContent>
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex flex-col gap-1.5">
-              <h3 className="font-medium text-foreground text-sm">
-                Time display format
-              </h3>
-              <p className="text-muted-foreground text-xs">
-                Choose between 12-hour or 24-hour clock format for displaying
-                time.
-              </p>
-            </div>
-            <Select defaultValue="12">
-              <SelectTrigger className="w-32 shrink-0">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="12">12 hours</SelectItem>
-                <SelectItem value="24">24 hours</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Date Display Format */}
-      <Card>
-        <CardContent>
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex flex-col gap-1.5">
-              <h3 className="font-medium text-foreground text-sm">
-                Date display format
-              </h3>
-              <p className="text-muted-foreground text-xs">
-                Select the format used to display dates throughout the app.
-              </p>
-            </div>
-            <Select defaultValue="mm-dd-yyyy">
-              <SelectTrigger className="w-36 shrink-0">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="mm-dd-yyyy">MM/DD/YYYY</SelectItem>
-                <SelectItem value="dd-mm-yyyy">DD/MM/YYYY</SelectItem>
-                <SelectItem value="yyyy-mm-dd">YYYY-MM-DD</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Start week on Monday */}
-      <Card>
-        <CardContent>
-          <SettingRow
-            defaultChecked={false}
-            description="Use Monday as the first day of the week in calendars and schedules."
-            title="Start week on Monday"
-          />
         </CardContent>
       </Card>
     </div>
@@ -201,11 +208,15 @@ export function AccountPreferences() {
 function SettingRow({
   title,
   description,
-  defaultChecked = false,
+  checked,
+  onCheckedChange,
+  disabled = false,
 }: {
   title: string;
   description: string;
-  defaultChecked?: boolean;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
@@ -213,7 +224,11 @@ function SettingRow({
         <p className="font-medium text-foreground text-xs">{title}</p>
         <p className="text-muted-foreground text-xs">{description}</p>
       </div>
-      <Switch defaultChecked={defaultChecked} />
+      <Switch
+        checked={checked}
+        disabled={disabled}
+        onCheckedChange={onCheckedChange}
+      />
     </div>
   );
 }

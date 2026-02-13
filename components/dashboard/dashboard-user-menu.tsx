@@ -38,7 +38,7 @@ const {
 
 export function DashboardUserMenu() {
   const router = useRouter();
-  const { user, isPending } = useUserQuery();
+  const { profile, user, isPending } = useUserQuery();
   const { setTheme, resolvedTheme } = useTheme();
   const shortcuts = useKeyboardShortcutLabels();
   const [signOutPending, setSignOutPending] = useState(false);
@@ -73,7 +73,12 @@ export function DashboardUserMenu() {
   if (!user) {
     return <Skeleton className="size-10 rounded-none" />;
   }
+  const enableFacehash = profile?.settings?.enableFacehash ?? true;
   const facehashName = `${user.name}`;
+  const initial =
+    user.name?.trim().charAt(0)?.toUpperCase() ??
+    user.email?.charAt(0)?.toUpperCase() ??
+    "?";
   const logoutDisabled = isPending || signOutPending;
   const logoutLabel = signOutPending ? "Signing out…" : "Log out";
 
@@ -87,12 +92,16 @@ export function DashboardUserMenu() {
                 <AvatarImage alt={user.name ?? "User"} src={user.image} />
               ) : null}
               <AvatarFallback>
-                <Facehash
-                  enableBlink
-                  intensity3d="dramatic"
-                  name={facehashName}
-                  size={32}
-                />
+                {enableFacehash ? (
+                  <Facehash
+                    enableBlink
+                    intensity3d="dramatic"
+                    name={facehashName}
+                    size={32}
+                  />
+                ) : (
+                  initial
+                )}
               </AvatarFallback>
             </Avatar>
           </Button>

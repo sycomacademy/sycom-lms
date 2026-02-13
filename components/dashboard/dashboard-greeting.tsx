@@ -21,30 +21,31 @@ function getTimeBasedGreeting(timezone?: string): string {
 }
 
 export function DashboardGreeting() {
-  const { timezone, user } = useUserQuery();
+  const { profile, timezone, user } = useUserQuery();
+
+  const useDeviceTimezone = profile?.settings?.useDeviceTimezone ?? true;
+  const useTimeBasedGreeting = useDeviceTimezone === true;
 
   const [greeting, setGreeting] = useState(() =>
-    getTimeBasedGreeting(timezone ?? undefined)
+    useTimeBasedGreeting
+      ? getTimeBasedGreeting(timezone ?? undefined)
+      : "Welcome"
   );
 
   useEffect(() => {
-    // Update greeting immediately when user timezone changes
+    if (!useTimeBasedGreeting) {
+      setGreeting("Welcome");
+      return;
+    }
     setGreeting(getTimeBasedGreeting(timezone ?? undefined));
-
-    // Set up interval to update greeting every 5 minutes
-    // This ensures the greeting changes naturally as time passes
     const interval = setInterval(
-      () => {
-        const newGreeting = getTimeBasedGreeting(timezone ?? undefined);
-        setGreeting(newGreeting);
-      },
+      () => setGreeting(getTimeBasedGreeting(timezone ?? undefined)),
       5 * 60 * 1000
-    ); // 5 minutes
-
+    );
     return () => clearInterval(interval);
-  }, [timezone]);
+  }, [timezone, useTimeBasedGreeting]);
 
-  const displayName = user?.name ?? user?.email?.split("@")[0];
+  const displayName = user?.name?.split(" ")[0] ?? user?.email?.split("@")[0];
 
   return (
     <h2 className="font-semibold text-foreground text-lg tracking-tight">

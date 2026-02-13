@@ -8,6 +8,13 @@
       "when": 1770916309482,
       "tag": "0000_ancient_magma",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1771019540317,
+      "tag": "0001_silent_serpent_society",
+      "breakpoints": true
     }
   ]
 }

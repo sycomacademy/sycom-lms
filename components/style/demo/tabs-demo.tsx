@@ -98,7 +98,7 @@ export function TabsDemo() {
       </Tabs>
       {/* Line variant. */}
       <Tabs defaultValue="preview">
-        <TabsList variant="line">
+        <TabsList variant="underline">
           <TabsTrigger value="preview">
             <AppWindowIcon />
             Preview
@@ -124,7 +124,7 @@ export function TabsDemo() {
       </Tabs>
       {/* Vertical orientation with line variant. */}
       <Tabs defaultValue="preview" orientation="vertical">
-        <TabsList variant="line">
+        <TabsList variant="underline">
           <TabsTrigger value="preview">
             <AppWindowIcon />
             Preview

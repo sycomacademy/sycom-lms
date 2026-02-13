@@ -1,4 +1,5 @@
 import { auth } from "@/packages/auth/auth";
+import type { UpdateProfileData } from "@/packages/db/queries";
 import {
   getProfileByUserId,
   updateProfileByUserId,
@@ -40,9 +41,16 @@ export const profileRouter = router({
         }
       }
 
-      if (input.bio !== undefined) {
+      if (input.bio !== undefined || input.settings !== undefined) {
+        const data: UpdateProfileData = {};
+        if (input.bio !== undefined) {
+          data.bio = input.bio;
+        }
+        if (input.settings !== undefined) {
+          data.settings = input.settings;
+        }
         updatedProfile = await updateProfileByUserId(db, {
-          data: { bio: input.bio },
+          data,
           userId,
         });
       }

@@ -1,7 +1,17 @@
-import { relations } from "drizzle-orm";
-import { pgTable, text } from "drizzle-orm/pg-core";
+import { relations, sql } from "drizzle-orm";
+import { jsonb, pgTable, text } from "drizzle-orm/pg-core";
 import { user } from "@/packages/db/schema/auth";
 import { createdAt, updatedAt } from "@/packages/db/schema/helper";
+
+export const profileSettingsDefault = {
+  enableFacehash: true,
+  useDeviceTimezone: true,
+} as const;
+
+export interface ProfileSettings {
+  enableFacehash?: boolean;
+  useDeviceTimezone?: boolean;
+}
 
 export const profile = pgTable("profile", {
   id: text("id").primaryKey(),
@@ -10,6 +20,9 @@ export const profile = pgTable("profile", {
     .unique()
     .references(() => user.id, { onDelete: "cascade" }),
   bio: text("bio").default(""),
+  settings: jsonb("settings")
+    .$type<ProfileSettings>()
+    .default(sql`'{"useDeviceTimezone":true,"enableFacehash":true}'::jsonb`),
   createdAt,
   updatedAt,
 });

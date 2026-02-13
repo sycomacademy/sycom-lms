@@ -15,14 +15,11 @@ const twitterHandleSchema = z
   .or(z.literal(""));
 
 /**
- * Profile Settings Schema
+ * Profile Settings Schema (stored in profile.settings JSONB)
  */
 export const profileSettingsSchema = z.object({
-  theme: z.enum(["light", "dark", "system"]).optional().default("system"),
-  emailNotifications: z.boolean().optional().default(true),
-  marketingEmails: z.boolean().optional().default(false),
-  courseReminders: z.boolean().optional().default(true),
-  weeklyDigest: z.boolean().optional().default(true),
+  useDeviceTimezone: z.boolean().optional().default(true),
+  enableFacehash: z.boolean().optional().default(true),
 });
 
 export type ProfileSettingsInput = z.infer<typeof profileSettingsSchema>;
@@ -84,6 +81,7 @@ export const updateAccountSchema = z.object({
   name: nameSchema.optional(),
   email: emailSchema.optional(),
   bio: z.string().max(500, "Bio must be less than 500 characters").optional(),
+  settings: profileSettingsSchema.partial().optional(),
 });
 
 export type UpdateAccountInput = z.infer<typeof updateAccountSchema>;
