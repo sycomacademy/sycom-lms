@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
   const redirectTo = raw.startsWith("/") ? raw : "/sign-in";
   const url = new URL(redirectTo, request.url);
   const res = NextResponse.redirect(url);
-  res.cookies.delete(AUTH_COOKIE);
+  // Clear with same path as Better Auth default so the browser actually removes the cookie
+  res.cookies.set(AUTH_COOKIE, "", { path: "/", maxAge: 0 });
   return res;
 }
