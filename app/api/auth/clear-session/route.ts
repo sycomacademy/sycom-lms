@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { auth } from "@/packages/auth/auth";
 import { AUTH_COOKIE } from "@/packages/auth/helper";
 
 /**
@@ -7,6 +8,9 @@ import { AUTH_COOKIE } from "@/packages/auth/helper";
  * Cookie mutation is only allowed in Route Handlers, not in layout RSC.
  */
 export async function GET(request: NextRequest) {
+  await auth.api.signOut({
+    headers: request.headers,
+  });
   const raw = request.nextUrl.searchParams.get("redirect") ?? "/sign-in";
   const redirectTo = raw.startsWith("/") ? raw : "/sign-in";
   const url = new URL(redirectTo, request.url);

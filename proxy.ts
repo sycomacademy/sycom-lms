@@ -1,6 +1,6 @@
+import { getSessionCookie } from "better-auth/cookies";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { AUTH_COOKIE } from "./packages/auth/helper";
 
 /**
  * Optimistic cookie-based auth check.
@@ -28,19 +28,19 @@ const AUTH_ROUTES = [
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const hasSession = request.cookies.has(AUTH_COOKIE);
+  const sessionCookie = getSessionCookie(request);
 
   // Protected routes: redirect to sign-in if no session cookie
   const isProtected = PROTECTED_PREFIXES.some((prefix) =>
     pathname.startsWith(prefix)
   );
-  if (isProtected && !hasSession) {
+  if (isProtected && !sessionCookie) {
     return NextResponse.redirect(new URL("/sign-in", request.url));
   }
 
   // Auth routes: redirect to dashboard if already signed in
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
-  if (isAuthRoute && hasSession) {
+  if (isAuthRoute && sessionCookie) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
