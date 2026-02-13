@@ -1,16 +1,17 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
 import {
   BookOpenIcon,
   HeadphonesIcon,
   HelpCircleIcon,
   LayoutDashboardIcon,
   LibraryIcon,
-  ShieldCheckIcon,
   UserIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ComponentProps } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,48 +29,76 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
+import { useDelayedValue } from "@/packages/hooks/use-delayed-value";
 import { useIsMobile } from "@/packages/hooks/use-mobile";
 import { useUserQuery } from "@/packages/hooks/use-user";
 import { cn } from "@/packages/utils/cn";
+import { capitalize } from "@/packages/utils/string";
 
-const mainNavItems = [
-  { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
-  { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
-  { href: "/dashboard/journey", label: "My journey", icon: BookOpenIcon },
-  { href: "/dashboard/support", label: "Support", icon: HeadphonesIcon },
-  { href: "/dashboard/account", label: "Account", icon: UserIcon },
-] as const;
+interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+}
 
-const myCoursesNavItem = {
-  href: "/dashboard/courses",
-  label: "My courses",
-  icon: BookOpenIcon,
-} as const;
-
-const adminNavItem = {
-  href: "/dashboard/admin",
-  label: "Admin",
-  icon: ShieldCheckIcon,
-} as const;
+/** Role-keyed sidebar config: each role has groups (label → array of links). No shared main group. */
+const SIDEBAR_NAV_CONFIG: Record<
+  "student" | "instructor" | "admin",
+  Record<string, NavItem[]>
+> = {
+  student: {
+    main: [
+      { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
+      { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
+      { href: "/dashboard/journey", label: "My journey", icon: BookOpenIcon },
+      { href: "/dashboard/support", label: "Support", icon: HeadphonesIcon },
+      { href: "/dashboard/account", label: "Account", icon: UserIcon },
+    ],
+  },
+  instructor: {
+    main: [
+      { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
+      { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
+      { href: "/dashboard/journey", label: "My journey", icon: BookOpenIcon },
+      { href: "/dashboard/support", label: "Support", icon: HeadphonesIcon },
+      { href: "/dashboard/account", label: "Account", icon: UserIcon },
+    ],
+  },
+  admin: {
+    main: [
+      { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
+      { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
+      { href: "/dashboard/journey", label: "My journey", icon: BookOpenIcon },
+      { href: "/dashboard/support", label: "Support", icon: HeadphonesIcon },
+      { href: "/dashboard/account", label: "Account", icon: UserIcon },
+    ],
+  },
+};
 
 /** Icon size one step up from default (size-4 → size-5) in both states. */
 const menuButtonIconClass = "[&_svg]:size-5";
 
 /** Keep menu button height/padding when collapsed, center icon, hide label to avoid letter peek. */
 const menuButtonCollapseClass =
-  "group-data-[collapsible=icon]:size-auto! group-data-[collapsible=icon]:h-12! group-data-[collapsible=icon]:min-h-12! group-data-[collapsible=icon]:w-full! group-data-[collapsible=icon]:p-2! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:[&>span:last-child]:hidden";
+  "group-data-[collapsible=icon]:size-auto! group-data-[collapsible=icon]:h-12! group-data-[collapsible=icon]:min-h-12! group-data-[collapsible=icon]:w-full! group-data-[collapsible=icon]:p-2!  group-data-[collapsible=icon]:[&>span:last-child]:hidden";
 
 /** Keep group label visible and centered when sidebar is collapsed (no layout shift). */
 const groupLabelCollapseClass =
-  "group-data-[collapsible=icon]:mt-0 group-data-[collapsible=icon]:opacity-100 group-data-[collapsible=icon]:justify-center";
+  "group-data-[collapsible=icon]:mt-0 group-data-[collapsible=icon]:opacity-100 ";
+
+const DEFAULT_ROLE: keyof typeof SIDEBAR_NAV_CONFIG = "student";
 
 export function AppSidebar() {
   const { role } = useUserQuery();
+  const { open } = useSidebar();
   const isMobile = useIsMobile();
   const pathname = usePathname();
-  const isInstructor = role === "instructor";
-  const isAdmin = role === "admin";
+  const isOpen = useDelayedValue(open, 195);
+  const roleKey =
+    role === "instructor" || role === "admin" ? role : DEFAULT_ROLE;
+  const navGroups = SIDEBAR_NAV_CONFIG[roleKey];
 
   return (
     <Sidebar
@@ -89,87 +118,45 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className={groupLabelCollapseClass}>
-            Main
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainNavItems.map(({ href, label, icon: Icon }) => (
-                <SidebarMenuItem key={href}>
-                  <SidebarMenuButton
-                    className={cn(
-                      "text-sm",
-                      menuButtonIconClass,
-                      menuButtonCollapseClass
-                    )}
-                    isActive={pathname === href}
-                    render={<Link href={href} />}
-                    size="lg"
-                    tooltip={label}
-                  >
-                    <Icon />
-                    <span>{label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        {isInstructor ? (
-          <SidebarGroup>
-            <SidebarGroupLabel className={groupLabelCollapseClass}>
-              Teach
+        {Object.entries(navGroups).map(([groupLabel, items]) => (
+          <SidebarGroup key={groupLabel}>
+            <SidebarGroupLabel
+              className={cn(
+                groupLabelCollapseClass,
+                !isOpen && "justify-center"
+              )}
+            >
+              {capitalize(groupLabel)}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    className={cn(
-                      "text-sm",
-                      menuButtonIconClass,
-                      menuButtonCollapseClass
-                    )}
-                    isActive={pathname === myCoursesNavItem.href}
-                    render={<Link href={myCoursesNavItem.href} />}
-                    size="lg"
-                    tooltip={myCoursesNavItem.label}
-                  >
-                    <BookOpenIcon />
-                    <span>{myCoursesNavItem.label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {items.map(({ href, label, icon: Icon }) => (
+                  <SidebarMenuItem key={href}>
+                    <SidebarMenuButton
+                      className={cn(
+                        "text-sm",
+                        menuButtonIconClass,
+                        menuButtonCollapseClass,
+                        !isOpen && "justify-center"
+                      )}
+                      isActive={pathname === href}
+                      render={
+                        <Link
+                          href={href as ComponentProps<typeof Link>["href"]}
+                        />
+                      }
+                      size="lg"
+                      tooltip={label}
+                    >
+                      <Icon />
+                      <span>{label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        ) : null}
-        {isAdmin ? (
-          <SidebarGroup>
-            <SidebarGroupLabel className={groupLabelCollapseClass}>
-              Admin
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    className={cn(
-                      "text-sm",
-                      menuButtonIconClass,
-                      menuButtonCollapseClass
-                    )}
-                    isActive={pathname === adminNavItem.href}
-                    render={<Link href={adminNavItem.href} />}
-                    size="lg"
-                    tooltip={adminNavItem.label}
-                  >
-                    <ShieldCheckIcon />
-                    <span>{adminNavItem.label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ) : null}
+        ))}
       </SidebarContent>
       <SidebarFooter>
         <DropdownMenu>
@@ -179,7 +166,8 @@ export function AppSidebar() {
                 className={cn(
                   "text-sm",
                   menuButtonIconClass,
-                  menuButtonCollapseClass
+                  menuButtonCollapseClass,
+                  !isOpen && "justify-center"
                 )}
                 size="lg"
                 tooltip="Help & support"

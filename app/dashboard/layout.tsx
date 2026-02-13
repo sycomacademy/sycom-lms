@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { getSession } from "@/packages/auth/helper";
@@ -11,6 +12,10 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const cookieStore = await cookies();
+  const sidebarState = cookieStore.get("sidebar_state");
+  const open = sidebarState?.value === "true";
+
   authLogger.debug("requesting session");
   const session = await getSession();
 
@@ -23,7 +28,7 @@ export default async function DashboardLayout({
 
   return (
     <HydrateClient>
-      <DashboardShell>{children}</DashboardShell>
+      <DashboardShell defaultOpen={open}>{children}</DashboardShell>
     </HydrateClient>
   );
 }

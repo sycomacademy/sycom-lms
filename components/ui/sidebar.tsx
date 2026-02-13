@@ -12,8 +12,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { PanelLeftCloseIcon } from "@/components/icons/panel-left-close";
-import { PanelLeftOpenIcon } from "@/components/icons/panel-left-open";
+import { Icon } from "@/components/icons/";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -33,10 +32,8 @@ import {
 import { useAnimatedIcon } from "@/packages/hooks/use-animated-icon";
 import { useIsMobile } from "@/packages/hooks/use-mobile";
 import { cn } from "@/packages/utils/cn";
-import { createLoggerWithContext } from "@/packages/utils/logger";
-import { MenuIcon } from "../icons/menu-icon";
 
-const sidebarLogger = createLoggerWithContext("client:sidebar");
+const { MenuIcon, PanelLeftCloseIcon, PanelLeftOpenIcon } = Icon;
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -55,9 +52,7 @@ interface SidebarContextProps {
   toggleSidebar: () => void;
 }
 
-const SidebarContext = createContext<SidebarContextProps | undefined>(
-  undefined
-);
+const SidebarContext = createContext<SidebarContextProps | null>(null);
 
 function useSidebar() {
   const context = useContext(SidebarContext);
@@ -97,21 +92,8 @@ function SidebarProvider({
         _setOpen(openState);
       }
 
-      // Persist sidebar state in a cookie (client-safe; next/headers cookies() is server-only).
-      try {
-        // biome-ignore lint/suspicious/noDocumentCookie: client-only sidebar state; Cookie Store API not needed here
-        document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
-      } catch (err) {
-        if (err instanceof Error) {
-          sidebarLogger.warn("Sidebar state cookie could not be set:", {
-            error: err.message,
-          });
-        } else {
-          sidebarLogger.warn("Sidebar state cookie could not be set:", {
-            error: err,
-          });
-        }
-      }
+      // biome-ignore lint/suspicious/noDocumentCookie: we need to set the cookie to persist the sidebar state
+      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
     },
     [setOpenProp, open]
   );
@@ -546,6 +528,18 @@ function SidebarMenuButton({
     tooltip?: string | React.ComponentProps<typeof TooltipContent>;
   } & VariantProps<typeof sidebarMenuButtonVariants>) {
   const { isMobile, state } = useSidebar();
+
+  // When a tooltip is present, wrap with TooltipTrigger while preserving any
+  // custom render element (e.g. <Link>) so it stays the rendered tag.
+  let resolvedRender = render;
+  if (tooltip) {
+    resolvedRender = render ? (
+      <TooltipTrigger render={render} />
+    ) : (
+      TooltipTrigger
+    );
+  }
+
   const comp = useRender({
     defaultTagName: "button",
     props: mergeProps<"button">(
@@ -554,7 +548,7 @@ function SidebarMenuButton({
       },
       props
     ),
-    render: tooltip ? TooltipTrigger : render,
+    render: resolvedRender,
     state: {
       slot: "sidebar-menu-button",
       sidebar: "menu-button",

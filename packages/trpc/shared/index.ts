@@ -10,6 +10,11 @@ export function makeQueryClient() {
       queries: {
         staleTime: 2 * 60 * 1000,
       },
+      mutations: {
+        onError: (error) => {
+          console.error("[mutation error]", error.message, error);
+        },
+      },
       dehydrate: {
         serializeData: superjson.serialize,
         shouldDehydrateQuery: (query) =>

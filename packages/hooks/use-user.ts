@@ -11,8 +11,7 @@ const useUserLogger = createLoggerWithContext("client:use-user");
 
 export function useUserQuery() {
   const trpc = useTRPC();
-  const { data: session, isPending: sessionIsPending } =
-    authClient.useSession();
+  const { data: session } = authClient.useSession();
   const profileQueryOptions = trpc.profile.getProfile.queryOptions();
   const {
     data: profile,
@@ -52,7 +51,7 @@ export function useUserQuery() {
     session,
     isSignedIn: !!session?.user,
     user: session?.user,
-    isPending: profileIsPending || sessionIsPending,
+    isPending: profileIsPending,
     isFetching: profileIsFetching,
     ipAddress,
     userAgent,

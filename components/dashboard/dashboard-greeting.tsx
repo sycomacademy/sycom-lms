@@ -1,6 +1,7 @@
 "use client";
 import { TZDate } from "@date-fns/tz";
 import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useUserQuery } from "@/packages/hooks/use-user";
 
 function getTimeBasedGreeting(timezone?: string): string {
@@ -43,9 +44,14 @@ export function DashboardGreeting() {
     return () => clearInterval(interval);
   }, [timezone]);
 
+  const displayName = user?.name ?? user?.email?.split("@")[0];
+
   return (
     <h2 className="font-semibold text-foreground text-lg tracking-tight">
-      {greeting}, {user?.name ?? user?.email?.split("@")[0]}
+      {greeting},{" "}
+      {displayName ?? (
+        <Skeleton className="inline-block h-5 w-24 align-middle" />
+      )}
     </h2>
   );
 }

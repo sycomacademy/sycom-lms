@@ -158,12 +158,16 @@ export function SignInForm() {
                   <FormControl>
                     <Checkbox
                       checked={field.value}
+                      id="rememberMe"
                       onCheckedChange={(checked) =>
                         field.onChange(checked === true)
                       }
                     />
                   </FormControl>
-                  <FieldLabel className="font-normal text-muted-foreground text-xs">
+                  <FieldLabel
+                    className="font-normal text-muted-foreground text-xs"
+                    htmlFor="rememberMe"
+                  >
                     Remember me
                   </FieldLabel>
                 </div>

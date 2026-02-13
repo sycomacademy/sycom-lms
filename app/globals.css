@@ -151,3 +151,25 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Sidebar delayed centering - content only centers after transition completes */
+.sidebar-delayed-center {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 150ms ease-out,
+    visibility 150ms ease-out;
+  transition-delay: 0ms;
+}
+
+[data-state="collapsed"] .sidebar-delayed-center {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 200ms;
+}
+
+@starting-style {
+  [data-state="collapsed"] .sidebar-delayed-center {
+    opacity: 0;
+  }
+}
