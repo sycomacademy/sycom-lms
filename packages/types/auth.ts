@@ -46,3 +46,12 @@ export const resetPasswordSchema = z
     path: ["confirmPassword"],
   });
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+/**
+ * User update payload (Better Auth). All fields optional.
+ */
+export const updateUserSchema = z.object({
+  name: nameSchema.optional(),
+  email: emailSchema.optional(),
+});
+export type UpdateUserInput = z.infer<typeof updateUserSchema>;

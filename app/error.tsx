@@ -18,7 +18,7 @@ export default function DashboardError({
   }, [error]);
 
   return (
-    <div className="flex h-full flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
+    <div className="flex h-screen flex-col items-center justify-center gap-4 p-8 text-center">
       <h2 className="font-semibold text-foreground text-lg">
         Something went wrong
       </h2>

@@ -7,7 +7,7 @@ import {
   HelpCircleIcon,
   LayoutDashboardIcon,
   LibraryIcon,
-  UserIcon,
+  SettingsIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -54,7 +54,7 @@ const SIDEBAR_NAV_CONFIG: Record<
       { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
       { href: "/dashboard/journey", label: "My journey", icon: BookOpenIcon },
       { href: "/dashboard/support", label: "Support", icon: HeadphonesIcon },
-      { href: "/dashboard/account", label: "Account", icon: UserIcon },
+      { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
     ],
   },
   instructor: {
@@ -63,7 +63,7 @@ const SIDEBAR_NAV_CONFIG: Record<
       { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
       { href: "/dashboard/journey", label: "My journey", icon: BookOpenIcon },
       { href: "/dashboard/support", label: "Support", icon: HeadphonesIcon },
-      { href: "/dashboard/account", label: "Account", icon: UserIcon },
+      { href: "/dashboard/settings  ", label: "Settings", icon: SettingsIcon },
     ],
   },
   admin: {
@@ -72,7 +72,7 @@ const SIDEBAR_NAV_CONFIG: Record<
       { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
       { href: "/dashboard/journey", label: "My journey", icon: BookOpenIcon },
       { href: "/dashboard/support", label: "Support", icon: HeadphonesIcon },
-      { href: "/dashboard/account", label: "Account", icon: UserIcon },
+      { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
     ],
   },
 };

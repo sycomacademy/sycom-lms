@@ -116,16 +116,13 @@ export function DashboardUserMenu() {
             </Badge>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            {...userHover}
-            render={<Link href="/dashboard/account" />}
-          >
+          <DropdownMenuItem {...userHover} render={<Link href="/dashboard" />}>
             <UserIcon ref={userIconRef} />
             <span className="flex-1">Profile</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             {...settingsHover}
-            render={<Link href="/dashboard/account/settings" />}
+            render={<Link href="/dashboard/settings" />}
           >
             <SettingsIcon ref={settingsIconRef} />
             <span className="flex-1">Settings</span>

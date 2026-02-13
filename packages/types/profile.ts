@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { emailSchema, nameSchema } from "@/packages/types/auth";
 
 /**
  * URL validation helper
@@ -74,3 +75,15 @@ export const getProfileByUserIdSchema = z.object({
 });
 
 export type GetProfileByUserIdInput = z.infer<typeof getProfileByUserIdSchema>;
+
+/**
+ * Combined account update input for profile.update (user + profile fields).
+ * All fields optional; only provided fields are updated.
+ */
+export const updateAccountSchema = z.object({
+  name: nameSchema.optional(),
+  email: emailSchema.optional(),
+  bio: z.string().max(500, "Bio must be less than 500 characters").optional(),
+});
+
+export type UpdateAccountInput = z.infer<typeof updateAccountSchema>;

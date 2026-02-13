@@ -16,7 +16,7 @@ export function DashboardShell({
     <SidebarProvider defaultOpen={defaultOpen}>
       <AppSidebar />
       <SidebarInset
-        className="flex flex-col md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-0"
+        className="flex max-h-[calc(100vh-16px)] flex-col overflow-scroll md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-0"
         role="main"
       >
         <DashboardHeader />
