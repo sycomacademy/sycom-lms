@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import AuthCheck from "@/components/auth/auth-check";
 import { SignUpForm } from "@/components/auth/sign-up-form";
 
 export const metadata: Metadata = {
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
 };
 
 export default async function SignUpPage() {
+  <AuthCheck isOnLoggedInPage={false} />;
   return (
     <div className="flex h-full w-full flex-col">
       <div className="flex h-full w-full items-center justify-center">

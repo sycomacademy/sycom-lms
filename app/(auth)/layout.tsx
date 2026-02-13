@@ -1,20 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import AuthCheck from "@/components/auth/auth-check";
 import { AuthLeftPanel } from "@/components/auth/left-panel";
 import { LoginTestimonials } from "@/components/auth/testimonials";
-import { getSession } from "@/packages/auth/helper";
 
 export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSession();
-
-  if (session) {
-    redirect("/dashboard");
-  }
+  <AuthCheck isOnLoggedInPage={false} />;
   return (
     <div className="flex min-h-svh bg-background p-1">
       <div className="relative hidden overflow-hidden bg-foreground lg:flex lg:w-1/2">

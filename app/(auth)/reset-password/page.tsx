@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import AuthCheck from "@/components/auth/auth-check";
 import { ResetPasswordForm } from "@/components/auth/reset-password-form";
 import { Button } from "@/components/ui/button";
 
@@ -13,6 +14,7 @@ export default async function ResetPasswordPage({
 }: {
   searchParams: Promise<{ token?: string; error?: string }>;
 }) {
+  <AuthCheck isOnLoggedInPage={false} />;
   const { token, error } = await searchParams;
 
   if (error === "INVALID_TOKEN" || !token) {

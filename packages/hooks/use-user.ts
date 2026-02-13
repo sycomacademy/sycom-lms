@@ -4,7 +4,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useTRPC } from "@/packages/trpc/client";
 import { createLoggerWithContext } from "../utils/logger";
-import { isValidTimezone } from "../utils/timezone";
+import { isValidTimezone } from "../utils/time";
 
 const useUserLogger = createLoggerWithContext("client:use-user");
 

@@ -1,11 +1,11 @@
-"use client";
-
+import AuthCheck from "@/components/auth/auth-check";
 import { AccountGeneral } from "@/components/dashboard/account/account-general";
 import { AccountPreferences } from "@/components/dashboard/account/account-preferences";
 import { AccountSecurity } from "@/components/dashboard/account/account-security";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function DashboardAccountPage() {
+  <AuthCheck isOnLoggedInPage={true} />;
   return (
     <div className="flex flex-col gap-6">
       <Tabs defaultValue="general">
