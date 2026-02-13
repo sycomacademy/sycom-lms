@@ -12,7 +12,7 @@ Learn cybersecurity with hands-on labs, certification prep, and career-focused t
 - **Env**: T3 Env (`@t3-oss/env-nextjs`)
 - **AI**: Vercel AI SDK, Anthropic
 - **Code quality**: Biome (via Ultracite), Lefthook
-- **Email**: SendGrid
+- **Email**: Resend (sendgrid for backup)
 - **CI**: GitHub Actions (Neon workflow, reset-staging)
 
 ## Scripts
@@ -68,8 +68,8 @@ All query functions live in `packages/db/queries/` and are used directly in Reac
 
 Run `bun run db:seed` to populate the database. This runs all seeds in `packages/db/seed/`:
 
-1. **main** — instructors, courses, pathways, authors, blog posts, FAQs, features, testimonials  
-2. **lessons** — CISSP and Network+ course content, quiz questions  
+1. **main** — instructors, courses, pathways, authors, blog posts, FAQs, features, testimonials
+2. **lessons** — CISSP and Network+ course content, quiz questions
 3. **migrate-images** — uploads `public/images/` to Vercel Blob and updates DB (skipped if `BLOB_READ_WRITE_TOKEN` is not set)
 
 All seeds are **idempotent**: safe to run multiple times (uses `ON CONFLICT DO NOTHING` and conditional updates).

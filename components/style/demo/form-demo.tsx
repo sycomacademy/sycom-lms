@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -34,6 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { toastManager } from "@/components/ui/toast";
 import { cn } from "@/packages/utils/cn";
 
 const items = [
@@ -106,7 +106,8 @@ export function FormDemo() {
   });
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
-    toast("You submitted the following values:", {
+    toastManager.add({
+      title: "You submitted the following values:",
       description: (
         <pre className="mt-2 w-[320px] rounded-md bg-neutral-950 p-4">
           <code className="text-white">{JSON.stringify(data, null, 2)}</code>
