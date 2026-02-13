@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
+import AuthCheck from "@/components/auth/auth-check";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { HydrateClient, prefetch, trpc } from "@/packages/trpc/server";
-import AuthCheck from "@/components/auth/auth-check";
 
 export default async function DashboardLayout({
   children,
