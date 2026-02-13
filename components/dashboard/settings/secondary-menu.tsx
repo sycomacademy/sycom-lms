@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { AppRoutes } from "@/.next/dev/types/routes";
 import { Tabs, TabsList, TabsTab } from "@/components/ui/tabs";
+import type { AppRoutes } from "@/routes";
 
 export interface SecondaryMenuItem {
   path: AppRoutes;
