@@ -1,7 +1,7 @@
 "use client";
 
 import { type QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createTRPCClient, httpBatchLink, loggerLink } from "@trpc/client";
+import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import { createTRPCContext } from "@trpc/tanstack-react-query";
 import type React from "react";
 import { useState } from "react";
@@ -47,26 +47,6 @@ export const TRPCReactProvider = (
             });
           },
           transformer: superjson,
-        }),
-        loggerLink({
-          enabled: (opts) =>
-            process.env.NODE_ENV === "development" ||
-            (opts.direction === "down" && opts.result instanceof Error),
-          logger: (opts) => {
-            const prefix = "[client:tRPC]";
-            const direction =
-              opts.direction === "up" ? "→ request" : "← response";
-            const path = "path" in opts ? opts.path : "?";
-            if (opts.direction === "up") {
-              console.debug(`${prefix} ${direction} ${path}`, opts.input ?? {});
-            } else {
-              const status = opts.result instanceof Error ? "error" : "ok";
-              const elapsed = "elapsedMs" in opts ? ` ${opts.elapsedMs}ms` : "";
-              console.debug(
-                `${prefix} ${direction} ${path} (${status})${elapsed}`
-              );
-            }
-          },
         }),
       ],
     })

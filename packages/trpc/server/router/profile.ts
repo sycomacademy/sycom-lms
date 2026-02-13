@@ -3,6 +3,11 @@ import { protectedProcedure, router } from "../init";
 
 export const profileRouter = router({
   getProfile: protectedProcedure.query(async ({ ctx: { db, session } }) => {
-    return getProfileByUserId(db, { userId: session.user.id });
+    const profile = await getProfileByUserId(db, { userId: session.user.id });
+    return {
+      profile,
+      session: session.session,
+      user: session.user,
+    };
   }),
 });

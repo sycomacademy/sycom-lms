@@ -10,9 +10,9 @@ const authLogger = createLoggerWithContext("auth:getSession");
  * getSession() calls (e.g. in layout + page + Server Actions) only hit auth once.
  */
 export const getSession = cache(async () => {
-  authLogger.info("fetching session");
+  authLogger.debug("fetching session");
   const h = await headers();
   const session = await auth.api.getSession({ headers: h });
-  authLogger.info("session resolved", { hasSession: !!session?.user });
+  authLogger.debug("session resolved", { hasSession: !!session?.user });
   return session;
 });

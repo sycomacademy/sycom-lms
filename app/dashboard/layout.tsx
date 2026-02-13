@@ -1,11 +1,6 @@
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { getSession } from "@/packages/auth/helper";
-import { getServerTrpc, HydrateClient, prefetch } from "@/packages/trpc/server";
-import { createLoggerWithContext } from "@/packages/utils/logger";
-
-const authLogger = createLoggerWithContext("auth:layout");
+import { HydrateClient, prefetch, trpc } from "@/packages/trpc/server";
 
 export default async function DashboardLayout({
   children,
@@ -16,15 +11,7 @@ export default async function DashboardLayout({
   const sidebarState = cookieStore.get("sidebar_state");
   const open = sidebarState?.value === "true";
 
-  authLogger.debug("requesting session");
-  const session = await getSession();
-
-  if (!session) {
-    redirect("/sign-in");
-  }
-
-  const trpc = await getServerTrpc();
-  await prefetch(trpc.profile.getProfile.queryOptions());
+  prefetch(trpc.profile.getProfile.queryOptions());
 
   return (
     <HydrateClient>

@@ -33,7 +33,7 @@ const loggingMiddleware = t.middleware(async ({ next, path, type, ctx }) => {
   const durationMs = Math.round(performance.now() - start);
   const ok = result.ok;
 
-  trpcLogger.info(`${type} ${path}`, {
+  trpcLogger.debug(`${type} ${path}`, {
     path,
     type,
     userId,

@@ -2,18 +2,15 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: so that the prefetch function works from the guide */
 import "server-only";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
-import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import {
   createTRPCOptionsProxy,
   type TRPCQueryOptions,
 } from "@trpc/tanstack-react-query";
-import { cookies, headers } from "next/headers";
+import { headers } from "next/headers";
 import { NextRequest } from "next/server";
 import React, { cache } from "react";
-import superjson from "superjson";
 import { getWebsiteUrl } from "@/packages/env/utils";
 import { createContext } from "@/packages/trpc/server/context";
-import type { AppRouter } from "@/packages/trpc/server/router";
 import { appRouter } from "@/packages/trpc/server/router";
 import { makeQueryClient } from "@/packages/trpc/shared";
 import { createLoggerWithContext } from "@/packages/utils/logger";
@@ -22,35 +19,20 @@ export const getQueryClient = cache(makeQueryClient);
 
 const trpcLogger = createLoggerWithContext("trpc:server");
 
-async function getServerTrpcClient() {
-  const cookieStore = await cookies();
-  return createTRPCClient<AppRouter>({
-    links: [
-      httpBatchLink({
-        url: `${getWebsiteUrl()}/api/trpc`,
-        headers: () => ({
-          Cookie: cookieStore.toString(),
-        }),
-        fetch(url, options) {
-          return fetch(url, {
-            ...options,
-            credentials: "include",
-          });
-        },
-        transformer: superjson,
-      }),
-    ],
+const trpcContext = async () => {
+  const headersList = await headers();
+  const req = new NextRequest(getWebsiteUrl(), {
+    headers: headersList,
   });
-}
+  const ctx = await createContext(req);
+  return ctx;
+};
 
-export async function getServerTrpc() {
-  const client = await getServerTrpcClient();
-  return createTRPCOptionsProxy<AppRouter>({
-    client,
-    router: appRouter,
-    queryClient: getQueryClient(),
-  });
-}
+export const trpc = createTRPCOptionsProxy({
+  ctx: trpcContext,
+  router: appRouter,
+  queryClient: getQueryClient,
+});
 
 /**
  * Prefetch and await completion. Use when you need data in cache before first paint.
@@ -91,10 +73,6 @@ export function HydrateClient(props: { children: React.ReactNode }) {
 }
 
 export const getCaller = cache(async () => {
-  const headersList = await headers();
-  const req = new NextRequest(getWebsiteUrl(), {
-    headers: headersList,
-  });
-  const ctx = await createContext(req);
+  const ctx = await trpcContext();
   return appRouter.createCaller(ctx);
 });

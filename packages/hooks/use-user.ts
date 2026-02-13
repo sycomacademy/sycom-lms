@@ -1,8 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { authClient } from "@/packages/auth/auth-client";
 import { useTRPC } from "@/packages/trpc/client";
 import { createLoggerWithContext } from "../utils/logger";
 import { isValidTimezone } from "../utils/timezone";
@@ -11,26 +10,26 @@ const useUserLogger = createLoggerWithContext("client:use-user");
 
 export function useUserQuery() {
   const trpc = useTRPC();
-  const { data: session } = authClient.useSession();
+
   const profileQueryOptions = trpc.profile.getProfile.queryOptions();
   const {
-    data: profile,
+    data: userData,
     isPending: profileIsPending,
     isFetching: profileIsFetching,
-  } = useQuery({
+  } = useSuspenseQuery({
     ...profileQueryOptions,
-    enabled: !!session?.user,
   });
 
-  const ipAddress = session?.session.ipAddress;
-  const userAgent = session?.session.userAgent;
-  const role = session?.user?.role;
+  const profile = userData.profile;
+  const session = userData.session;
+  const user = userData.user;
+
   // Track if we've already attempted detection in this session
   const hasAttemptedDetection = useRef(false);
   const [detectedTimezone, setDetectedTimezone] = useState<string | null>(null);
 
   useEffect(() => {
-    if (hasAttemptedDetection.current || !session?.user) {
+    if (hasAttemptedDetection.current || !user) {
       return;
     }
 
@@ -44,18 +43,17 @@ export function useUserQuery() {
     } finally {
       hasAttemptedDetection.current = true;
     }
-  }, [session?.user]);
+  }, [user]);
 
   return {
     profile,
     session,
-    isSignedIn: !!session?.user,
-    user: session?.user,
+    isSignedIn: !!user,
+    user,
     isPending: profileIsPending,
     isFetching: profileIsFetching,
-    ipAddress,
-    userAgent,
     timezone: detectedTimezone,
-    role,
+    ipAddress: session.ipAddress,
+    userAgent: session.userAgent,
   };
 }

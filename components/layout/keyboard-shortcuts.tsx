@@ -83,7 +83,6 @@ export function KeyboardShortcuts() {
       {
         key: "d",
         meta: true,
-        preventDefault: true,
         onKey: toggleTheme,
       },
     ],
@@ -94,7 +93,6 @@ export function KeyboardShortcuts() {
       {
         key: "l",
         ctrl: true,
-        preventDefault: true,
         onKey: handleSignOut,
       },
     ],
