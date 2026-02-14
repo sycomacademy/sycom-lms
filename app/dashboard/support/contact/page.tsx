@@ -1,11 +1,11 @@
-import { ReportForm } from "@/components/dashboard/support/report-form";
+import { ContactInfo } from "@/components/dashboard/support/contact-info";
 import { dashboardGuard } from "@/packages/auth/helper";
 
-export default async function SupportReportPage() {
+export default async function SupportContactPage() {
   await dashboardGuard();
   return (
     <div className="flex flex-col gap-6">
-      <ReportForm />
+      <ContactInfo />
     </div>
   );
 }
