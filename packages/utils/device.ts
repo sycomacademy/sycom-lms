@@ -9,6 +9,9 @@ export function getOsFromUa(ua: string): string {
   if (ua.includes("win")) {
     return "Windows";
   }
+  if (ua.includes("iphone") || ua.includes("ipad")) {
+    return "iOS";
+  }
   if (ua.includes("mac")) {
     return "macOS";
   }
@@ -18,9 +21,7 @@ export function getOsFromUa(ua: string): string {
   if (ua.includes("android")) {
     return "Android";
   }
-  if (ua.includes("iphone") || ua.includes("ipad")) {
-    return "iOS";
-  }
+
   return "Unknown";
 }
 
@@ -55,3 +56,9 @@ export function formatDeviceLabel(userAgent?: string | null): string {
 export function isMobileAgent(userAgent?: string | null): boolean {
   return MOBILE_UA.test((userAgent ?? "").toLowerCase());
 }
+
+console.log(
+  formatDeviceLabel(
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Mobile/15E148 Safari/604.1"
+  )
+);
