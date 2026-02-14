@@ -1,6 +1,7 @@
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { publicProcedure, router } from "../init";
 import { feedbackRouter } from "./feedback";
+import { fileRouter } from "./file";
 import { profileRouter } from "./profile";
 
 export const appRouter = router({
@@ -8,6 +9,7 @@ export const appRouter = router({
     return "OK";
   }),
   feedback: feedbackRouter,
+  file: fileRouter,
   profile: profileRouter,
 });
 

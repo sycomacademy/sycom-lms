@@ -24,13 +24,20 @@ export const profileRouter = router({
       let updatedUser = session.user;
       let updatedProfile: typeof profile.$inferSelect | null = null;
 
-      if (input.name !== undefined || input.email !== undefined) {
-        const body: { name?: string; email?: string } = {};
+      if (
+        input.name !== undefined ||
+        input.email !== undefined ||
+        input.image !== undefined
+      ) {
+        const body: { name?: string; email?: string; image?: string } = {};
         if (input.name !== undefined) {
           body.name = input.name;
         }
         if (input.email !== undefined) {
           body.email = input.email;
+        }
+        if (input.image !== undefined) {
+          body.image = input.image;
         }
         const result = (await auth.api.updateUser({
           body,

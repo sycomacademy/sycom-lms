@@ -80,6 +80,7 @@ export type GetProfileByUserIdInput = z.infer<typeof getProfileByUserIdSchema>;
 export const updateAccountSchema = z.object({
   name: nameSchema.optional(),
   email: emailSchema.optional(),
+  image: z.url().optional(),
   bio: z.string().max(500, "Bio must be less than 500 characters").optional(),
   settings: profileSettingsSchema.partial().optional(),
 });
