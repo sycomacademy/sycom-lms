@@ -47,15 +47,17 @@ export function SignInForm() {
         title: "Sign in failed",
         type: "error",
       });
+      setIsLoading(false);
     } else {
       toastManager.add({
         description: "Signed in successfully",
         title: "Signed in",
         type: "success",
       });
+      // Refresh invalidates the RSC cache so server components see the new session
+      router.refresh();
       router.push("/dashboard");
     }
-    setIsLoading(false);
   };
 
   return (

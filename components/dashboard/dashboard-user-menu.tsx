@@ -57,11 +57,14 @@ export function DashboardUserMenu() {
     const { error } = await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
+          // Refresh invalidates the RSC cache so server components see the logged-out state
+          router.refresh();
           router.push("/");
         },
       },
     });
     if (error) {
+      setSignOutPending(false);
       toastManager.add({
         title: "Error",
         description: error.message ?? "Something went wrong. Please try again.",

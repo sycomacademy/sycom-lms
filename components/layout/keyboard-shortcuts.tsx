@@ -72,6 +72,8 @@ export function KeyboardShortcuts() {
     authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
+          // Refresh invalidates the RSC cache so server components see the logged-out state
+          router.refresh();
           router.push("/");
         },
       },

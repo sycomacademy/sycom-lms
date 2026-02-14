@@ -6,8 +6,6 @@ import { createLoggerWithContext } from "@/packages/utils/logger";
 
 const authLogger = createLoggerWithContext("auth:getSession");
 
-export const AUTH_COOKIE = "better-auth.session_token";
-
 /**
  * Session for the current request. Cached per-request so multiple
  * getSession() calls (e.g. in layout + page + Server Actions) only hit auth once.
