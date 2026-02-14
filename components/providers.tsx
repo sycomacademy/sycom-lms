@@ -1,6 +1,5 @@
 "use client";
 
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { AnchoredToastProvider, ToastProvider } from "@/components/ui/toast";
 import { TRPCReactProvider } from "@/packages/trpc/client";
 import { KeyboardShortcuts } from "./layout/keyboard-shortcuts";
@@ -23,7 +22,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         </ToastProvider>
         <KeyboardShortcuts />
       </ThemeProvider>
-      <ReactQueryDevtools />
+      {/* <ReactQueryDevtools /> */}
     </TRPCReactProvider>
   );
 }

@@ -31,3 +31,14 @@ export const signInGuard = async () => {
     redirect("/dashboard");
   }
 };
+
+export const adminGuard = async () => {
+  const session = await getSession();
+  if (!session) {
+    redirect("/sign-in");
+  }
+  if (session.user.role !== "admin") {
+    redirect("/dashboard");
+  }
+  return session;
+};
