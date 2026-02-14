@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -22,17 +23,28 @@ const accountNameSchema = z.object({
 
 type AccountNameInput = z.infer<typeof accountNameSchema>;
 
+function parseFullName(fullName: string | undefined) {
+  const parts = fullName?.trim().split(NAME_WORDS) ?? [];
+  return {
+    firstName: parts[0] ?? "",
+    lastName: parts.slice(1).join(" ") ?? "",
+  };
+}
+
 export function AccountName() {
   const { user } = useUserQuery();
   const mutation = useUserMutation();
-  const parts = user?.name?.trim().split(NAME_WORDS) ?? [];
-  const firstName = parts[0] ?? "";
-  const lastName = parts.slice(1).join(" ") ?? "";
 
   const form = useForm<AccountNameInput>({
     resolver: zodResolver(accountNameSchema),
-    defaultValues: { firstName, lastName },
+    defaultValues: parseFullName(user?.name),
   });
+
+  useEffect(() => {
+    if (user?.name) {
+      form.reset(parseFullName(user.name));
+    }
+  }, [user?.name, form]);
 
   const onSubmit = (data: AccountNameInput) => {
     const name = [data.firstName, data.lastName]
@@ -42,10 +54,7 @@ export function AccountName() {
     if (!name) {
       return;
     }
-    const currentName = user?.name?.trim() ?? "";
-    if (name === currentName) {
-      return;
-    }
+
     mutation.mutate(
       { name },
       {
@@ -109,10 +118,16 @@ export function AccountName() {
                 size="sm"
                 type="submit"
               >
-                {mutation.isPending ? (
-                  <Spinner className="mr-2 size-3" />
-                ) : null}
-                Save
+                <span className="relative inline-flex items-center justify-center">
+                  <span
+                    className={mutation.isPending ? "invisible" : undefined}
+                  >
+                    Save
+                  </span>
+                  {mutation.isPending && (
+                    <Spinner className="absolute size-3" />
+                  )}
+                </span>
               </Button>
             </div>
           </form>
