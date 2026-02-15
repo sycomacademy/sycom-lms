@@ -73,6 +73,7 @@ interface DataTableProps<TData, TValue> {
   pageIndex?: number;
   onPaginationChange?: (pagination: PaginationState) => void;
   manualPagination?: boolean;
+  manualSorting?: boolean;
   sorting?: SortingState;
   onSortingChange?: (sorting: SortingState) => void;
 }
@@ -85,6 +86,7 @@ function DataTable<TData, TValue>({
   pageIndex: controlledPageIndex = 0,
   onPaginationChange,
   manualPagination = false,
+  manualSorting = false,
   sorting: controlledSorting,
   onSortingChange,
 }: DataTableProps<TData, TValue>) {
@@ -112,7 +114,8 @@ function DataTable<TData, TValue>({
     getPaginationRowModel: manualPagination
       ? undefined
       : getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
+    getSortedRowModel: manualSorting ? undefined : getSortedRowModel(),
+    manualSorting,
     onPaginationChange: (updater) => {
       const next =
         typeof updater === "function" ? updater(pagination) : updater;

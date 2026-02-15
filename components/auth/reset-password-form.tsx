@@ -27,7 +27,13 @@ import {
   resetPasswordSchema,
 } from "@/packages/types/auth";
 
-export function ResetPasswordForm({ token }: { token: string }) {
+export function ResetPasswordForm({
+  token,
+  isInvite = false,
+}: {
+  token: string;
+  isInvite?: boolean;
+}) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -68,11 +74,12 @@ export function ResetPasswordForm({ token }: { token: string }) {
         </div>
         <div className="space-y-2">
           <h1 className="font-medium text-lg tracking-tight">
-            Password reset successful
+            {isInvite ? "You're all set!" : "Password reset successful"}
           </h1>
           <p className="text-muted-foreground text-sm">
-            Your password has been updated. You can now sign in with your new
-            password.
+            {isInvite
+              ? "Your password has been set. You can now sign in to your account."
+              : "Your password has been updated. You can now sign in with your new password."}
           </p>
         </div>
         <Button
@@ -92,10 +99,12 @@ export function ResetPasswordForm({ token }: { token: string }) {
       {/* Header */}
       <div className="space-y-2 text-center">
         <h1 className="font-medium text-lg tracking-tight">
-          Set a new password
+          {isInvite ? "Welcome! Set your password" : "Set a new password"}
         </h1>
         <p className="text-muted-foreground text-sm">
-          Choose a strong password for your account.
+          {isInvite
+            ? "You've been invited to the platform. Choose a password to get started."
+            : "Choose a strong password for your account."}
         </p>
       </div>
 
@@ -198,7 +207,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
           <Button className="mt-1 w-full" disabled={isLoading} type="submit">
             {isLoading ? <Spinner className="mr-2" /> : null}
-            Reset password
+            {isInvite ? "Set password" : "Reset password"}
           </Button>
         </form>
       </Form>

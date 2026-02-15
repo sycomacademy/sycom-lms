@@ -86,7 +86,9 @@ export function CreateCourseDialog() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!(title.trim() && slug.trim())) return;
+    if (!(title.trim() && slug.trim())) {
+      return;
+    }
 
     createMutation.mutate({
       title: title.trim(),
@@ -104,7 +106,9 @@ export function CreateCourseDialog() {
     <Dialog
       onOpenChange={(v) => {
         setOpen(v);
-        if (!v) resetForm();
+        if (!v) {
+          resetForm();
+        }
       }}
       open={open}
     >
@@ -160,7 +164,9 @@ export function CreateCourseDialog() {
               <Label>Difficulty</Label>
               <Select
                 onValueChange={(v) => {
-                  if (v) setDifficulty(v);
+                  if (v) {
+                    setDifficulty(v);
+                  }
                 }}
                 value={difficulty}
               >

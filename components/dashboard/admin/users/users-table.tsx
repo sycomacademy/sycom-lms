@@ -37,6 +37,13 @@ const ROLE_FILTER_LABELS: Record<string, string> = {
   student: "Student",
 };
 
+const STATUS_FILTER_LABELS: Record<string, string> = {
+  all: "All statuses",
+  active: "Active",
+  banned: "Banned",
+  unverified: "Unverified email",
+};
+
 const columns: ColumnDef<User, unknown>[] = [
   {
     accessorKey: "name",
@@ -141,6 +148,7 @@ const columns: ColumnDef<User, unknown>[] = [
       return (
         <UserActions
           isBanned={user.banned ?? false}
+          isEmailVerified={user.emailVerified}
           userEmail={user.email}
           userId={user.id}
           userName={user.name}
@@ -163,6 +171,14 @@ export function UsersTable() {
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const [filterRole, setFilterRole] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "createdAt", desc: true },
+  ]);
+
+  const sortBy =
+    (sorting[0]?.id as "name" | "email" | "createdAt") ?? "createdAt";
+  const sortDirection = sorting[0]?.desc === false ? "asc" : "desc";
 
   const queryOptions = trpc.admin.listUsers.queryOptions({
     limit: pagination.pageSize,
@@ -172,8 +188,12 @@ export function UsersTable() {
       filterRole !== "all"
         ? (filterRole as "admin" | "instructor" | "student")
         : undefined,
-    sortBy: "createdAt",
-    sortDirection: "desc",
+    filterStatus:
+      filterStatus !== "all"
+        ? (filterStatus as "active" | "banned" | "unverified")
+        : undefined,
+    sortBy,
+    sortDirection,
   });
 
   const { data } = useSuspenseQuery(queryOptions);
@@ -184,9 +204,16 @@ export function UsersTable() {
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
   };
 
-  const handleFilterChange = (value: string) => {
+  const handleRoleFilterChange = (value: string) => {
     startTransition(() => {
       setFilterRole(value);
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+    });
+  };
+
+  const handleStatusFilterChange = (value: string) => {
+    startTransition(() => {
+      setFilterStatus(value);
       setPagination((prev) => ({ ...prev, pageIndex: 0 }));
     });
   };
@@ -194,6 +221,13 @@ export function UsersTable() {
   const handlePaginationChange = (next: PaginationState) => {
     startTransition(() => {
       setPagination(next);
+    });
+  };
+
+  const handleSortingChange = (next: SortingState) => {
+    startTransition(() => {
+      setSorting(next);
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
     });
   };
 
@@ -218,7 +252,7 @@ export function UsersTable() {
           <Select
             onValueChange={(v) => {
               if (v) {
-                handleFilterChange(v);
+                handleRoleFilterChange(v);
               }
             }}
             value={filterRole}
@@ -235,6 +269,26 @@ export function UsersTable() {
               <SelectItem value="student">Student</SelectItem>
             </SelectContent>
           </Select>
+          <Select
+            onValueChange={(v) => {
+              if (v) {
+                handleStatusFilterChange(v);
+              }
+            }}
+            value={filterStatus}
+          >
+            <SelectTrigger className="w-fit data-[size=default]:h-9">
+              <SelectValue>
+                {STATUS_FILTER_LABELS[filterStatus] ?? "All statuses"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="banned">Banned</SelectItem>
+              <SelectItem value="unverified">Unverified email</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <CreateUserDialog />
       </div>
@@ -244,9 +298,12 @@ export function UsersTable() {
         columns={columns}
         data={data.users}
         manualPagination
+        manualSorting
         onPaginationChange={handlePaginationChange}
+        onSortingChange={handleSortingChange}
         pageIndex={pagination.pageIndex}
         pageSize={pagination.pageSize}
+        sorting={sorting}
         total={data.total}
       />
     </div>

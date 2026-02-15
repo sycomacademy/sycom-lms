@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   BanIcon,
   EyeIcon,
+  MailIcon,
   MoreHorizontalIcon,
   ShieldIcon,
   Trash2Icon,
@@ -58,6 +59,7 @@ interface UserActionsProps {
   userEmail: string;
   userRole: UserRole;
   isBanned: boolean;
+  isEmailVerified: boolean;
 }
 
 export function UserActions({
@@ -66,6 +68,7 @@ export function UserActions({
   userEmail,
   userRole,
   isBanned,
+  isEmailVerified,
 }: UserActionsProps) {
   const { user: currentUser } = useUserQuery();
   const trpc = useTRPC();
@@ -191,6 +194,10 @@ export function UserActions({
     })
   );
 
+  const sendVerificationEmailMutation = useMutation(
+    trpc.admin.sendVerificationEmail.mutationOptions({})
+  );
+
   return (
     <>
       <DropdownMenu>
@@ -198,7 +205,7 @@ export function UserActions({
           <span className="sr-only">Open menu</span>
           <MoreHorizontalIcon className="size-4" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuGroup>
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
           </DropdownMenuGroup>
@@ -213,6 +220,29 @@ export function UserActions({
             <DropdownMenuItem onClick={() => setImpersonateOpen(true)}>
               <EyeIcon />
               Impersonate
+            </DropdownMenuItem>
+          )}
+          {!isEmailVerified && (
+            <DropdownMenuItem
+              disabled={sendVerificationEmailMutation.isPending}
+              onClick={() =>
+                toastManager.promise(
+                  sendVerificationEmailMutation.mutateAsync({
+                    email: userEmail,
+                  }),
+                  {
+                    loading: "Sending verification email...",
+                    success: "Verification email sent",
+                    error: (err) =>
+                      err instanceof Error
+                        ? err.message
+                        : "Failed to send verification email",
+                  }
+                )
+              }
+            >
+              <MailIcon />
+              Send verification email
             </DropdownMenuItem>
           )}
           {!(isTargetAdmin || isSelf) && <DropdownMenuSeparator />}

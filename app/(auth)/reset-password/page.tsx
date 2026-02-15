@@ -12,10 +12,11 @@ export const metadata: Metadata = {
 export default async function ResetPasswordPage({
   searchParams,
 }: {
-  searchParams: Promise<{ token?: string; error?: string }>;
+  searchParams: Promise<{ token?: string; error?: string; invite?: string }>;
 }) {
   await signInGuard();
-  const { token, error } = await searchParams;
+  const { token, error, invite } = await searchParams;
+  const isInvite = invite === "true";
 
   if (error === "INVALID_TOKEN" || !token) {
     return (
@@ -46,7 +47,7 @@ export default async function ResetPasswordPage({
   return (
     <div className="flex h-full w-full flex-col">
       <div className="flex h-full w-full items-center justify-center">
-        <ResetPasswordForm token={token} />
+        <ResetPasswordForm isInvite={isInvite} token={token} />
       </div>
     </div>
   );

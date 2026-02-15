@@ -8,14 +8,21 @@ export const listUsersSchema = z.object({
   sortBy: z.enum(["name", "email", "createdAt"]).default("createdAt"),
   sortDirection: z.enum(["asc", "desc"]).default("desc"),
   filterRole: z.enum(["admin", "instructor", "student"]).optional(),
+  filterStatus: z.enum(["active", "banned", "unverified"]).optional(),
 });
 
-export const createUserSchema = z.object({
-  name: z.string().min(1).max(100),
-  email: z.email(),
-  password: z.string().min(8),
-  role: z.enum(["admin", "instructor", "student"]).default("student"),
-});
+export const createUserSchema = z
+  .object({
+    name: z.string().min(1).max(100),
+    email: z.email(),
+    password: z.string().min(8).optional(),
+    role: z.enum(["admin", "instructor", "student"]).default("student"),
+    sendInvite: z.boolean().default(false),
+  })
+  .refine((data) => data.sendInvite || data.password, {
+    message: "Password is required when not sending an invite",
+    path: ["password"],
+  });
 
 export const banUserSchema = z.object({
   userId: z.string(),

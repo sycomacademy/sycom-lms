@@ -37,8 +37,15 @@ export const adminRouter = router({
   listUsers: adminProcedure
     .input(listUsersSchema)
     .query(async ({ ctx, input }) => {
-      const { limit, offset, search, sortBy, sortDirection, filterRole } =
-        input;
+      const {
+        limit,
+        offset,
+        search,
+        sortBy,
+        sortDirection,
+        filterRole,
+        filterStatus,
+      } = input;
       const { db } = ctx;
 
       // Build WHERE conditions
@@ -46,6 +53,18 @@ export const adminRouter = router({
 
       if (filterRole) {
         conditions.push(eq(user.role, filterRole));
+      }
+
+      if (filterStatus) {
+        if (filterStatus === "banned") {
+          conditions.push(eq(user.banned, true));
+        } else if (filterStatus === "active") {
+          conditions.push(eq(user.banned, false));
+          conditions.push(eq(user.emailVerified, true));
+        } else if (filterStatus === "unverified") {
+          conditions.push(eq(user.banned, false));
+          conditions.push(eq(user.emailVerified, false));
+        }
       }
 
       // Case-insensitive search on both name and email
@@ -93,15 +112,34 @@ export const adminRouter = router({
   createUser: adminProcedure
     .input(createUserSchema)
     .mutation(async ({ ctx, input }) => {
+      // biome-ignore lint/style/noNonNullAssertion: password is required if sendInvite is false
+      const password = input.sendInvite ? crypto.randomUUID() : input.password!;
+
       const result = await auth.api.createUser({
         body: {
           name: input.name,
           email: input.email,
-          password: input.password,
+          password,
           role: input.role,
         },
         headers: ctx.headers,
       });
+
+      if (input.sendInvite) {
+        // Auto-verify email since admin is vouching for them
+        await ctx.db
+          .update(user)
+          .set({ emailVerified: true })
+          .where(eq(user.email, input.email));
+
+        // Send password reset email so they can set their own password
+        await auth.api.requestPasswordReset({
+          body: {
+            email: input.email,
+            redirectTo: "/reset-password?invite=true",
+          },
+        });
+      }
 
       return result;
     }),
@@ -200,6 +238,20 @@ export const adminRouter = router({
           userId: input.userId,
         },
         headers: ctx.headers,
+      });
+
+      return { success: true };
+    }),
+
+  // Send verification email to an unverified user
+  sendVerificationEmail: adminProcedure
+    .input(z.object({ email: z.string().email() }))
+    .mutation(async ({ input }) => {
+      await auth.api.sendVerificationEmail({
+        body: {
+          email: input.email,
+          callbackURL: "/",
+        },
       });
 
       return { success: true };

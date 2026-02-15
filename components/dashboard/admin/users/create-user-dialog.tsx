@@ -26,6 +26,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -34,19 +35,29 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
+import { Switch } from "@/components/ui/switch";
 import { toastManager } from "@/components/ui/toast";
 import { useTRPC } from "@/packages/trpc/client";
 
-const createUserSchema = z.object({
-  name: z.string().min(1, "Name is required").max(100),
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  role: z.enum(["admin", "instructor", "student"]),
-});
+const createUserSchema = z
+  .object({
+    name: z.string().min(1, "Name is required").max(100),
+    email: z.string().email("Invalid email address"),
+    password: z.string().optional(),
+    role: z.enum(["admin", "instructor", "student"]),
+    sendInvite: z.boolean(),
+  })
+  .refine(
+    (data) => data.sendInvite || (data.password && data.password.length >= 8),
+    {
+      message: "Password must be at least 8 characters",
+      path: ["password"],
+    }
+  );
 
 type CreateUserInput = z.infer<typeof createUserSchema>;
 
-const ROLE_LABELS: Record<CreateUserInput["role"], string> = {
+const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
   instructor: "Instructor",
   student: "Student",
@@ -64,15 +75,20 @@ export function CreateUserDialog() {
       email: "",
       password: "",
       role: "student",
+      sendInvite: true,
     },
   });
 
+  const sendInvite = form.watch("sendInvite") ?? true;
+
   const createMutation = useMutation(
     trpc.admin.createUser.mutationOptions({
-      onSuccess: () => {
+      onSuccess: (_data, variables) => {
         toastManager.add({
           title: "User created",
-          description: "The new user has been created successfully.",
+          description: variables.sendInvite
+            ? "An invite email has been sent to set their password."
+            : "The user has been created. A verification email has been sent.",
           type: "success",
         });
         queryClient.invalidateQueries({
@@ -92,7 +108,13 @@ export function CreateUserDialog() {
   );
 
   const onSubmit = (data: CreateUserInput) => {
-    createMutation.mutate(data);
+    createMutation.mutate({
+      name: data.name,
+      email: data.email,
+      role: data.role,
+      sendInvite: data.sendInvite,
+      ...(!data.sendInvite && { password: data.password }),
+    });
   };
 
   return (
@@ -112,10 +134,7 @@ export function CreateUserDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create user</DialogTitle>
-          <DialogDescription>
-            Add a new user to the platform. They will receive an email with
-            their credentials.
-          </DialogDescription>
+          <DialogDescription>Add a new user to the platform.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -155,25 +174,47 @@ export function CreateUserDialog() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <Field>
-                        <FieldLabel className="text-xs">Password</FieldLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Min. 8 characters"
-                            type="password"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </Field>
-                    </FormItem>
-                  )}
-                />
+                <div className="flex items-center justify-between rounded-md border px-3 py-2.5">
+                  <Label className="text-xs" htmlFor="send-invite">
+                    Send invite link
+                    <span className="block font-normal text-muted-foreground">
+                      User sets their own password via email
+                    </span>
+                  </Label>
+                  <Switch
+                    checked={sendInvite}
+                    id="send-invite"
+                    onCheckedChange={(checked) => {
+                      form.setValue("sendInvite", checked);
+                      if (checked) {
+                        form.setValue("password", "");
+                        form.clearErrors("password");
+                      }
+                    }}
+                    size="sm"
+                  />
+                </div>
+                {!sendInvite && (
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <Field>
+                          <FieldLabel className="text-xs">Password</FieldLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Min. 8 characters"
+                              type="password"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </Field>
+                      </FormItem>
+                    )}
+                  />
+                )}
                 <FormField
                   control={form.control}
                   name="role"
@@ -214,7 +255,7 @@ export function CreateUserDialog() {
                 type="submit"
               >
                 {createMutation.isPending ? <Spinner /> : null}
-                Create user
+                {sendInvite ? "Create & send invite" : "Create user"}
               </Button>
             </DialogFooter>
           </form>
