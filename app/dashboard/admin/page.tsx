@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { UsersTable } from "@/components/dashboard/admin/users-table";
+import { UsersTable } from "@/components/dashboard/admin/users/users-table";
 import { Spinner } from "@/components/ui/spinner";
 
 export default function AdminPage() {

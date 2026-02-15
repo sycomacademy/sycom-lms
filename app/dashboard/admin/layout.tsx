@@ -34,8 +34,6 @@ export default async function AdminLayout({
         <AdminMenu
           items={[
             { path: "/dashboard/admin", label: "Users" },
-            { path: "/dashboard/admin/courses", label: "Courses" },
-            { path: "/dashboard/admin/pathways", label: "Pathways" },
             { path: "/dashboard/admin/reports", label: "Reports & Feedback" },
           ]}
         />

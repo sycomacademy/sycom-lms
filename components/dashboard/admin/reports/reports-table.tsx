@@ -9,7 +9,7 @@ import {
   MessageSquareIcon,
 } from "lucide-react";
 import { useState, useTransition } from "react";
-import { ReportDetailDialog } from "@/components/dashboard/admin/report-detail-dialog";
+import { ReportDetailDialog } from "@/components/dashboard/admin/reports/report-detail-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";

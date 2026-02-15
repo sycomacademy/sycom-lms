@@ -3,6 +3,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BookOpenIcon,
+  GraduationCapIcon,
   HeadphonesIcon,
   HelpCircleIcon,
   LayoutDashboardIcon,
@@ -61,18 +62,20 @@ const SIDEBAR_NAV_CONFIG: Record<
   instructor: {
     main: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
+      { href: "/dashboard/courses", label: "Courses", icon: GraduationCapIcon },
       { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
       { href: "/dashboard/journey", label: "My journey", icon: BookOpenIcon },
       { href: "/dashboard/support", label: "Support", icon: HeadphonesIcon },
-      { href: "/dashboard/settings  ", label: "Settings", icon: SettingsIcon },
+      { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
     ],
   },
   admin: {
-    main: [
+    admin: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
-      { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
-      { href: "/dashboard/journey", label: "My journey", icon: BookOpenIcon },
       { href: "/dashboard/admin", label: "Admin", icon: ShieldIcon },
+      { href: "/dashboard/courses", label: "Courses", icon: GraduationCapIcon },
+    ],
+    other: [
       { href: "/dashboard/support", label: "Support", icon: HeadphonesIcon },
       { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
     ],
