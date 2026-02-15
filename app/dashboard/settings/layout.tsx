@@ -1,10 +1,12 @@
 import { SecondaryMenu } from "@/components/dashboard/settings/settings-menu";
+import { dashboardGuard } from "@/packages/auth/helper";
 
-export default function AccountLayout({
+export default async function AccountLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  await dashboardGuard();
   return (
     <div className="mb-10 max-w-3xl md:ml-12">
       <SecondaryMenu

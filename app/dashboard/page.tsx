@@ -9,8 +9,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { dashboardGuard } from "@/packages/auth/helper";
 
 export default async function DashboardPage() {
+  await dashboardGuard();
   return (
     <div className="flex flex-col gap-6">
       <div>

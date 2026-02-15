@@ -1,8 +1,10 @@
 import { Suspense } from "react";
 import { UsersTable } from "@/components/dashboard/admin/users/users-table";
 import { Spinner } from "@/components/ui/spinner";
+import { adminGuard } from "@/packages/auth/helper";
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  await adminGuard();
   return (
     <Suspense
       fallback={

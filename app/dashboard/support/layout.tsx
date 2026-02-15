@@ -1,10 +1,13 @@
 import { SupportMenu } from "@/components/dashboard/support/support-menu";
+import { dashboardGuard } from "@/packages/auth/helper";
 
-export default function SupportLayout({
+export default async function SupportLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  await dashboardGuard();
+
   return (
     <div className="mb-10 max-w-3xl md:ml-12">
       <SupportMenu

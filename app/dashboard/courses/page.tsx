@@ -1,8 +1,10 @@
 import { Suspense } from "react";
 import { CoursesTable } from "@/components/dashboard/courses/courses-table";
 import { Spinner } from "@/components/ui/spinner";
+import { instructorGuard } from "@/packages/auth/helper";
 
-export default function CoursesPage() {
+export default async function CoursesPage() {
+  await instructorGuard();
   return (
     <div className="flex flex-col gap-6">
       <div>
