@@ -17,6 +17,9 @@ const handler = (req: NextRequest) =>
         code: error.code,
         path,
         message: error.message,
+        cause: error.cause,
+        name: error.name,
+        stack: error.stack,
       });
     },
   });

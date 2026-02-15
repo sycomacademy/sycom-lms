@@ -42,6 +42,20 @@ const STATUS_LABELS: Record<string, string> = {
   closed: "Closed",
 };
 
+const TYPE_FILTER_LABELS: Record<string, string> = {
+  all: "All types",
+  report: "Reports",
+  feedback: "Feedback",
+};
+
+const STATUS_FILTER_LABELS: Record<string, string> = {
+  all: "All statuses",
+  pending: "Pending",
+  in_progress: "In Progress",
+  resolved: "Resolved",
+  closed: "Closed",
+};
+
 const TYPE_ICONS: Record<string, React.ReactNode> = {
   bug: <AlertCircleIcon className="size-3.5" />,
   feature: <LightbulbIcon className="size-3.5" />,
@@ -242,7 +256,9 @@ export function ReportsTable() {
           value={filterType}
         >
           <SelectTrigger className="w-fit" size="sm">
-            <SelectValue placeholder="All types" />
+            <SelectValue>
+              {TYPE_FILTER_LABELS[filterType] ?? "All types"}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All types</SelectItem>
@@ -259,7 +275,9 @@ export function ReportsTable() {
           value={filterStatus}
         >
           <SelectTrigger className="w-fit" size="sm">
-            <SelectValue placeholder="All statuses" />
+            <SelectValue>
+              {STATUS_FILTER_LABELS[filterStatus] ?? "All statuses"}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>

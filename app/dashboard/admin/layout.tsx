@@ -14,12 +14,16 @@ export default async function AdminLayout({
       trpc.admin.listUsers.queryOptions({
         limit: 10,
         offset: 0,
+        sortBy: "createdAt",
+        sortDirection: "desc",
       })
     ),
     prefetch(
       trpc.admin.listReports.queryOptions({
         limit: 10,
         offset: 0,
+        type: "all",
+        status: "all",
       })
     ),
   ]);

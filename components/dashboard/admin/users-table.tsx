@@ -89,6 +89,7 @@ const columns: ColumnDef<User, unknown>[] = [
     enableSorting: false,
     cell: ({ row }) => {
       const banned = row.original.banned;
+      const isEmailVerified = row.original.emailVerified;
       if (banned) {
         return (
           <Badge variant="destructive">
@@ -97,9 +98,18 @@ const columns: ColumnDef<User, unknown>[] = [
           </Badge>
         );
       }
+      if (!isEmailVerified) {
+        return (
+          <Badge variant="outline">
+            <span className="size-1.5 rounded-full bg-warning" />
+            Unverified email
+          </Badge>
+        );
+      }
+
       return (
         <Badge variant="outline">
-          <span className="size-1.5 rounded-full bg-emerald-500" />
+          <span className="size-1.5 rounded-full bg-success" />
           Active
         </Badge>
       );
@@ -134,9 +144,7 @@ const columns: ColumnDef<User, unknown>[] = [
           userEmail={user.email}
           userId={user.id}
           userName={user.name}
-          userRole={
-            (user.role as "admin" | "instructor" | "student") ?? "student"
-          }
+          userRole={user.role ?? "student"}
         />
       );
     },
