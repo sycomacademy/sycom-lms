@@ -1,9 +1,9 @@
 "use client";
 
+import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Tabs, TabsList, TabsTab } from "@/components/ui/tabs";
-import type { AppRoutes } from "@/routes";
 
 export interface AdminMenuItem {
   path: string;
@@ -40,7 +40,7 @@ export function AdminMenu({ items }: { items: AdminMenuItem[] }) {
             className="shrink-0 py-2"
             key={path}
             nativeButton={false}
-            render={<Link href={path as AppRoutes} />}
+            render={<Link href={path as Route} />}
             value={path}
           >
             {label}

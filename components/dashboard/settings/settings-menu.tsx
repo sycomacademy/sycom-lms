@@ -1,12 +1,11 @@
 "use client";
 
+import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Tabs, TabsList, TabsTab } from "@/components/ui/tabs";
-import type { AppRoutes } from "@/routes";
-
 export interface SecondaryMenuItem {
-  path: AppRoutes;
+  path: Route;
   label: string;
 }
 

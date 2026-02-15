@@ -55,6 +55,7 @@ function useUncontrolledState<T>({
   const prevValueRef = useRef(value);
   const handleChange = useCallbackRef(onChange);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: we want to call the onChange callback when the value changes
   useEffect(() => {
     if (prevValueRef.current !== value) {
       handleChange(value as T);

@@ -1,4 +1,4 @@
-import { SecondaryMenu } from "@/components/dashboard/settings/secondary-menu";
+import { SecondaryMenu } from "@/components/dashboard/settings/settings-menu";
 
 export default function AccountLayout({
   children,

@@ -149,7 +149,7 @@ export function FileUploader(props: FileUploaderProps) {
     onValueChange?.(newFiles);
   }
 
-  // Revoke preview url when component unmounts
+  // biome-ignore lint/correctness/useExhaustiveDependencies: we want to revoke the preview url when the component unmounts
   useEffect(() => {
     return () => {
       if (!files) {
@@ -161,7 +161,6 @@ export function FileUploader(props: FileUploaderProps) {
         }
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const isDisabled = disabled || (files?.length ?? 0) >= maxFileCount;
