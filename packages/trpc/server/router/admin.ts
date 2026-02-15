@@ -1,12 +1,20 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { auth } from "@/packages/auth/auth";
+import { user } from "@/packages/db/schema/auth";
 import { feedback } from "@/packages/db/schema/feedback";
 import { report } from "@/packages/db/schema/report";
+import {
+  banUserSchema,
+  createUserSchema,
+  listReportsSchema,
+  listUsersSchema,
+  setRoleSchema,
+  updateReportStatusSchema,
+} from "@/packages/types/admin";
 import { protectedProcedure, router, t } from "../init";
 
-// Admin middleware - checks if user has admin role
 const adminMiddleware = t.middleware(async ({ next, ctx }) => {
   if (!ctx.session?.user || ctx.session.user.role !== "admin") {
     throw new TRPCError({
@@ -24,48 +32,6 @@ const adminMiddleware = t.middleware(async ({ next, ctx }) => {
 
 const adminProcedure = protectedProcedure.use(adminMiddleware);
 
-// Input schemas
-const listUsersSchema = z.object({
-  limit: z.number().min(1).max(100).default(10),
-  offset: z.number().min(0).default(0),
-  search: z.string().optional(),
-  sortBy: z.enum(["name", "email", "createdAt"]).default("createdAt"),
-  sortDirection: z.enum(["asc", "desc"]).default("desc"),
-  filterRole: z.enum(["admin", "instructor", "student"]).optional(),
-});
-
-const createUserSchema = z.object({
-  name: z.string().min(1).max(100),
-  email: z.string().email(),
-  password: z.string().min(8),
-  role: z.enum(["admin", "instructor", "student"]).default("student"),
-});
-
-const banUserSchema = z.object({
-  userId: z.string(),
-  banReason: z.string().optional(),
-  banExpiresIn: z.number().optional(), // seconds
-});
-
-const setRoleSchema = z.object({
-  userId: z.string(),
-  role: z.enum(["admin", "instructor", "student"]),
-});
-
-const listReportsSchema = z.object({
-  limit: z.number().min(1).max(100).default(10),
-  offset: z.number().min(0).default(0),
-  type: z.enum(["report", "feedback", "all"]).default("all"),
-  status: z
-    .enum(["pending", "in_progress", "resolved", "closed", "all"])
-    .default("all"),
-});
-
-const updateReportStatusSchema = z.object({
-  id: z.string(),
-  status: z.enum(["pending", "in_progress", "resolved", "closed"]),
-});
-
 export const adminRouter = router({
   // List users with pagination, search, and filtering
   listUsers: adminProcedure
@@ -73,26 +39,51 @@ export const adminRouter = router({
     .query(async ({ ctx, input }) => {
       const { limit, offset, search, sortBy, sortDirection, filterRole } =
         input;
+      const { db } = ctx;
 
-      const result = await auth.api.listUsers({
-        query: {
-          limit,
-          offset,
-          searchValue: search,
-          searchField: "name",
-          searchOperator: "contains",
-          sortBy,
-          sortDirection,
-          filterField: filterRole ? "role" : undefined,
-          filterValue: filterRole,
-          filterOperator: "eq",
-        },
-        headers: ctx.headers,
-      });
+      // Build WHERE conditions
+      const conditions: ReturnType<typeof eq>[] = [];
+
+      if (filterRole) {
+        conditions.push(eq(user.role, filterRole));
+      }
+
+      // Case-insensitive search on both name and email
+      const searchCondition = search
+        ? or(ilike(user.name, `%${search}%`), ilike(user.email, `%${search}%`))
+        : undefined;
+
+      const allConditions = [
+        ...conditions,
+        ...(searchCondition ? [searchCondition] : []),
+      ];
+      const where =
+        allConditions.length > 0 ? and(...allConditions) : undefined;
+
+      // Sort
+      const ORDER_COLUMNS = {
+        name: user.name,
+        email: user.email,
+        createdAt: user.createdAt,
+      } as const;
+      const orderColumn = ORDER_COLUMNS[sortBy];
+      const orderBy =
+        sortDirection === "asc" ? asc(orderColumn) : desc(orderColumn);
+
+      const [users, totalResult] = await Promise.all([
+        db
+          .select()
+          .from(user)
+          .where(where)
+          .orderBy(orderBy)
+          .limit(limit)
+          .offset(offset),
+        db.select({ count: count() }).from(user).where(where),
+      ]);
 
       return {
-        users: result.users,
-        total: result.total,
+        users,
+        total: totalResult[0]?.count ?? 0,
         limit,
         offset,
       };
@@ -163,6 +154,32 @@ export const adminRouter = router({
   setRole: adminProcedure
     .input(setRoleSchema)
     .mutation(async ({ ctx, input }) => {
+      // Admins cannot change their own role
+      if (input.userId === ctx.session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You cannot change your own role",
+        });
+      }
+
+      // Admins cannot change another admin's role
+      const [target] = await ctx.db
+        .select({ role: user.role })
+        .from(user)
+        .where(eq(user.id, input.userId))
+        .limit(1);
+
+      if (!target) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+
+      if (target.role === "admin") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You cannot change the role of another admin",
+        });
+      }
+
       await auth.api.setRole({
         body: {
           userId: input.userId,
@@ -188,8 +205,17 @@ export const adminRouter = router({
       return { success: true };
     }),
 
-  // Stop impersonating
-  stopImpersonating: adminProcedure.mutation(async ({ ctx }) => {
+  // Stop impersonating — uses protectedProcedure (not admin) because
+  // the current session user is the impersonated user who may not be admin.
+  // We verify impersonation is active via the session's impersonatedBy field.
+  stopImpersonating: protectedProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.session.session.impersonatedBy) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Not currently impersonating anyone",
+      });
+    }
+
     await auth.api.stopImpersonating({
       headers: ctx.headers,
     });

@@ -13,7 +13,7 @@ export default async function DashboardLayout({
   const sidebarState = cookieStore.get("sidebar_state");
   const open = sidebarState?.value === "true";
 
-  prefetch(trpc.profile.getProfile.queryOptions());
+  await prefetch(trpc.profile.getProfile.queryOptions());
 
   return (
     <HydrateClient>

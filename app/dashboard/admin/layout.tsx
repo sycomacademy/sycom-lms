@@ -9,13 +9,20 @@ export default async function AdminLayout({
 }) {
   await adminGuard();
 
-  // Prefetch users list for initial load
-  await prefetch(
-    trpc.admin.listUsers.queryOptions({
-      limit: 10,
-      offset: 0,
-    })
-  );
+  await Promise.all([
+    prefetch(
+      trpc.admin.listUsers.queryOptions({
+        limit: 10,
+        offset: 0,
+      })
+    ),
+    prefetch(
+      trpc.admin.listReports.queryOptions({
+        limit: 10,
+        offset: 0,
+      })
+    ),
+  ]);
 
   return (
     <HydrateClient>

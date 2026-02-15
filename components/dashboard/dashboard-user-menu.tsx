@@ -160,7 +160,7 @@ export function DashboardUserMenu() {
           </DropdownMenuItem>
           <DropdownMenuItem
             {...helpHover}
-            render={<Link href="/dashboard/help" />}
+            render={<Link href="/dashboard/support" />}
           >
             <CircleHelpIcon ref={helpIconRef} />
             <span>Help</span>

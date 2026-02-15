@@ -1,6 +1,5 @@
 import { TRPCError } from "@trpc/server";
 import { and, eq, isNull } from "drizzle-orm";
-import { z } from "zod";
 import {
   FILE_CATEGORIES,
   type FileCategory,
@@ -13,34 +12,13 @@ import {
   generateId,
   validateFile,
 } from "@/packages/storage/utils";
+import {
+  confirmUploadSchema,
+  fileIdSchema,
+  listFilesSchema,
+  requestUploadSchema,
+} from "@/packages/types/file-storage";
 import { protectedProcedure, router } from "../init";
-
-// Input schemas
-const requestUploadSchema = z.object({
-  filename: z.string().min(1).max(255),
-  contentType: z.string(),
-  size: z.number().positive(),
-  entityType: z.string(),
-  entityId: z.string(),
-  category: z.enum(["video", "document", "image", "avatar", "attachment"]),
-});
-
-const confirmUploadSchema = z.object({
-  sessionId: z.string(),
-  url: z.url(),
-  visibility: z.enum(["public", "private"]).default("public"),
-  metadata: z.record(z.string(), z.unknown()).optional(),
-});
-
-const listFilesSchema = z.object({
-  entityType: z.string(),
-  entityId: z.string(),
-  category: z.string().optional(),
-});
-
-const fileIdSchema = z.object({
-  fileId: z.string(),
-});
 
 /**
  * Resolve scope from entity type and ID

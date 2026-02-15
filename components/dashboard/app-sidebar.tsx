@@ -179,13 +179,13 @@ export function AppSidebar() {
             }
           />
           <DropdownMenuContent align="start" side="right" sideOffset={4}>
-            <DropdownMenuItem render={<Link href="/dashboard/help" />}>
+            <DropdownMenuItem render={<Link href="/dashboard/support" />}>
               Help
             </DropdownMenuItem>
             <DropdownMenuItem render={<Link href="/dashboard/support" />}>
               Contact us
             </DropdownMenuItem>
-            <DropdownMenuItem render={<Link href="/dashboard/help#faq" />}>
+            <DropdownMenuItem render={<Link href="/dashboard/support" />}>
               FAQ
             </DropdownMenuItem>
           </DropdownMenuContent>

@@ -18,11 +18,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         <ToastProvider timeout={3000}>
           <AnchoredToastProvider>
             <TooltipProvider>{children}</TooltipProvider>
+            {/* <ReactQueryDevtools /> */}
           </AnchoredToastProvider>
         </ToastProvider>
         <KeyboardShortcuts />
       </ThemeProvider>
-      {/* <ReactQueryDevtools /> */}
     </TRPCReactProvider>
   );
 }
