@@ -1,21 +1,7 @@
 import { z } from "zod";
 
 // ---------------------------------------------------------------------------
-// Shared enum values (mirrors DB schema)
-// ---------------------------------------------------------------------------
-
-export const courseStatuses = ["draft", "published", "archived"] as const;
-export const difficultyLevels = [
-  "beginner",
-  "intermediate",
-  "advanced",
-  "expert",
-] as const;
-export const instructorRoles = ["main", "secondary"] as const;
-export const lessonTypes = ["text", "video", "quiz"] as const;
-
-// ---------------------------------------------------------------------------
-// Course list / query inputs
+// Input schemas
 // ---------------------------------------------------------------------------
 
 export const listCoursesSchema = z.object({
@@ -26,13 +12,14 @@ export const listCoursesSchema = z.object({
     .enum(["title", "createdAt", "updatedAt", "status"])
     .default("updatedAt"),
   sortDirection: z.enum(["asc", "desc"]).default("desc"),
-  filterStatus: z.enum(courseStatuses).optional(),
-  filterDifficulty: z.enum(difficultyLevels).optional(),
+  filterCategoryIds: z.array(z.string()).optional(),
+  filterStatuses: z
+    .array(z.enum(["draft", "published", "archived"]))
+    .optional(),
+  filterDifficulties: z
+    .array(z.enum(["beginner", "intermediate", "advanced", "expert"]))
+    .optional(),
 });
-
-// ---------------------------------------------------------------------------
-// Course mutations
-// ---------------------------------------------------------------------------
 
 export const createCourseSchema = z.object({
   title: z.string().min(1, "Title is required").max(200),
@@ -46,9 +33,12 @@ export const createCourseSchema = z.object({
       "Slug must be lowercase alphanumeric with hyphens"
     ),
   imageUrl: z.string().url().optional(),
-  difficulty: z.enum(difficultyLevels).default("beginner"),
+  difficulty: z
+    .enum(["beginner", "intermediate", "advanced", "expert"])
+    .default("beginner"),
   estimatedDuration: z.number().int().positive().optional(),
-  status: z.enum(courseStatuses).default("draft"),
+  status: z.enum(["draft", "published", "archived"]).default("draft"),
+  categoryIds: z.array(z.string()).optional(),
 });
 
 export const updateCourseSchema = z.object({
@@ -62,27 +52,16 @@ export const updateCourseSchema = z.object({
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
     .optional(),
   imageUrl: z.string().url().nullish(),
-  difficulty: z.enum(difficultyLevels).optional(),
+  difficulty: z
+    .enum(["beginner", "intermediate", "advanced", "expert"])
+    .optional(),
   estimatedDuration: z.number().int().positive().nullish(),
-  status: z.enum(courseStatuses).optional(),
+  status: z.enum(["draft", "published", "archived"]).optional(),
+  categoryIds: z.array(z.string()).optional(),
 });
 
 export const deleteCourseSchema = z.object({
   courseId: z.string(),
-});
-
-// ---------------------------------------------------------------------------
-// Instructor management
-// ---------------------------------------------------------------------------
-
-export const addInstructorSchema = z.object({
-  courseId: z.string(),
-  userId: z.string(),
-});
-
-export const removeInstructorSchema = z.object({
-  courseId: z.string(),
-  userId: z.string(),
 });
 
 // ---------------------------------------------------------------------------
@@ -113,16 +92,16 @@ export const deleteSectionSchema = z.object({
 export const createLessonSchema = z.object({
   sectionId: z.string(),
   title: z.string().min(1, "Title is required").max(200),
-  content: z.any().optional(), // Plate.js JSON
-  type: z.enum(lessonTypes).default("text"),
+  content: z.any().optional(),
+  type: z.enum(["text", "video", "quiz"]).default("text"),
   estimatedDuration: z.number().int().positive().optional(),
 });
 
 export const updateLessonSchema = z.object({
   lessonId: z.string(),
   title: z.string().min(1).max(200).optional(),
-  content: z.any().optional(), // Plate.js JSON
-  type: z.enum(lessonTypes).optional(),
+  content: z.any().optional(),
+  type: z.enum(["text", "video", "quiz"]).optional(),
   order: z.number().int().min(0).optional(),
   estimatedDuration: z.number().int().positive().nullish(),
 });

@@ -1,7 +1,11 @@
 "use client";
 
 import { useSuspenseQuery } from "@tanstack/react-query";
-import type { ColumnDef, PaginationState } from "@tanstack/react-table";
+import type {
+  ColumnDef,
+  PaginationState,
+  SortingState,
+} from "@tanstack/react-table";
 import { BanIcon, Loader2Icon, SearchIcon } from "lucide-react";
 import { useDeferredValue, useState, useTransition } from "react";
 import { CreateUserDialog } from "@/components/dashboard/admin/users/create-user-dialog";

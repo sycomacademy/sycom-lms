@@ -258,7 +258,7 @@ function FileCard({ file, progress, onRemove }: FileCardProps) {
               {file.name}
             </p>
             <p className="text-muted-foreground text-xs">
-              {formatBytes(file.size)}
+              {formatBytes(file.size, 2, "accurate")}
             </p>
           </div>
           {progress ? <Progress value={progress} /> : null}

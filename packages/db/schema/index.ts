@@ -1,6 +1,8 @@
 import { account, session, user, verification } from "./auth";
 import {
+  category,
   course,
+  courseCategory,
   courseInstructor,
   enrollment,
   lesson,
@@ -16,7 +18,9 @@ import { report } from "./report";
 
 export const schema = {
   account,
+  category,
   course,
+  courseCategory,
   courseInstructor,
   enrollment,
   feedback,

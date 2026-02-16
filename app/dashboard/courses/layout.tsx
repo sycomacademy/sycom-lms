@@ -8,14 +8,17 @@ export default async function CoursesLayout({
 }) {
   await instructorGuard();
 
-  await prefetch(
-    trpc.course.list.queryOptions({
-      limit: 10,
-      offset: 0,
-      sortBy: "updatedAt",
-      sortDirection: "desc",
-    })
-  );
+  await Promise.all([
+    prefetch(
+      trpc.course.list.queryOptions({
+        limit: 12,
+        offset: 0,
+        sortBy: "updatedAt",
+        sortDirection: "desc",
+      })
+    ),
+    prefetch(trpc.category.list.queryOptions()),
+  ]);
 
   return (
     <HydrateClient>

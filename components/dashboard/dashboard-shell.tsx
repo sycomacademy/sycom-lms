@@ -26,7 +26,7 @@ export function DashboardShell({
         </Suspense>
         <DashboardHeader />
         <Separator aria-hidden="true" className="bg-secondary" />
-        <div className="flex-1 overflow-auto p-4">{children}</div>
+        <div className="flex-1 p-4">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

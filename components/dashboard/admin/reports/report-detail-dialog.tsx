@@ -149,7 +149,6 @@ export function ReportDetailDialog({
   );
 
   const isReport = reportType === "report";
-  console.log();
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>

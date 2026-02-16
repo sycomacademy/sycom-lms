@@ -56,9 +56,3 @@ export function formatDeviceLabel(userAgent?: string | null): string {
 export function isMobileAgent(userAgent?: string | null): boolean {
   return MOBILE_UA.test((userAgent ?? "").toLowerCase());
 }
-
-console.log(
-  formatDeviceLabel(
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Mobile/15E148 Safari/604.1"
-  )
-);

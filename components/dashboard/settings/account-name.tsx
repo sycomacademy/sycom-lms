@@ -47,7 +47,7 @@ export function AccountName() {
   }, [user?.name, form]);
 
   const onSubmit = (data: AccountNameInput) => {
-    const name = [data.firstName, data.lastName]
+    const name = [data.firstName.trim(), data.lastName.trim()]
       .filter(Boolean)
       .join(" ")
       .trim();

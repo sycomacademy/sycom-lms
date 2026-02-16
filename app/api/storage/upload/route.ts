@@ -5,6 +5,9 @@ import { getSession } from "@/packages/auth/helper";
 import { db } from "@/packages/db";
 import { uploadSessions } from "@/packages/db/schema/files";
 import { getWebsiteUrl } from "@/packages/env/utils";
+import { createLoggerWithContext } from "@/packages/utils/logger";
+
+const apiLogger = createLoggerWithContext("api:storage:upload");
 
 /**
  * Handle Vercel Blob client uploads
@@ -94,7 +97,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
 
         // Log completion (file record is created in confirmUpload)
-        console.log("Upload completed:", {
+        apiLogger.debug("Upload completed:", {
           sessionId: payload.sessionId,
           url: blob.url,
           pathname: blob.pathname,

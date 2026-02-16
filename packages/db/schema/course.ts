@@ -99,6 +99,39 @@ export const course = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// Categories (for courses)
+// ---------------------------------------------------------------------------
+
+export const category = pgTable("category", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => `cat_${crypto.randomUUID()}`),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  order: integer("order").default(0),
+});
+
+// ---------------------------------------------------------------------------
+// Course ↔ Category (many-to-many junction)
+// ---------------------------------------------------------------------------
+
+export const courseCategory = pgTable(
+  "course_category",
+  {
+    courseId: text("course_id")
+      .notNull()
+      .references(() => course.id, { onDelete: "cascade" }),
+    categoryId: text("category_id")
+      .notNull()
+      .references(() => category.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.courseId, table.categoryId] }),
+    index("course_category_category_id_idx").on(table.categoryId),
+  ]
+);
+
+// ---------------------------------------------------------------------------
 // Pathway ↔ Course (many-to-many junction)
 // ---------------------------------------------------------------------------
 
@@ -261,6 +294,22 @@ export const courseRelations = relations(course, ({ one, many }) => ({
   sections: many(section),
   enrollments: many(enrollment),
   pathwayCourses: many(pathwayCourse),
+  courseCategories: many(courseCategory),
+}));
+
+export const categoryRelations = relations(category, ({ many }) => ({
+  courseCategories: many(courseCategory),
+}));
+
+export const courseCategoryRelations = relations(courseCategory, ({ one }) => ({
+  course: one(course, {
+    fields: [courseCategory.courseId],
+    references: [course.id],
+  }),
+  category: one(category, {
+    fields: [courseCategory.categoryId],
+    references: [category.id],
+  }),
 }));
 
 export const pathwayCourseRelations = relations(pathwayCourse, ({ one }) => ({

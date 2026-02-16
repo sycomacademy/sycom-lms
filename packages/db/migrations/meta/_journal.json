@@ -43,6 +43,13 @@
       "when": 1771167670941,
       "tag": "0005_adorable_cerise",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1771179593407,
+      "tag": "0006_clever_black_queen",
+      "breakpoints": true
     }
   ]
 }
