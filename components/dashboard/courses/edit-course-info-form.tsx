@@ -54,6 +54,8 @@ interface CategoryItem {
   slug: string;
 }
 
+import Image from "next/image";
+
 const DIFFICULTY_LABELS: Record<string, string> = {
   beginner: "Beginner",
   intermediate: "Intermediate",
@@ -225,15 +227,15 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
         {/* Thumbnail */}
         <Field>
           <FieldLabel className="text-xs">Thumbnail</FieldLabel>
-          {/* {course.imageUrl && files.length === 0 && (
+          {course.imageUrl && files.length === 0 && (
             <Image
               alt={course.title}
-              className="mb-2 h-32 w-auto rounded-md object-cover"
+              className="mb-2 aspect-square size-32 w-auto rounded-md object-contain"
               height={128}
               src={course.imageUrl}
               width={256}
             />
-          )} */}
+          )}
           <FileUploader
             accept={{
               "image/*": [".jpg", ".jpeg", ".png", ".webp", ".gif"],
@@ -326,11 +328,14 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
         {/* Summary (rich text editor) */}
         <Field>
           <FieldLabel className="text-xs">Summary</FieldLabel>
-          <PlateEditor
-            onChange={setSummary}
-            placeholder="Write a detailed course summary..."
-            value={summary}
-          />
+          <div>
+            <PlateEditor
+              onChange={setSummary}
+              placeholder="Write a detailed course summary..."
+              value={summary}
+              variant="summary"
+            />
+          </div>
           <p className="text-muted-foreground text-xs">
             Detailed overview shown on the course page. Supports rich text
             formatting.

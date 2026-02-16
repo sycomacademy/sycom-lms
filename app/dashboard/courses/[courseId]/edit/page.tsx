@@ -1,7 +1,14 @@
+import { TRPCError } from "@trpc/server";
+import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { EditCoursePage } from "@/components/dashboard/courses/edit-course-page";
 import { instructorGuard } from "@/packages/auth/helper";
-import { HydrateClient, prefetch, trpc } from "@/packages/trpc/server";
+import {
+  getCaller,
+  HydrateClient,
+  prefetch,
+  trpc,
+} from "@/packages/trpc/server";
 
 interface EditCoursePageProps {
   params: Promise<{ courseId: string }>;
@@ -11,10 +18,14 @@ export default async function EditCourseRoute({ params }: EditCoursePageProps) {
   await instructorGuard();
   const { courseId } = await params;
 
-  // const course = await (await getCaller()).course.getById({ courseId });
-  // if (!course) {
-  //   notFound();
-  // }
+  try {
+    await (await getCaller()).course.getById({ courseId });
+  } catch (error) {
+    if (error instanceof TRPCError && error.code === "NOT_FOUND") {
+      notFound();
+    }
+    throw error;
+  }
 
   await Promise.all([
     prefetch(trpc.course.getById.queryOptions({ courseId })),

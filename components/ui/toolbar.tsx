@@ -1,18 +1,14 @@
 "use client";
 
 import { Toolbar as ToolbarPrimitive } from "@base-ui/react/toolbar";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+
 import { cn } from "@/packages/utils/cn";
 
 function Toolbar({ className, ...props }: ToolbarPrimitive.Root.Props) {
   return (
     <ToolbarPrimitive.Root
       className={cn(
-        "relative flex gap-2 rounded-xl border bg-card not-dark:bg-clip-padding p-1 text-card-foreground",
+        "relative flex gap-1 rounded-xl border bg-card not-dark:bg-clip-padding p-1 text-card-foreground",
         className
       )}
       data-slot="toolbar"
@@ -21,28 +17,21 @@ function Toolbar({ className, ...props }: ToolbarPrimitive.Root.Props) {
   );
 }
 
-function ToolbarButton({
-  className,
-  tooltip,
-  ...props
-}: ToolbarPrimitive.Button.Props & { tooltip?: string }) {
-  const button = (
+function ToolbarButton({ className, ...props }: ToolbarPrimitive.Button.Props) {
+  return (
     <ToolbarPrimitive.Button
-      className={cn(className)}
+      className={cn(
+        "inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 font-medium text-xs outline-none transition-all",
+        "hover:bg-muted hover:text-foreground",
+        "focus-visible:ring-2 focus-visible:ring-ring/50",
+        "disabled:pointer-events-none disabled:opacity-50",
+        "data-[pressed]:bg-muted",
+        "[&_svg:not([class*='size-'])]:size-3.5 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        className
+      )}
       data-slot="toolbar-button"
       {...props}
     />
-  );
-
-  if (!tooltip) {
-    return button;
-  }
-
-  return (
-    <Tooltip>
-      <TooltipTrigger render={button} />
-      <TooltipContent>{tooltip}</TooltipContent>
-    </Tooltip>
   );
 }
 

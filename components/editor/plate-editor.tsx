@@ -1,28 +1,22 @@
 "use client";
 
 import {
-  BoldPlugin,
-  ItalicPlugin,
-  StrikethroughPlugin,
-  UnderlinePlugin,
-} from "@platejs/basic-nodes/react";
-import {
-  BoldIcon,
-  Heading2Icon,
-  Heading3Icon,
-  ItalicIcon,
-  PilcrowIcon,
-  QuoteIcon,
-  StrikethroughIcon,
-  UnderlineIcon,
+  Bold,
+  Highlighter,
+  Italic,
+  Strikethrough,
+  Underline,
 } from "lucide-react";
 import type { Value } from "platejs";
 import { Plate, usePlateEditor } from "platejs/react";
+import type { EditorProps } from "@/components/editor/nodes/editor";
 import { Editor, EditorContainer } from "@/components/editor/nodes/editor";
 import { FixedToolbar } from "@/components/editor/nodes/fixed-toolbar";
 import { MarkToolbarButton } from "@/components/editor/nodes/mark-toolbar-button";
 import { BasicNodesKit } from "@/components/editor/plugins/basic-nodes-kit";
-import { ToolbarButton, ToolbarGroup } from "@/components/ui/toolbar";
+import { SummaryKit } from "@/components/editor/plugins/summary-kit";
+import { ToolbarGroup, ToolbarSeparator } from "@/components/ui/toolbar";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface PlateEditorProps {
   /** Initial / controlled value (Plate JSON). */
@@ -33,6 +27,8 @@ interface PlateEditorProps {
   placeholder?: string;
   /** Whether the editor is read-only. */
   readOnly?: boolean;
+  /** Editor variant - 'default' for full editor, 'summary' for minimal */
+  variant?: "default" | "summary";
 }
 
 const EMPTY_VALUE: Value = [{ type: "p", children: [{ text: "" }] }];
@@ -42,11 +38,17 @@ export function PlateEditor({
   onChange,
   placeholder = "Start writing...",
   readOnly = false,
+  variant = "default",
 }: PlateEditorProps) {
+  const plugins = variant === "summary" ? SummaryKit : BasicNodesKit;
+
   const editor = usePlateEditor({
-    plugins: BasicNodesKit,
+    plugins,
     value: value && value.length > 0 ? value : EMPTY_VALUE,
   });
+
+  const editorVariant: EditorProps["variant"] =
+    variant === "summary" ? "summary" : "default";
 
   return (
     <Plate
@@ -55,72 +57,61 @@ export function PlateEditor({
       readOnly={readOnly}
     >
       {!readOnly && (
-        <FixedToolbar className="justify-start rounded-t-lg border border-input border-b-0">
-          <ToolbarGroup>
-            <ToolbarButton
-              onClick={() => editor.tf.p.toggle()}
-              tooltip="Paragraph"
-            >
-              <PilcrowIcon className="size-4" />
-            </ToolbarButton>
-            <ToolbarButton
-              onClick={() => editor.tf.h2.toggle()}
-              tooltip="Heading 2 (Ctrl+Alt+2)"
-            >
-              <Heading2Icon className="size-4" />
-            </ToolbarButton>
-            <ToolbarButton
-              onClick={() => editor.tf.h3.toggle()}
-              tooltip="Heading 3 (Ctrl+Alt+3)"
-            >
-              <Heading3Icon className="size-4" />
-            </ToolbarButton>
-            <ToolbarButton
-              onClick={() => editor.tf.blockquote.toggle()}
-              tooltip="Blockquote (Ctrl+Shift+.)"
-            >
-              <QuoteIcon className="size-4" />
-            </ToolbarButton>
-          </ToolbarGroup>
-
-          <ToolbarGroup>
-            <MarkToolbarButton
-              nodeType={BoldPlugin.key}
-              tooltip="Bold (Ctrl+B)"
-            >
-              <BoldIcon className="size-4" />
-            </MarkToolbarButton>
-            <MarkToolbarButton
-              nodeType={ItalicPlugin.key}
-              tooltip="Italic (Ctrl+I)"
-            >
-              <ItalicIcon className="size-4" />
-            </MarkToolbarButton>
-            <MarkToolbarButton
-              nodeType={UnderlinePlugin.key}
-              tooltip="Underline (Ctrl+U)"
-            >
-              <UnderlineIcon className="size-4" />
-            </MarkToolbarButton>
-            <MarkToolbarButton
-              nodeType={StrikethroughPlugin.key}
-              tooltip="Strikethrough (Ctrl+Shift+X)"
-            >
-              <StrikethroughIcon className="size-4" />
-            </MarkToolbarButton>
-          </ToolbarGroup>
-        </FixedToolbar>
+        <TooltipProvider>
+          <FixedToolbar className="justify-start rounded-t-lg border border-input border-b-0">
+            <ToolbarGroup aria-label="Text formatting">
+              <MarkToolbarButton
+                aria-label="Bold"
+                nodeType="bold"
+                tooltip="Bold (⌘B)"
+              >
+                <Bold />
+              </MarkToolbarButton>
+              <MarkToolbarButton
+                aria-label="Italic"
+                nodeType="italic"
+                tooltip="Italic (⌘I)"
+              >
+                <Italic />
+              </MarkToolbarButton>
+              <MarkToolbarButton
+                aria-label="Underline"
+                nodeType="underline"
+                tooltip="Underline (⌘U)"
+              >
+                <Underline />
+              </MarkToolbarButton>
+            </ToolbarGroup>
+            {variant === "summary" && (
+              <>
+                <ToolbarSeparator orientation="vertical" />
+                <ToolbarGroup aria-label="Additional formatting">
+                  <MarkToolbarButton
+                    aria-label="Strikethrough"
+                    nodeType="strikethrough"
+                    tooltip="Strikethrough (⌘⇧X)"
+                  >
+                    <Strikethrough />
+                  </MarkToolbarButton>
+                  <MarkToolbarButton
+                    aria-label="Highlight"
+                    nodeType="highlight"
+                    tooltip="Highlight (⌘⇧H)"
+                  >
+                    <Highlighter />
+                  </MarkToolbarButton>
+                </ToolbarGroup>
+              </>
+            )}
+          </FixedToolbar>
+        </TooltipProvider>
       )}
 
       <EditorContainer
-        className="min-h-[200px] rounded-b-lg border border-input"
-        variant="default"
+        className="min-h-[120px] rounded-b-lg border border-input"
+        variant={readOnly ? "default" : editorVariant}
       >
-        <Editor
-          className="px-4 pt-2 pb-4 text-sm"
-          placeholder={placeholder}
-          variant="fullWidth"
-        />
+        <Editor placeholder={placeholder} variant={editorVariant} />
       </EditorContainer>
     </Plate>
   );

@@ -28,6 +28,7 @@ const editorContainerVariants = cva(
           "group rounded-md border border-input ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
           "has-data-readonly:w-fit has-data-readonly:cursor-default has-data-readonly:border-transparent has-data-readonly:focus-within:[box-shadow:none]"
         ),
+        summary: "h-full",
       },
     },
   }
@@ -80,6 +81,7 @@ const editorVariants = cva(
         fullWidth: "size-full px-16 pt-4 pb-72 text-base sm:px-24",
         none: "",
         select: "px-3 py-2 text-base data-readonly:w-fit",
+        summary: "size-full px-3 py-2 text-sm",
       },
     },
   }
