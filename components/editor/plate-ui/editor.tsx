@@ -11,10 +11,19 @@ const editorContainerVariants = cva(
   "relative w-full cursor-text select-text overflow-y-auto caret-primary selection:bg-brand/25 focus-visible:outline-none [&_.slate-selection-area]:z-50 [&_.slate-selection-area]:border [&_.slate-selection-area]:border-brand/25 [&_.slate-selection-area]:bg-brand/15",
   {
     defaultVariants: {
-      variant: "default",
+      variant: "basic",
     },
     variants: {
       variant: {
+        basic: cn(
+          "rounded-b-lg border border-input border-t-0 bg-background",
+          "has-[[data-slate-editor]:focus]:ring-2 has-[[data-slate-editor]:focus]:ring-ring/20"
+        ),
+        course: cn(
+          "rounded-b-lg border border-input border-t-0 bg-background",
+          "min-h-[300px]",
+          "has-[[data-slate-editor]:focus]:ring-2 has-[[data-slate-editor]:focus]:ring-ring/20"
+        ),
         comment: cn(
           "flex flex-wrap justify-between gap-1 px-1 py-0.5 text-sm",
           "rounded-md border-[1.5px] border-transparent bg-transparent",
@@ -59,7 +68,7 @@ const editorVariants = cva(
   ),
   {
     defaultVariants: {
-      variant: "default",
+      variant: "basic",
     },
     variants: {
       disabled: {
@@ -69,13 +78,14 @@ const editorVariants = cva(
         true: "ring-2 ring-ring ring-offset-2",
       },
       variant: {
+        basic: "min-h-[120px] px-3 py-2 text-sm",
+        course: "min-h-[280px] px-4 py-3 text-sm",
         ai: "w-full px-0 text-base md:text-sm",
         aiChat:
           "max-h-[min(70vh,320px)] w-full overflow-y-auto px-3 py-2 text-base md:text-sm",
         comment: cn("rounded-none border-none bg-transparent text-sm"),
         default:
           "size-full px-16 pt-4 pb-72 text-base sm:px-[max(64px,calc(50%-350px))]",
-        demo: "size-full px-16 pt-4 pb-72 text-base sm:px-[max(64px,calc(50%-350px))]",
         fullWidth: "size-full px-16 pt-4 pb-72 text-base sm:px-24",
         none: "",
         select: "px-3 py-2 text-base data-readonly:w-fit",

@@ -333,13 +333,13 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
               onChange={setSummary}
               placeholder="Write a detailed course summary..."
               value={summary}
-              variant="summary"
+              variant="basic"
             />
+            <p className="text-muted-foreground text-xs">
+              Detailed overview shown on the course page. Supports rich text
+              formatting.
+            </p>
           </div>
-          <p className="text-muted-foreground text-xs">
-            Detailed overview shown on the course page. Supports rich text
-            formatting.
-          </p>
         </Field>
 
         {/* Categories */}
