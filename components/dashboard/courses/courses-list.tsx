@@ -35,7 +35,6 @@ const DIFFICULTY_OPTIONS = [
 const STATUS_OPTIONS = [
   { value: "draft", label: "Draft" },
   { value: "published", label: "Published" },
-  { value: "archived", label: "Archived" },
 ] as const;
 
 const DIFFICULTY_BADGE_VARIANT: Record<
@@ -54,7 +53,6 @@ const STATUS_BADGE_VARIANT: Record<
 > = {
   draft: "outline",
   published: "default",
-  archived: "secondary",
 };
 
 type ViewMode = "card" | "table";
@@ -186,7 +184,7 @@ export function CoursesList() {
         : undefined,
     filterStatuses:
       deferredStatuses.length > 0
-        ? (deferredStatuses as ["draft"] | ["published"] | ["archived"])
+        ? (deferredStatuses as ["draft"] | ["published"])
         : undefined,
     sortBy: "updatedAt",
     sortDirection: "desc",
@@ -246,7 +244,7 @@ export function CoursesList() {
       {/* Filters row */}
       <div className="flex flex-wrap items-center gap-2">
         <CategoriesFilter
-          className="min-w-40"
+          className="min-w-72"
           onChange={(ids) => {
             setCategoryIds(ids);
             setPagination((prev) => ({ ...prev, pageIndex: 0 }));

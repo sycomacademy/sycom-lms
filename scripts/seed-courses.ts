@@ -26,7 +26,7 @@ const DIFFICULTIES = [
   "advanced",
   "expert",
 ] as const;
-const STATUSES = ["draft", "published", "archived"] as const;
+const STATUSES = ["draft", "published"] as const;
 
 function pick<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];

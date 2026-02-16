@@ -381,6 +381,7 @@ export const courseRouter = router({
         .values({
           title: input.title,
           description: input.description,
+          summary: input.summary,
           slug: input.slug,
           imageUrl: input.imageUrl,
           difficulty: input.difficulty,
@@ -445,27 +446,22 @@ export const courseRouter = router({
         }
       }
 
+      const UPDATABLE_FIELDS = [
+        "title",
+        "description",
+        "summary",
+        "slug",
+        "imageUrl",
+        "difficulty",
+        "estimatedDuration",
+        "status",
+      ] as const;
+
       const updateData: Record<string, unknown> = {};
-      if (data.title !== undefined) {
-        updateData.title = data.title;
-      }
-      if (data.description !== undefined) {
-        updateData.description = data.description;
-      }
-      if (data.slug !== undefined) {
-        updateData.slug = data.slug;
-      }
-      if (data.imageUrl !== undefined) {
-        updateData.imageUrl = data.imageUrl;
-      }
-      if (data.difficulty !== undefined) {
-        updateData.difficulty = data.difficulty;
-      }
-      if (data.estimatedDuration !== undefined) {
-        updateData.estimatedDuration = data.estimatedDuration;
-      }
-      if (data.status !== undefined) {
-        updateData.status = data.status;
+      for (const key of UPDATABLE_FIELDS) {
+        if (data[key] !== undefined) {
+          updateData[key] = data[key];
+        }
       }
 
       if (Object.keys(updateData).length === 0 && categoryIds === undefined) {

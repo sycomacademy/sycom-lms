@@ -33,7 +33,6 @@ const STATUS_BADGE_VARIANT: Record<
 > = {
   draft: "outline",
   published: "default",
-  archived: "secondary",
 };
 
 interface CourseCardProps {
@@ -43,7 +42,7 @@ interface CourseCardProps {
 
 export function CourseCard({ course, onDelete }: CourseCardProps) {
   return (
-    <Card className="flex flex-col overflow-hidden" size="default">
+    <Card className="flex flex-col overflow-hidden pt-0" size="default">
       <Link
         className="outline-none focus-visible:ring-2 focus-visible:ring-ring"
         href={`/dashboard/courses/${course.id}/edit`}

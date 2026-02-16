@@ -49,6 +49,8 @@
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-brand: var(--brand);
+  --color-highlight: var(--highlight);
 }
 
 :root {
@@ -88,6 +90,8 @@
   --destructive-foreground: var(--color-red-700);
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
+  --brand: oklch(0.623 0.214 259.815);
+  --highlight: oklch(0.852 0.199 91.936);
 }
 
 .dark {
@@ -126,6 +130,8 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.552 0.016 285.938);
   --destructive-foreground: var(--color-red-400);
+  --brand: oklch(0.707 0.165 254.624);
+  --highlight: oklch(0.852 0.199 91.936);
 }
 
 @layer base {
@@ -149,27 +155,5 @@
   }
   body {
     @apply bg-background text-foreground;
-  }
-}
-
-/* Sidebar delayed centering - content only centers after transition completes */
-.sidebar-delayed-center {
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity 150ms ease-out,
-    visibility 150ms ease-out;
-  transition-delay: 0ms;
-}
-
-[data-state="collapsed"] .sidebar-delayed-center {
-  opacity: 1;
-  visibility: visible;
-  transition-delay: 200ms;
-}
-
-@starting-style {
-  [data-state="collapsed"] .sidebar-delayed-center {
-    opacity: 0;
   }
 }

@@ -16,7 +16,7 @@ import { createdAt, updatedAt } from "@/packages/db/schema/helper";
 // Enums (inline text enums following existing report.ts pattern)
 // ---------------------------------------------------------------------------
 
-export const COURSE_STATUSES = ["draft", "published", "archived"] as const;
+export const COURSE_STATUSES = ["draft", "published"] as const;
 export type CourseStatus = (typeof COURSE_STATUSES)[number];
 
 export const DIFFICULTY_LEVELS = [
@@ -77,6 +77,7 @@ export const course = pgTable(
       .$defaultFn(() => `crs_${crypto.randomUUID()}`),
     title: text("title").notNull(),
     description: text("description"),
+    summary: jsonb("summary"), // Plate.js editor JSON (long-form rich text)
     slug: text("slug").notNull().unique(),
     imageUrl: text("image_url"),
     difficulty: text("difficulty", { enum: DIFFICULTY_LEVELS })

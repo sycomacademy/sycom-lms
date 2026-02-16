@@ -13,9 +13,7 @@ export const listCoursesSchema = z.object({
     .default("updatedAt"),
   sortDirection: z.enum(["asc", "desc"]).default("desc"),
   filterCategoryIds: z.array(z.string()).optional(),
-  filterStatuses: z
-    .array(z.enum(["draft", "published", "archived"]))
-    .optional(),
+  filterStatuses: z.array(z.enum(["draft", "published"])).optional(),
   filterDifficulties: z
     .array(z.enum(["beginner", "intermediate", "advanced", "expert"]))
     .optional(),
@@ -24,6 +22,7 @@ export const listCoursesSchema = z.object({
 export const createCourseSchema = z.object({
   title: z.string().min(1, "Title is required").max(200),
   description: z.string().max(2000).optional(),
+  summary: z.any().optional(), // Plate.js editor JSON
   slug: z
     .string()
     .min(1, "Slug is required")
@@ -37,7 +36,7 @@ export const createCourseSchema = z.object({
     .enum(["beginner", "intermediate", "advanced", "expert"])
     .default("beginner"),
   estimatedDuration: z.number().int().positive().optional(),
-  status: z.enum(["draft", "published", "archived"]).default("draft"),
+  status: z.enum(["draft", "published"]).default("draft"),
   categoryIds: z.array(z.string()).optional(),
 });
 
@@ -45,6 +44,7 @@ export const updateCourseSchema = z.object({
   courseId: z.string(),
   title: z.string().min(1).max(200).optional(),
   description: z.string().max(2000).optional(),
+  summary: z.any().optional(), // Plate.js editor JSON
   slug: z
     .string()
     .min(1)
@@ -56,7 +56,7 @@ export const updateCourseSchema = z.object({
     .enum(["beginner", "intermediate", "advanced", "expert"])
     .optional(),
   estimatedDuration: z.number().int().positive().nullish(),
-  status: z.enum(["draft", "published", "archived"]).optional(),
+  status: z.enum(["draft", "published"]).optional(),
   categoryIds: z.array(z.string()).optional(),
 });
 
