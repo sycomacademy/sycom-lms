@@ -3,12 +3,12 @@
 import { normalizeNodeId } from "platejs";
 import { Plate, usePlateEditor } from "platejs/react";
 
-import { EditorKit } from "@/components/editor/editor-kit";
+import { BaseEditorKit } from "@/components/editor/editor-base-kit";
 import { Editor, EditorContainer } from "@/components/editor/plate-ui/editor";
 
 export function PlateEditor() {
   const editor = usePlateEditor({
-    plugins: EditorKit,
+    plugins: BaseEditorKit,
     value,
   });
 
