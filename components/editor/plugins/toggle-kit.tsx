@@ -1,9 +1,8 @@
-'use client';
+"use client";
 
-import { TogglePlugin } from '@platejs/toggle/react';
-
-import { IndentKit } from '@/components/editor/plugins/indent-kit';
-import { ToggleElement } from '@/components/ui/toggle-node';
+import { TogglePlugin } from "@platejs/toggle/react";
+import { ToggleElement } from "@/components/editor/plate-ui/toggle-node";
+import { IndentKit } from "@/components/editor/plugins/indent-kit";
 
 export const ToggleKit = [
   ...IndentKit,

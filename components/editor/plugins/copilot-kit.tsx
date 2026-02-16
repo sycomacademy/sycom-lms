@@ -1,24 +1,23 @@
-'use client';
+"use client";
 
-import type { TElement } from 'platejs';
+import { faker } from "@faker-js/faker";
+import { CopilotPlugin } from "@platejs/ai/react";
+import { serializeMd, stripMarkdown } from "@platejs/markdown";
+import type { TElement } from "platejs";
 
-import { faker } from '@faker-js/faker';
-import { CopilotPlugin } from '@platejs/ai/react';
-import { serializeMd, stripMarkdown } from '@platejs/markdown';
+import { GhostText } from "@/components/editor/plate-ui/ghost-text";
 
-import { GhostText } from '@/components/ui/ghost-text';
-
-import { MarkdownKit } from './markdown-kit';
+import { MarkdownKit } from "./markdown-kit";
 
 export const CopilotKit = [
   ...MarkdownKit,
   CopilotPlugin.configure(({ api }) => ({
     options: {
       completeOptions: {
-        api: '/api/ai/copilot',
+        api: "/api/ai/copilot",
         body: {
           system: `You are an advanced AI writing assistant, similar to VSCode Copilot but for general text. Your task is to predict and generate the next part of the text based on the given context.
-  
+
   Rules:
   - Continue the text naturally up to the next punctuation mark (., ,, ;, :, ?, or !).
   - Maintain style and tone. Don't repeat given text.
@@ -36,7 +35,9 @@ export const CopilotKit = [
           });
         },
         onFinish: (_, completion) => {
-          if (completion === '0') return;
+          if (completion === "0") {
+            return;
+          }
 
           api.copilot.setBlockSuggestion({
             text: stripMarkdown(completion),
@@ -48,7 +49,9 @@ export const CopilotKit = [
       getPrompt: ({ editor }) => {
         const contextEntry = editor.api.block({ highest: true });
 
-        if (!contextEntry) return '';
+        if (!contextEntry) {
+          return "";
+        }
 
         const prompt = serializeMd(editor, {
           value: [contextEntry[0] as TElement],
@@ -62,16 +65,16 @@ export const CopilotKit = [
     },
     shortcuts: {
       accept: {
-        keys: 'tab',
+        keys: "tab",
       },
       acceptNextWord: {
-        keys: 'mod+right',
+        keys: "mod+right",
       },
       reject: {
-        keys: 'escape',
+        keys: "escape",
       },
       triggerSuggestion: {
-        keys: 'ctrl+space',
+        keys: "ctrl+space",
       },
     },
   })),
