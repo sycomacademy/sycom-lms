@@ -120,7 +120,7 @@ function Draggable(props: PlateElementProps) {
       resetPreview();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDragging]);
+  }, [isDragging, resetPreview]);
 
   useEffect(() => {
     if (isAboutToDrag) {

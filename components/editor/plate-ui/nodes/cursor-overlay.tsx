@@ -1,4 +1,4 @@
-/** biome-ignore-all lint/suspicious/noArrayIndexKey: <explanation> */
+/** biome-ignore-all lint/suspicious/noArrayIndexKey: <ode> */
 "use client";
 
 import { AIChatPlugin } from "@platejs/ai/react";

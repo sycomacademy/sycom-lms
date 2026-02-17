@@ -24,6 +24,7 @@ export function HeadingElement({
 }: PlateElementProps & VariantProps<typeof headingVariants>) {
   return (
     <PlateElement
+      // biome-ignore lint/style/noNonNullAssertion: <ode>
       as={variant!}
       className={headingVariants({ variant })}
       {...props}

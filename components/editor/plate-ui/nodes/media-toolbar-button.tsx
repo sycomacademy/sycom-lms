@@ -114,7 +114,7 @@ export function MediaToolbarButton({
           open={open}
           {...props}
         >
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger>
             <ToolbarSplitButtonSecondary />
           </DropdownMenuTrigger>
 

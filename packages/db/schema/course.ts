@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  boolean,
   index,
   integer,
   jsonb,
@@ -213,6 +214,7 @@ export const lesson = pgTable(
     content: jsonb("content"), // Plate.js editor JSON
     type: text("type", { enum: LESSON_TYPES }).default("text").notNull(),
     order: integer("order").notNull().default(0),
+    isLocked: boolean("is_locked").notNull().default(false),
     estimatedDuration: integer("estimated_duration"), // minutes
     createdAt,
     updatedAt,

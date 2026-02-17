@@ -32,6 +32,9 @@ import {
   deleteLessonSchema,
   deleteSectionSchema,
   listCoursesSchema,
+  moveLessonSchema,
+  reorderLessonsSchema,
+  reorderSectionsSchema,
   updateCourseSchema,
   updateLessonSchema,
   updateSectionSchema,
@@ -692,6 +695,7 @@ export const courseRouter = router({
           content: input.content,
           type: input.type ?? "text",
           order: nextOrder,
+          isLocked: input.isLocked ?? false,
           estimatedDuration: input.estimatedDuration,
         })
         .returning();
@@ -730,7 +734,32 @@ export const courseRouter = router({
         ctx.session.user.id,
         ctx.session.user.role ?? "student"
       );
+      // If moving to a different section, verify access to target section
+      if (input.sectionId !== undefined && input.sectionId !== les.sectionId) {
+        const [targetSec] = await db
+          .select({ courseId: section.courseId })
+          .from(section)
+          .where(eq(section.id, input.sectionId))
+          .limit(1);
+        if (!targetSec) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Target section not found",
+          });
+        }
+        // Ensure target section is in the same course
+        if (targetSec.courseId !== sec.courseId) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Cannot move lesson to a section in a different course",
+          });
+        }
+      }
+
       const updateData: Record<string, unknown> = {};
+      if (input.sectionId !== undefined) {
+        updateData.sectionId = input.sectionId;
+      }
       if (input.title !== undefined) {
         updateData.title = input.title;
       }
@@ -742,6 +771,9 @@ export const courseRouter = router({
       }
       if (input.order !== undefined) {
         updateData.order = input.order;
+      }
+      if (input.isLocked !== undefined) {
+        updateData.isLocked = input.isLocked;
       }
       if (input.estimatedDuration !== undefined) {
         updateData.estimatedDuration = input.estimatedDuration;
@@ -794,5 +826,156 @@ export const courseRouter = router({
       );
       await db.delete(lesson).where(eq(lesson.id, input.lessonId));
       return { success: true };
+    }),
+
+  // -------------------------------------------------------------------------
+  // Reordering (bulk operations for drag-and-drop)
+  // -------------------------------------------------------------------------
+  reorderSections: instructorProcedure
+    .input(reorderSectionsSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+      await assertCourseAccess(
+        db,
+        input.courseId,
+        ctx.session.user.id,
+        ctx.session.user.role ?? "student"
+      );
+
+      // Update each section's order based on its position in the array
+      await Promise.all(
+        input.sectionIds.map((sectionId: string, index: number) =>
+          db
+            .update(section)
+            .set({ order: index })
+            .where(
+              and(
+                eq(section.id, sectionId),
+                eq(section.courseId, input.courseId)
+              )
+            )
+        )
+      );
+
+      return { success: true };
+    }),
+
+  reorderLessons: instructorProcedure
+    .input(reorderLessonsSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      // Get the section to verify access
+      const [sec] = await db
+        .select({ courseId: section.courseId })
+        .from(section)
+        .where(eq(section.id, input.sectionId))
+        .limit(1);
+
+      if (!sec) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Section not found",
+        });
+      }
+
+      await assertCourseAccess(
+        db,
+        sec.courseId,
+        ctx.session.user.id,
+        ctx.session.user.role ?? "student"
+      );
+
+      // Update each lesson's order based on its position in the array
+      await Promise.all(
+        input.lessonIds.map((lessonId: string, index: number) =>
+          db
+            .update(lesson)
+            .set({ order: index })
+            .where(
+              and(
+                eq(lesson.id, lessonId),
+                eq(lesson.sectionId, input.sectionId)
+              )
+            )
+        )
+      );
+
+      return { success: true };
+    }),
+
+  moveLesson: instructorProcedure
+    .input(moveLessonSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      // Get the lesson's current section
+      const [les] = await db
+        .select({ sectionId: lesson.sectionId })
+        .from(lesson)
+        .where(eq(lesson.id, input.lessonId))
+        .limit(1);
+
+      if (!les) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Lesson not found",
+        });
+      }
+
+      // Get source section's course
+      const [sourceSec] = await db
+        .select({ courseId: section.courseId })
+        .from(section)
+        .where(eq(section.id, les.sectionId))
+        .limit(1);
+
+      if (!sourceSec) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Source section not found",
+        });
+      }
+
+      // Get target section's course
+      const [targetSec] = await db
+        .select({ courseId: section.courseId })
+        .from(section)
+        .where(eq(section.id, input.targetSectionId))
+        .limit(1);
+
+      if (!targetSec) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Target section not found",
+        });
+      }
+
+      // Ensure both sections are in the same course
+      if (sourceSec.courseId !== targetSec.courseId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot move lesson to a section in a different course",
+        });
+      }
+
+      await assertCourseAccess(
+        db,
+        sourceSec.courseId,
+        ctx.session.user.id,
+        ctx.session.user.role ?? "student"
+      );
+
+      // Move the lesson
+      const [updated] = await db
+        .update(lesson)
+        .set({
+          sectionId: input.targetSectionId,
+          order: input.newOrder,
+        })
+        .where(eq(lesson.id, input.lessonId))
+        .returning();
+
+      return updated;
     }),
 });

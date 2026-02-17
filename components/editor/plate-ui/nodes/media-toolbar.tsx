@@ -18,15 +18,14 @@ import {
   useRemoveNodeButton,
   useSelected,
 } from "platejs/react";
-
+import { useEffect } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Popover,
-  PopoverAnchor,
   PopoverContent,
+  PopoverTrigger,
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-
 import { CaptionButton } from "./caption";
 
 const inputVariants = cva(
@@ -57,24 +56,21 @@ export function MediaToolbar({
     !isImagePreviewOpen;
   const isEditing = useFloatingMediaValue("isEditing");
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!open && isEditing) {
       FloatingMediaStore.set("isEditing", false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, isEditing]);
 
   const element = useElement();
   const { props: buttonProps } = useRemoveNodeButton({ element });
 
   return (
     <Popover modal={false} open={open}>
-      <PopoverAnchor>{children}</PopoverAnchor>
+      <PopoverTrigger>{children}</PopoverTrigger>
 
-      <PopoverContent
-        className="w-auto p-1"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
+      <PopoverContent className="w-auto p-1">
         {isEditing ? (
           <div className="flex w-[330px] flex-col">
             <div className="flex items-center">

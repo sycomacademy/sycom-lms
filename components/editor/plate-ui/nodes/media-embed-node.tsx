@@ -1,5 +1,5 @@
-/** biome-ignore-all lint/style/noNonNullAssertion: <explanation> */
-/** biome-ignore-all lint/style/noNestedTernary: <explanation> */
+/** biome-ignore-all lint/style/noNonNullAssertion: <ode> */
+/** biome-ignore-all lint/style/noNestedTernary: <ode> */
 "use client";
 
 import { parseTwitterUrl, parseVideoUrl } from "@platejs/media";

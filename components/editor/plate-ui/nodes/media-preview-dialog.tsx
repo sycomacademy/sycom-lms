@@ -1,3 +1,6 @@
+/** biome-ignore-all lint/a11y/noNoninteractiveElementInteractions: <ode> */
+/** biome-ignore-all lint/a11y/useKeyWithClickEvents: <ode> */
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <ode> */
 "use client";
 
 import {

@@ -15,10 +15,8 @@ import {
   usePluginOption,
 } from "platejs/react";
 import type * as React from "react";
-
+import { Toolbar } from "@/components/ui/toolbar";
 import { cn } from "@/packages/utils/cn";
-
-import { Toolbar } from "./toolbar";
 
 export function FloatingToolbar({
   children,
@@ -65,7 +63,9 @@ export function FloatingToolbar({
 
   const ref = useComposedRef<HTMLDivElement>(props.ref, floatingRef);
 
-  if (hidden) return null;
+  if (hidden) {
+    return null;
+  }
 
   return (
     <div ref={clickOutsideRef}>

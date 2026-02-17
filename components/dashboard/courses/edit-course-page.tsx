@@ -3,6 +3,7 @@
 import { BookOpenIcon, InfoIcon } from "lucide-react";
 
 import { EditCourseInfoForm } from "@/components/dashboard/courses/edit-course-info-form";
+import { EditCurriculumForm } from "@/components/dashboard/courses/edit-curriculum-form";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 
 interface EditCoursePageProps {
@@ -36,13 +37,7 @@ export function EditCoursePage({ courseId }: EditCoursePageProps) {
         </TabsPanel>
 
         <TabsPanel className="pt-6" value={1}>
-          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12 text-center">
-            <BookOpenIcon className="mb-3 size-8 text-muted-foreground/60" />
-            <p className="font-medium text-sm">Curriculum editor</p>
-            <p className="mt-1 text-muted-foreground text-sm">
-              Sections and lessons management coming soon.
-            </p>
-          </div>
+          <EditCurriculumForm courseId={courseId} />
         </TabsPanel>
       </Tabs>
     </div>

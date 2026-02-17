@@ -91,7 +91,9 @@ function CodeBlockCombobox() {
     [searchValue]
   );
 
-  if (readOnly) return null;
+  if (readOnly) {
+    return null;
+  }
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
@@ -164,11 +166,12 @@ function CopyButton({
     setTimeout(() => {
       setHasCopied(false);
     }, 2000);
-  }, [hasCopied]);
+  }, []);
 
   return (
     <Button
       onClick={() => {
+        // biome-ignore lint/complexity/noVoid: <ode>
         void navigator.clipboard.writeText(
           typeof value === "function" ? value() : value
         );

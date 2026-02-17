@@ -1,9 +1,0 @@
-import { BaseCodeDrawingPlugin } from "@platejs/code-drawing";
-
-import { CodeDrawingElement } from "@/components/editor/plate-ui/nodes/code-drawing-node";
-
-export const BaseCodeDrawingKit = [
-  BaseCodeDrawingPlugin.configure({
-    node: { component: CodeDrawingElement },
-  }),
-];

@@ -12,7 +12,9 @@ export function GhostText() {
     element.id as string
   );
 
-  if (!isSuggested) return null;
+  if (!isSuggested) {
+    return null;
+  }
 
   return <GhostTextContent />;
 }
