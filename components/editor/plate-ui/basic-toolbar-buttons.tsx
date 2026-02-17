@@ -3,18 +3,20 @@
 import {
   BoldIcon,
   CodeIcon,
+  EyeIcon,
   Heading1,
   Heading2,
   HighlighterIcon,
   ItalicIcon,
   List,
   ListOrdered,
+  PencilIcon,
   QuoteIcon,
   SeparatorHorizontal,
   StrikethroughIcon,
   UnderlineIcon,
 } from "lucide-react";
-import { useEditorRef } from "platejs/react";
+import { useEditorReadOnly, useEditorRef, usePlateState } from "platejs/react";
 import { ToolbarGroup, ToolbarSeparator } from "@/components/ui/toolbar";
 import {
   RedoToolbarButton,
@@ -125,52 +127,79 @@ function HorizontalRuleButton() {
   );
 }
 
-// Full toolbar buttons component for course variant
+// Mode toggle button for switching between editing and viewing
+function ModeToggleButton() {
+  const [readOnly, setReadOnly] = usePlateState("readOnly");
+
+  return (
+    <ToolbarButton
+      onClick={() => setReadOnly(!readOnly)}
+      pressed={!readOnly}
+      tooltip={readOnly ? "Edit mode" : "View mode"}
+    >
+      {readOnly ? <PencilIcon /> : <EyeIcon />}
+    </ToolbarButton>
+  );
+}
+
+// Full toolbar buttons component for basic variant
 export function ToolbarButtons() {
+  const readOnly = useEditorReadOnly();
+
   return (
     <>
+      {!readOnly && (
+        <>
+          <ToolbarGroup>
+            <UndoToolbarButton />
+            <RedoToolbarButton />
+          </ToolbarGroup>
+
+          <ToolbarSeparator />
+
+          <ToolbarGroup>
+            <MarkToolbarButton nodeType="bold" tooltip="Bold">
+              <BoldIcon />
+            </MarkToolbarButton>
+            <MarkToolbarButton nodeType="italic" tooltip="Italic">
+              <ItalicIcon />
+            </MarkToolbarButton>
+            <MarkToolbarButton nodeType="underline" tooltip="Underline">
+              <UnderlineIcon />
+            </MarkToolbarButton>
+            <MarkToolbarButton nodeType="strikethrough" tooltip="Strikethrough">
+              <StrikethroughIcon />
+            </MarkToolbarButton>
+            <MarkToolbarButton nodeType="code" tooltip="Inline Code">
+              <CodeIcon />
+            </MarkToolbarButton>
+            <MarkToolbarButton nodeType="highlight" tooltip="Highlight">
+              <HighlighterIcon />
+            </MarkToolbarButton>
+            <HorizontalRuleButton />
+          </ToolbarGroup>
+
+          <ToolbarSeparator />
+
+          <ToolbarGroup>
+            <Heading1Button />
+            <Heading2Button />
+          </ToolbarGroup>
+
+          <ToolbarSeparator />
+
+          <ToolbarGroup>
+            <BulletListButton />
+            <NumberedListButton />
+            <BlockquoteButton />
+          </ToolbarGroup>
+        </>
+      )}
+
+      <div className="grow" />
+
       <ToolbarGroup>
-        <UndoToolbarButton />
-        <RedoToolbarButton />
-      </ToolbarGroup>
-
-      <ToolbarSeparator />
-
-      <ToolbarGroup>
-        <MarkToolbarButton nodeType="bold" tooltip="Bold">
-          <BoldIcon />
-        </MarkToolbarButton>
-        <MarkToolbarButton nodeType="italic" tooltip="Italic">
-          <ItalicIcon />
-        </MarkToolbarButton>
-        <MarkToolbarButton nodeType="underline" tooltip="Underline">
-          <UnderlineIcon />
-        </MarkToolbarButton>
-        <MarkToolbarButton nodeType="strikethrough" tooltip="Strikethrough">
-          <StrikethroughIcon />
-        </MarkToolbarButton>
-        <MarkToolbarButton nodeType="code" tooltip="Inline Code">
-          <CodeIcon />
-        </MarkToolbarButton>
-        <MarkToolbarButton nodeType="highlight" tooltip="Highlight">
-          <HighlighterIcon />
-        </MarkToolbarButton>
-        <HorizontalRuleButton />
-      </ToolbarGroup>
-
-      <ToolbarSeparator />
-
-      <ToolbarGroup>
-        <Heading1Button />
-        <Heading2Button />
-      </ToolbarGroup>
-
-      <ToolbarSeparator />
-
-      <ToolbarGroup>
-        <BulletListButton />
-        <NumberedListButton />
-        <BlockquoteButton />
+        <ModeToggleButton />
       </ToolbarGroup>
     </>
   );
