@@ -115,12 +115,13 @@ function Draggable(props: PlateElementProps) {
   };
 
   // clear up virtual multiple preview when drag end
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <ode>
   useEffect(() => {
     if (!isDragging) {
       resetPreview();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDragging, resetPreview]);
+  }, [isDragging]);
 
   useEffect(() => {
     if (isAboutToDrag) {
