@@ -163,5 +163,10 @@
   "trustedDependencies": [
     "sharp",
     "unrs-resolver"
-  ]
+  ],
+  "pnpm": {
+    "overrides": {
+      "jotai": "2.11.0"
+    }
+  }
 }

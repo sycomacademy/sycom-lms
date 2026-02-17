@@ -97,14 +97,15 @@ function MarkButton({ clear, nodeType, children, ...props }: MarkButtonProps) {
   );
 }
 
-// History buttons
+// History buttons (HistoryPlugin is in Plate core; toolbar + HistoryShortcutsPlugin wire UI and keys)
 function UndoButton() {
   const editor = useEditorRef();
+  const canUndo = (editor.history?.undos?.length ?? 0) > 0;
 
   return (
     <ToolbarButton
-      disabled={editor.history.undos.length === 0}
-      onClick={() => editor.undo()}
+      disabled={!canUndo}
+      onClick={() => editor.tf.undo()}
       tooltip="Undo (Ctrl+Z)"
     >
       <Undo2Icon />
@@ -114,12 +115,13 @@ function UndoButton() {
 
 function RedoButton() {
   const editor = useEditorRef();
+  const canRedo = (editor.history?.redos?.length ?? 0) > 0;
 
   return (
     <ToolbarButton
-      disabled={editor.history.redos.length === 0}
-      onClick={() => editor.redo()}
-      tooltip="Redo (Ctrl+Y)"
+      disabled={!canRedo}
+      onClick={() => editor.tf.redo()}
+      tooltip="Redo (Ctrl+Shift+Z)"
     >
       <Redo2Icon />
     </ToolbarButton>

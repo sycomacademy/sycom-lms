@@ -17,6 +17,7 @@ const editorContainerVariants = cva(
       variant: {
         basic: cn(
           "rounded-b-lg border border-input border-t-0 bg-background",
+          "max-h-[200px]",
           "has-[[data-slate-editor]:focus]:ring-2 has-[[data-slate-editor]:focus]:ring-ring/20"
         ),
         course: cn(

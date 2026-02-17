@@ -11,7 +11,10 @@ import type { Value } from "platejs";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { PlateEditor } from "@/components/editor/plate-editor";
+import {
+  DEFAULT_EDITOR_VALUE,
+  PlateEditor,
+} from "@/components/editor/plate-editor";
 import { Button } from "@/components/ui/button";
 import {
   Combobox,
@@ -112,9 +115,10 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
   const [categoryIds, setCategoryIds] = useState<string[]>(
     () => course.categories?.map((c) => c.id) ?? []
   );
-  const [summary, setSummary] = useState<Value>(
-    () => (course.summary as Value) ?? []
-  );
+  const [summary, setSummary] = useState<Value>(() => {
+    const raw = (course.summary as Value | null | undefined) ?? [];
+    return Array.isArray(raw) && raw.length > 0 ? raw : DEFAULT_EDITOR_VALUE;
+  });
   const uploadedImageUrl = useRef<string | null>(course.imageUrl ?? null);
 
   const { upload: uploadImage, isPending: isUploading } = useFileUploadSimple();
@@ -328,18 +332,16 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
         {/* Summary (rich text editor) */}
         <Field>
           <FieldLabel className="text-xs">Summary</FieldLabel>
-          <div>
-            <PlateEditor
-              onChange={setSummary}
-              placeholder="Write a detailed course summary..."
-              value={summary}
-              variant="basic"
-            />
-            <p className="text-muted-foreground text-xs">
-              Detailed overview shown on the course page. Supports rich text
-              formatting.
-            </p>
-          </div>
+          <PlateEditor
+            onChange={setSummary}
+            placeholder="Write a detailed course summary..."
+            value={summary}
+            variant="basic"
+          />
+          <p className="text-muted-foreground text-xs">
+            Detailed overview shown on the course page. Supports rich text
+            formatting.
+          </p>
         </Field>
 
         {/* Categories */}
