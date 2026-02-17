@@ -1,10 +1,9 @@
-'use client';
+"use client";
 
-import { ListPlugin } from '@platejs/list/react';
-import { KEYS } from 'platejs';
-
-import { IndentKit } from '@/components/editor/plugins/indent-kit';
-import { BlockList } from '@/components/ui/block-list';
+import { ListPlugin } from "@platejs/list/react";
+import { KEYS } from "platejs";
+import { BlockList } from "@/components/editor/plate-ui/nodes/block-list";
+import { IndentKit } from "@/components/editor/plugins/indent-kit";
 
 export const ListKit = [
   ...IndentKit,

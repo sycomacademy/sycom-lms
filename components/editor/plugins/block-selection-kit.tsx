@@ -4,7 +4,7 @@ import { AIChatPlugin } from "@platejs/ai/react";
 import { BlockSelectionPlugin } from "@platejs/selection/react";
 import { getPluginTypes, isHotkey, KEYS } from "platejs";
 
-import { BlockSelection } from "@/components/ui/block-selection";
+import { BlockSelection } from "@/components/editor/plate-ui/nodes/block-selection";
 
 export const BlockSelectionKit = [
   BlockSelectionPlugin.configure(({ editor }) => ({
@@ -22,9 +22,11 @@ export const BlockSelectionKit = [
     },
     render: {
       belowRootNodes: (props) => {
-        if (!props.attributes.className?.includes("slate-selectable"))
+        if (!props.attributes.className?.includes("slate-selectable")) {
           return null;
+        }
 
+        // biome-ignore lint/suspicious/noExplicitAny: <we need to use any to avoid type errors>
         return <BlockSelection {...(props as any)} />;
       },
     },
