@@ -54,7 +54,7 @@ const SIDEBAR_NAV_CONFIG: Record<
     main: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
       { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
-      { href: "/dashboard/journey", label: "My journey", icon: BookOpenIcon },
+      { href: "/dashboard/journey", label: "My courses", icon: BookOpenIcon },
       { href: "/dashboard/support", label: "Support", icon: HeadphonesIcon },
       { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
     ],
@@ -62,9 +62,12 @@ const SIDEBAR_NAV_CONFIG: Record<
   instructor: {
     main: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
-      { href: "/dashboard/courses", label: "Courses", icon: GraduationCapIcon },
-      { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
-      { href: "/dashboard/journey", label: "My journey", icon: BookOpenIcon },
+      {
+        href: "/dashboard/courses",
+        label: "My Courses",
+        icon: GraduationCapIcon,
+      },
+      // { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
       { href: "/dashboard/support", label: "Support", icon: HeadphonesIcon },
       { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
     ],

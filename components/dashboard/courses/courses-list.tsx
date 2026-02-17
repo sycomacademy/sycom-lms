@@ -1,6 +1,10 @@
 "use client";
 
-import { useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import {
   ChevronLeftIcon,
@@ -12,16 +16,29 @@ import {
   SearchIcon,
   TableIcon,
   Trash2Icon,
+  UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useDeferredValue, useState } from "react";
 import { CategoriesFilter } from "@/components/dashboard/courses/categories-filter";
 import { CourseCard } from "@/components/dashboard/courses/course-card";
+import { CoursePeopleDialog } from "@/components/dashboard/courses/course-people-dialog";
 import { MultiSelectFilter } from "@/components/dashboard/courses/multi-select-filter";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
+import { toastManager } from "@/components/ui/toast";
 import { useTRPC } from "@/packages/trpc/client";
 import type { RouterOutputs } from "@/packages/trpc/server/router";
 
@@ -58,94 +75,109 @@ const STATUS_BADGE_VARIANT: Record<
 type ViewMode = "card" | "table";
 type Course = RouterOutputs["course"]["list"]["courses"][number];
 
-const courseColumns: ColumnDef<Course, unknown>[] = [
-  {
-    accessorKey: "title",
-    header: "Title",
-    size: 300,
-    cell: ({ row }) => (
-      <Link
-        className="font-medium hover:underline"
-        href={`/dashboard/courses/${row.original.id}/edit`}
-      >
-        <span className="line-clamp-1">{row.original.title}</span>
-      </Link>
-    ),
-  },
-  {
-    id: "categories",
-    header: "Categories",
-    size: 200,
-    enableSorting: false,
-    cell: ({ row }) => (
-      <div className="flex flex-wrap gap-1">
-        {row.original.categories.length > 0 ? (
-          row.original.categories.map((cat) => (
-            <Badge key={cat.id} variant="secondary">
-              {cat.name}
-            </Badge>
-          ))
-        ) : (
-          <span className="text-muted-foreground">&mdash;</span>
-        )}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "difficulty",
-    header: "Difficulty",
-    size: 120,
-    enableSorting: false,
-    cell: ({ row }) => (
-      <Badge
-        className="capitalize"
-        variant={DIFFICULTY_BADGE_VARIANT[row.original.difficulty] ?? "outline"}
-      >
-        {row.original.difficulty}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    size: 100,
-    enableSorting: false,
-    cell: ({ row }) => (
-      <Badge
-        className="capitalize"
-        variant={STATUS_BADGE_VARIANT[row.original.status] ?? "outline"}
-      >
-        {row.original.status}
-      </Badge>
-    ),
-  },
-  {
-    id: "actions",
-    size: 80,
-    enableSorting: false,
-    cell: ({ row }) => (
-      <div className="flex items-center justify-end gap-1">
-        <Button
-          onClick={() => {
-            // TODO: implement delete mutation
-          }}
-          size="icon-xs"
-          variant="destructive"
+function buildCourseColumns(
+  openPeopleDialog: (course: Course) => void,
+  onDeleteClick: (course: Course) => void
+): ColumnDef<Course, unknown>[] {
+  return [
+    {
+      accessorKey: "title",
+      header: "Title",
+      size: 300,
+      cell: ({ row }) => (
+        <Link
+          className="font-medium hover:underline"
+          href={`/dashboard/courses/${row.original.id}/edit`}
         >
-          <Trash2Icon />
-        </Button>
-        <Button
-          nativeButton={false}
-          render={<Link href={`/dashboard/courses/${row.original.id}/edit`} />}
-          size="icon-xs"
-          variant="outline"
+          <span className="line-clamp-1">{row.original.title}</span>
+        </Link>
+      ),
+    },
+    {
+      id: "categories",
+      header: "Categories",
+      size: 200,
+      enableSorting: false,
+      cell: ({ row }) => (
+        <div className="flex flex-wrap gap-1">
+          {row.original.categories.length > 0 ? (
+            row.original.categories.map((cat) => (
+              <Badge key={cat.id} variant="secondary">
+                {cat.name}
+              </Badge>
+            ))
+          ) : (
+            <span className="text-muted-foreground">&mdash;</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "difficulty",
+      header: "Difficulty",
+      size: 120,
+      enableSorting: false,
+      cell: ({ row }) => (
+        <Badge
+          className="capitalize"
+          variant={
+            DIFFICULTY_BADGE_VARIANT[row.original.difficulty] ?? "outline"
+          }
         >
-          <PencilIcon />
-        </Button>
-      </div>
-    ),
-  },
-];
+          {row.original.difficulty}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      size: 100,
+      enableSorting: false,
+      cell: ({ row }) => (
+        <Badge
+          className="capitalize"
+          variant={STATUS_BADGE_VARIANT[row.original.status] ?? "outline"}
+        >
+          {row.original.status}
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      size: 80,
+      enableSorting: false,
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            onClick={() => openPeopleDialog(row.original)}
+            size="icon-xs"
+            title="Instructor & students"
+            variant="outline"
+          >
+            <UsersIcon />
+          </Button>
+          <Button
+            onClick={() => onDeleteClick(row.original)}
+            size="icon-xs"
+            variant="destructive"
+          >
+            <Trash2Icon />
+          </Button>
+          <Button
+            nativeButton={false}
+            render={
+              <Link href={`/dashboard/courses/${row.original.id}/edit`} />
+            }
+            size="icon-xs"
+            variant="outline"
+          >
+            <PencilIcon />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+}
 
 export function CoursesList() {
   const trpc = useTRPC();
@@ -159,6 +191,31 @@ export function CoursesList() {
     pageIndex: 0,
     pageSize: 12,
   });
+  const [peopleDialogCourse, setPeopleDialogCourse] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+  const [courseToDelete, setCourseToDelete] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+  const queryClient = useQueryClient();
+  const deleteMutation = useMutation(
+    trpc.course.delete.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: [["course", "list"]] });
+        setCourseToDelete(null);
+        toastManager.add({ title: "Course deleted", type: "success" });
+      },
+      onError: (err) => {
+        toastManager.add({
+          title: "Failed to delete course",
+          description: err.message,
+          type: "error",
+        });
+      },
+    })
+  );
 
   // Deferred values for the query — UI updates immediately (checkboxes, input),
   // while the query re-fetches in the background without suspending.
@@ -204,8 +261,15 @@ export function CoursesList() {
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
   };
 
-  const handleDelete = (_courseId: string) => {
-    // TODO: implement delete mutation
+  const handleDeleteClick = (course: Course) => {
+    setCourseToDelete({ id: course.id, title: course.title });
+  };
+
+  const handleConfirmDelete = () => {
+    if (!courseToDelete) {
+      return;
+    }
+    deleteMutation.mutate({ courseId: courseToDelete.id });
   };
 
   const handlePaginationChange = (next: PaginationState) => {
@@ -296,7 +360,11 @@ export function CoursesList() {
       {/* Content */}
       {view === "table" ? (
         <DataTable
-          columns={courseColumns}
+          columns={buildCourseColumns(
+            (course) =>
+              setPeopleDialogCourse({ id: course.id, title: course.title }),
+            handleDeleteClick
+          )}
           data={data.courses}
           manualPagination
           onPaginationChange={handlePaginationChange}
@@ -318,7 +386,18 @@ export function CoursesList() {
                 <CourseCard
                   course={course}
                   key={course.id}
-                  onDelete={handleDelete}
+                  onDelete={(courseId) => {
+                    const c = data.courses.find((x) => x.id === courseId);
+                    if (c) {
+                      handleDeleteClick(c);
+                    }
+                  }}
+                  onViewPeople={() =>
+                    setPeopleDialogCourse({
+                      id: course.id,
+                      title: course.title,
+                    })
+                  }
                 />
               ))}
             </div>
@@ -381,6 +460,43 @@ export function CoursesList() {
           )}
         </>
       )}
+
+      <CoursePeopleDialog
+        courseId={peopleDialogCourse?.id ?? null}
+        courseTitle={peopleDialogCourse?.title ?? ""}
+        onOpenChange={(open) => !open && setPeopleDialogCourse(null)}
+        open={peopleDialogCourse !== null}
+      />
+
+      <AlertDialog
+        onOpenChange={(open) => !open && setCourseToDelete(null)}
+        open={courseToDelete !== null}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete course?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete{" "}
+              <strong>{courseToDelete?.title ?? ""}</strong>. Sections, lessons,
+              and enrollments for this course will be removed. This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteMutation.isPending}
+              onClick={handleConfirmDelete}
+              variant="destructive"
+            >
+              {deleteMutation.isPending ? (
+                <Loader2Icon className="size-4 animate-spin" />
+              ) : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

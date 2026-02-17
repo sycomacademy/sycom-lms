@@ -1,6 +1,6 @@
 "use client";
 
-import { PencilIcon, Trash2Icon } from "lucide-react";
+import { PencilIcon, Trash2Icon, UsersIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
@@ -38,9 +38,14 @@ const STATUS_BADGE_VARIANT: Record<
 interface CourseCardProps {
   course: Course;
   onDelete?: (courseId: string) => void;
+  onViewPeople?: () => void;
 }
 
-export function CourseCard({ course, onDelete }: CourseCardProps) {
+export function CourseCard({
+  course,
+  onDelete,
+  onViewPeople,
+}: CourseCardProps) {
   return (
     <Card className="flex flex-col overflow-hidden pt-0" size="default">
       <Link
@@ -95,6 +100,17 @@ export function CourseCard({ course, onDelete }: CourseCardProps) {
         </p>
       </CardContent>
       <CardFooter className="flex items-center justify-end gap-2 border-t">
+        {onViewPeople && (
+          <Button
+            onClick={onViewPeople}
+            size="sm"
+            title="Instructor & students"
+            variant="outline"
+          >
+            <UsersIcon className="size-3.5" />
+            People
+          </Button>
+        )}
         <Button
           onClick={() => onDelete?.(course.id)}
           size="sm"

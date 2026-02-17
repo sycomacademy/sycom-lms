@@ -358,6 +358,85 @@ export const courseRouter = router({
     }),
 
   // -------------------------------------------------------------------------
+  // Get main instructor (creator) and enrolled students for a course
+  // -------------------------------------------------------------------------
+  getInstructorAndEnrollments: instructorProcedure
+    .input(z.object({ courseId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      await assertCourseAccess(
+        db,
+        input.courseId,
+        ctx.session.user.id,
+        ctx.session.user.role ?? "student"
+      );
+
+      const [courseRow] = await db
+        .select({ createdBy: course.createdBy })
+        .from(course)
+        .where(eq(course.id, input.courseId))
+        .limit(1);
+
+      if (!courseRow?.createdBy) {
+        return {
+          mainInstructor: null,
+          enrolledStudents: [] as {
+            id: string;
+            name: string | null;
+            email: string;
+            image: string | null;
+            enrolledAt: Date;
+          }[],
+        };
+      }
+
+      const [creatorRow, enrolledRows] = await Promise.all([
+        db
+          .select({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            image: user.image,
+          })
+          .from(user)
+          .where(eq(user.id, courseRow.createdBy))
+          .limit(1),
+        db
+          .select({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            image: user.image,
+            enrolledAt: enrollment.enrolledAt,
+          })
+          .from(enrollment)
+          .innerJoin(user, eq(user.id, enrollment.userId))
+          .where(eq(enrollment.courseId, input.courseId))
+          .orderBy(asc(enrollment.enrolledAt)),
+      ]);
+
+      const mainInstructor = creatorRow[0]
+        ? {
+            id: creatorRow[0].id,
+            name: creatorRow[0].name,
+            email: creatorRow[0].email,
+            image: creatorRow[0].image,
+          }
+        : null;
+
+      const enrolledStudents = enrolledRows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        image: row.image,
+        enrolledAt: row.enrolledAt,
+      }));
+
+      return { mainInstructor, enrolledStudents };
+    }),
+
+  // -------------------------------------------------------------------------
   // Create a course
   // -------------------------------------------------------------------------
   create: instructorProcedure
