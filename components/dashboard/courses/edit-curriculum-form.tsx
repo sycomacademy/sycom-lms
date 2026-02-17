@@ -1,25 +1,6 @@
 "use client";
 
 import {
-  closestCenter,
-  DndContext,
-  type DragEndEvent,
-  DragOverlay,
-  type DragStartEvent,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import {
   useMutation,
   useQueryClient,
   useSuspenseQuery,
@@ -35,11 +16,16 @@ import {
   UnlockIcon,
 } from "lucide-react";
 import type { Value } from "platejs";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DEFAULT_EDITOR_VALUE,
   PlateEditor,
 } from "@/components/editor/plate-editor";
+import {
+  Sortable,
+  SortableItem,
+  SortableItemHandle,
+} from "@/components/reui/sortable";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,6 +43,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { toastManager } from "@/components/ui/toast";
 import { useTRPC } from "@/packages/trpc/client";
@@ -107,22 +99,6 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
     new Set()
   );
   const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
-  const [activeDragId, setActiveDragId] = useState<string | null>(null);
-  const [activeDragType, setActiveDragType] = useState<
-    "section" | "lesson" | null
-  >(null);
-
-  // DnD sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   const invalidateCourse = useCallback(() => {
     queryClient.invalidateQueries({
@@ -241,6 +217,9 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
 
   const reorderSectionsMutation = useMutation(
     trpc.course.reorderSections.mutationOptions({
+      onSuccess: () => {
+        invalidateCourse();
+      },
       onError: (error) => {
         invalidateCourse();
         toastManager.add({
@@ -254,6 +233,9 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
 
   const reorderLessonsMutation = useMutation(
     trpc.course.reorderLessons.mutationOptions({
+      onSuccess: () => {
+        invalidateCourse();
+      },
       onError: (error) => {
         invalidateCourse();
         toastManager.add({
@@ -281,13 +263,76 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
     })
   );
 
-  // Sections data
-  const sections = useMemo(
+  // Server data: initial and after refetch
+  const sectionsFromServer = useMemo(
     () => (course.sections ?? []) as Section[],
     [course.sections]
   );
 
-  const sectionIds = useMemo(() => sections.map((s) => s.id), [sections]);
+  // Client-side sort state: source of truth for UI (ReUI pattern: value + onValueChange)
+  const [localSections, setLocalSections] = useState<Section[]>(() =>
+    ((course?.sections ?? []) as Section[]).map((s) => ({
+      ...s,
+      lessons: [...s.lessons],
+    }))
+  );
+  const localSectionsRef = useRef<Section[]>([]);
+  const hasOrderDirtyRef = useRef(false);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedSectionIdsRef = useRef<string[]>([]);
+  const lastSavedLessonIdsBySectionRef = useRef<Record<string, string[]>>({});
+
+  // Keep ref in sync for debounced flush
+  useEffect(() => {
+    localSectionsRef.current = localSections;
+  }, [localSections]);
+
+  // Sync local state from server only when not dirty and server data actually changed
+  useEffect(() => {
+    if (hasOrderDirtyRef.current) {
+      return;
+    }
+    const serverSectionIds = sectionsFromServer.map((s) => s.id).join(",");
+    const lastSectionIds = lastSavedSectionIdsRef.current.join(",");
+    const serverLessonKeys = sectionsFromServer
+      .map((s) => s.lessons.map((l) => l.id).join(","))
+      .join("|");
+    const lastLessonKeys = Object.values(lastSavedLessonIdsBySectionRef.current)
+      .map((ids) => ids.join(","))
+      .join("|");
+    if (
+      serverSectionIds === lastSectionIds &&
+      serverLessonKeys === lastLessonKeys &&
+      lastSavedSectionIdsRef.current.length > 0
+    ) {
+      return;
+    }
+    setLocalSections(
+      sectionsFromServer.map((s) => ({ ...s, lessons: [...s.lessons] }))
+    );
+    lastSavedSectionIdsRef.current = sectionsFromServer.map((s) => s.id);
+    const bySection: Record<string, string[]> = {};
+    for (const s of sectionsFromServer) {
+      bySection[s.id] = s.lessons.map((l) => l.id);
+    }
+    lastSavedLessonIdsBySectionRef.current = bySection;
+  }, [sectionsFromServer]);
+
+  // Clear debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current !== null) {
+        clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  const sectionIds = useMemo(
+    () => localSections.map((s) => s.id),
+    [localSections]
+  );
+  const sections = localSections;
 
   // Handlers
   const handleAddSection = () => {
@@ -348,171 +393,264 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
     setExpandedLessonId((prev) => (prev === lessonId ? null : lessonId));
   };
 
-  // DnD handlers
-  const handleDragStart = (event: DragStartEvent) => {
-    const id = event.active.id as string;
-    setActiveDragId(id);
-    if (id.startsWith("sec_")) {
-      setActiveDragType("section");
-    } else if (id.startsWith("lsn_")) {
-      setActiveDragType("lesson");
-    }
+  const expandAllSections = () => {
+    setCollapsedSections(new Set());
+    setExpandedLessonId(null);
   };
 
-  const applySectionReorder = useCallback(
-    (activeId: string, overId: string) => {
-      const oldIndex = sectionIds.indexOf(activeId);
-      const newIndex = sectionIds.indexOf(overId);
-      if (oldIndex === -1 || newIndex === -1) {
-        return;
-      }
-      const newOrder = arrayMove(sectionIds, oldIndex, newIndex);
-      reorderSectionsMutation.mutate({ courseId, sectionIds: newOrder });
-    },
-    [courseId, sectionIds, reorderSectionsMutation]
-  );
+  const collapseAllSections = () => {
+    setCollapsedSections(new Set(sectionIds));
+    setExpandedLessonId(null);
+  };
 
-  const applyLessonReorderSameSection = useCallback(
-    (activeId: string, overId: string, sectionId: string) => {
-      const sectionLessons =
-        sections.find((s) => s.id === sectionId)?.lessons ?? [];
-      const lessonIds = sectionLessons.map((l) => l.id);
-      const oldIndex = lessonIds.indexOf(activeId);
-      const newIndex = lessonIds.indexOf(overId);
-      if (oldIndex === -1 || newIndex === -1) {
-        return;
-      }
-      const newOrder = arrayMove(lessonIds, oldIndex, newIndex);
-      reorderLessonsMutation.mutate({ sectionId, lessonIds: newOrder });
-    },
-    [sections, reorderLessonsMutation]
-  );
+  const DEBOUNCE_MS = 400;
 
-  const applyLessonMoveToSection = useCallback(
-    (activeId: string, overId: string, targetSectionId: string) => {
-      const targetSection = sections.find((s) => s.id === targetSectionId);
-      if (!targetSection) {
-        return;
+  // Flush local order state to server (section order, moves, lesson orders)
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: flush has multiple branches by design
+  const flushOrderToServer = useCallback(() => {
+    if (saveTimeoutRef.current !== null) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    const current = localSectionsRef.current;
+    const lastSectionIds = lastSavedSectionIdsRef.current;
+    const lastBySection = lastSavedLessonIdsBySectionRef.current;
+
+    const currentSectionIds = current.map((s) => s.id);
+    const sectionOrderChanged =
+      currentSectionIds.length !== lastSectionIds.length ||
+      currentSectionIds.some((id, i) => id !== lastSectionIds[i]);
+
+    const applySavedRefs = () => {
+      lastSavedSectionIdsRef.current = currentSectionIds;
+      const newBySection: Record<string, string[]> = {};
+      for (const s of current) {
+        newBySection[s.id] = s.lessons.map((l) => l.id);
       }
-      const overIndex = targetSection.lessons.findIndex((l) => l.id === overId);
-      moveLessonMutation.mutate({
-        lessonId: activeId,
-        targetSectionId,
-        newOrder: overIndex >= 0 ? overIndex : targetSection.lessons.length,
+      lastSavedLessonIdsBySectionRef.current = newBySection;
+      hasOrderDirtyRef.current = false;
+      invalidateCourse();
+    };
+
+    if (sectionOrderChanged) {
+      reorderSectionsMutation.mutate(
+        { courseId, sectionIds: currentSectionIds },
+        { onSuccess: applySavedRefs }
+      );
+      return;
+    }
+
+    const lastLessonToSection: Record<string, string> = {};
+    for (const [secId, lessonIds] of Object.entries(lastBySection)) {
+      const ids = lessonIds as string[];
+      for (const lid of ids) {
+        lastLessonToSection[lid] = secId;
+      }
+    }
+
+    const movedLessons: {
+      lessonId: string;
+      targetSectionId: string;
+      newOrder: number;
+    }[] = [];
+    for (const sec of current) {
+      for (let i = 0; i < sec.lessons.length; i++) {
+        const lesson = sec.lessons[i];
+        if (lastLessonToSection[lesson.id] !== sec.id) {
+          movedLessons.push({
+            lessonId: lesson.id,
+            targetSectionId: sec.id,
+            newOrder: i,
+          });
+        }
+      }
+    }
+
+    const flushLessonOrders = (secs: Section[]) => {
+      const toFlush = secs.filter((sec) => {
+        const currentIds = sec.lessons.map((l) => l.id);
+        const lastIds = lastBySection[sec.id] ?? [];
+        return (
+          currentIds.length !== lastIds.length ||
+          currentIds.some((id, i) => id !== lastIds[i])
+        );
       });
-    },
-    [sections, moveLessonMutation]
-  );
-
-  const handleLessonReorderOrMove = useCallback(
-    (activeId: string, overId: string) => {
-      const allLessons = sections.flatMap((s) => s.lessons);
-      const activeLesson = allLessons.find((l) => l.id === activeId);
-      const overLesson = allLessons.find((l) => l.id === overId);
-      if (!(activeLesson && overLesson)) {
+      if (toFlush.length === 0) {
+        applySavedRefs();
         return;
       }
-
-      if (activeLesson.sectionId === overLesson.sectionId) {
-        applyLessonReorderSameSection(activeId, overId, activeLesson.sectionId);
-      } else {
-        applyLessonMoveToSection(activeId, overId, overLesson.sectionId);
+      let pending = toFlush.length;
+      const checkDone = () => {
+        pending--;
+        if (pending === 0) {
+          applySavedRefs();
+        }
+      };
+      for (const sec of toFlush) {
+        reorderLessonsMutation.mutate(
+          { sectionId: sec.id, lessonIds: sec.lessons.map((l) => l.id) },
+          { onSettled: checkDone }
+        );
       }
-    },
-    [sections, applyLessonReorderSameSection, applyLessonMoveToSection]
-  );
+    };
 
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event;
-      setActiveDragId(null);
-      setActiveDragType(null);
-      if (!over || active.id === over.id) {
+    const runMovesThenLessons = (idx: number) => {
+      if (idx >= movedLessons.length) {
+        flushLessonOrders(current);
         return;
       }
+      const m = movedLessons[idx];
+      moveLessonMutation.mutate(
+        {
+          lessonId: m.lessonId,
+          targetSectionId: m.targetSectionId,
+          newOrder: m.newOrder,
+        },
+        { onSettled: () => runMovesThenLessons(idx + 1) }
+      );
+    };
 
-      const activeId = active.id as string;
-      const overId = over.id as string;
+    if (movedLessons.length > 0) {
+      runMovesThenLessons(0);
+    } else {
+      flushLessonOrders(current);
+    }
+  }, [
+    courseId,
+    invalidateCourse,
+    moveLessonMutation,
+    reorderLessonsMutation,
+    reorderSectionsMutation,
+  ]);
 
-      if (activeId.startsWith("sec_") && overId.startsWith("sec_")) {
-        applySectionReorder(activeId, overId);
-        return;
-      }
-      if (activeId.startsWith("lsn_") && overId.startsWith("lsn_")) {
-        handleLessonReorderOrMove(activeId, overId);
-      }
+  const scheduleDebouncedSave = useCallback(() => {
+    hasOrderDirtyRef.current = true;
+    if (saveTimeoutRef.current !== null) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(flushOrderToServer, DEBOUNCE_MS);
+  }, [flushOrderToServer]);
+
+  const handleSectionsReorder = useCallback(
+    (newSections: Section[]) => {
+      hasOrderDirtyRef.current = true;
+      setLocalSections(
+        newSections.map((s) => ({ ...s, lessons: [...s.lessons] }))
+      );
+      scheduleDebouncedSave();
     },
-    [applySectionReorder, handleLessonReorderOrMove]
+    [scheduleDebouncedSave]
   );
 
-  // Find active item for drag overlay
-  const activeSection =
-    activeDragType === "section"
-      ? sections.find((s) => s.id === activeDragId)
-      : null;
-  const activeLesson =
-    activeDragType === "lesson"
-      ? sections.flatMap((s) => s.lessons).find((l) => l.id === activeDragId)
-      : null;
+  const handleLessonsReorder = useCallback(
+    (sectionId: string, newLessons: Lesson[]) => {
+      hasOrderDirtyRef.current = true;
+      setLocalSections((prev) =>
+        prev.map((s) =>
+          s.id === sectionId ? { ...s, lessons: newLessons } : s
+        )
+      );
+      scheduleDebouncedSave();
+    },
+    [scheduleDebouncedSave]
+  );
+
+  const handleMoveLessonToSection = useCallback(
+    (lessonId: string, targetSectionId: string) => {
+      hasOrderDirtyRef.current = true;
+      setLocalSections((prev) => {
+        const activeLesson = prev
+          .flatMap((s) => s.lessons)
+          .find((l) => l.id === lessonId);
+        const targetSection = prev.find((s) => s.id === targetSectionId);
+        if (!(activeLesson && targetSection)) {
+          return prev;
+        }
+        const newLesson = { ...activeLesson, sectionId: targetSectionId };
+        return prev.map((s) => {
+          if (s.id === activeLesson.sectionId) {
+            return {
+              ...s,
+              lessons: s.lessons.filter((l) => l.id !== lessonId),
+            };
+          }
+          if (s.id === targetSectionId) {
+            return {
+              ...s,
+              lessons: [
+                ...s.lessons.filter((l) => l.id !== lessonId),
+                newLesson,
+              ],
+            };
+          }
+          return s;
+        });
+      });
+      scheduleDebouncedSave();
+    },
+    [scheduleDebouncedSave]
+  );
 
   return (
     <div className="flex flex-col gap-4">
-      <DndContext
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-        onDragStart={handleDragStart}
-        sensors={sensors}
-      >
-        <SortableContext
-          items={sectionIds}
-          strategy={verticalListSortingStrategy}
+      <div className="flex items-center gap-2">
+        <Button
+          onClick={expandAllSections}
+          size="sm"
+          type="button"
+          variant="ghost"
         >
-          {sections.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12 text-center">
-              <p className="text-muted-foreground text-sm">
-                No sections yet. Add your first section to get started.
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {sections.map((section) => (
-                <SectionItem
-                  collapsedSections={collapsedSections}
-                  expandedLessonId={expandedLessonId}
-                  isUpdating={
-                    updateSectionMutation.isPending ||
-                    updateLessonMutation.isPending
-                  }
-                  key={section.id}
-                  onAddLesson={handleAddLesson}
-                  onDeleteLesson={handleDeleteLesson}
-                  onDeleteSection={handleDeleteSection}
-                  onToggleCollapse={toggleSectionCollapse}
-                  onToggleLessonExpand={toggleLessonExpand}
-                  onToggleLessonLock={handleToggleLessonLock}
-                  onUpdateLessonContent={handleUpdateLessonContent}
-                  onUpdateLessonTitle={handleUpdateLessonTitle}
-                  onUpdateSectionTitle={handleUpdateSectionTitle}
-                  section={section}
-                />
-              ))}
-            </div>
-          )}
-        </SortableContext>
-
-        <DragOverlay>
-          {activeSection && (
-            <div className="rounded-lg border bg-card p-4 opacity-90 shadow-lg">
-              <span className="font-medium text-sm">{activeSection.title}</span>
-            </div>
-          )}
-          {activeLesson && (
-            <div className="rounded-md border bg-card p-3 opacity-90 shadow-lg">
-              <span className="text-sm">{activeLesson.title}</span>
-            </div>
-          )}
-        </DragOverlay>
-      </DndContext>
+          Expand all
+        </Button>
+        <Button
+          onClick={collapseAllSections}
+          size="sm"
+          type="button"
+          variant="ghost"
+        >
+          Collapse all
+        </Button>
+      </div>
+      {sections.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12 text-center">
+          <p className="text-muted-foreground text-sm">
+            No sections yet. Add your first section to get started.
+          </p>
+        </div>
+      ) : (
+        <Sortable<Section>
+          className="flex flex-col gap-3"
+          getItemValue={(s) => s.id}
+          onValueChange={handleSectionsReorder}
+          value={sections}
+        >
+          {sections.map((section) => (
+            <SortableItem key={section.id} value={section.id}>
+              <SectionItem
+                allSections={sections}
+                collapsedSections={collapsedSections}
+                expandedLessonId={expandedLessonId}
+                isUpdating={
+                  updateSectionMutation.isPending ||
+                  updateLessonMutation.isPending
+                }
+                onAddLesson={handleAddLesson}
+                onDeleteLesson={handleDeleteLesson}
+                onDeleteSection={handleDeleteSection}
+                onLessonsReorder={handleLessonsReorder}
+                onMoveLessonToSection={handleMoveLessonToSection}
+                onToggleCollapse={toggleSectionCollapse}
+                onToggleLessonExpand={toggleLessonExpand}
+                onToggleLessonLock={handleToggleLessonLock}
+                onUpdateLessonContent={handleUpdateLessonContent}
+                onUpdateLessonTitle={handleUpdateLessonTitle}
+                onUpdateSectionTitle={handleUpdateSectionTitle}
+                section={section}
+              />
+            </SortableItem>
+          ))}
+        </Sortable>
+      )}
 
       <Button
         className="w-fit"
@@ -539,6 +677,7 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
 
 interface SectionItemProps {
   section: Section;
+  allSections: Section[];
   collapsedSections: Set<string>;
   expandedLessonId: string | null;
   isUpdating: boolean;
@@ -551,10 +690,13 @@ interface SectionItemProps {
   onToggleLessonLock: (lessonId: string, isLocked: boolean) => void;
   onUpdateLessonContent: (lessonId: string, content: Value) => void;
   onDeleteLesson: (lessonId: string) => void;
+  onLessonsReorder: (sectionId: string, newLessons: Lesson[]) => void;
+  onMoveLessonToSection: (lessonId: string, targetSectionId: string) => void;
 }
 
 function SectionItem({
   section,
+  allSections,
   collapsedSections,
   expandedLessonId,
   isUpdating,
@@ -567,21 +709,9 @@ function SectionItem({
   onToggleLessonLock,
   onUpdateLessonContent,
   onDeleteLesson,
+  onLessonsReorder,
+  onMoveLessonToSection,
 }: SectionItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: section.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
   const isCollapsed = collapsedSections.has(section.id);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState(section.title);
@@ -604,26 +734,16 @@ function SectionItem({
     }
   };
 
-  const lessonIds = section.lessons.map((l) => l.id);
+  const otherSections = allSections.filter((s) => s.id !== section.id);
 
   return (
-    <div
-      className={cn("rounded-lg border bg-card", isDragging && "opacity-50")}
-      ref={setNodeRef}
-      style={style}
-    >
+    <div className="rounded-lg border bg-card">
       <Collapsible open={!isCollapsed}>
         {/* Section Header */}
         <div className="flex items-center gap-2 p-3">
-          {/* Drag Handle */}
-          <button
-            className="cursor-grab touch-none text-muted-foreground hover:text-foreground"
-            type="button"
-            {...attributes}
-            {...listeners}
-          >
+          <SortableItemHandle className="touch-none text-muted-foreground hover:text-foreground">
             <GripVerticalIcon className="size-4" />
-          </button>
+          </SortableItemHandle>
 
           {/* Collapse Toggle */}
           <CollapsibleTrigger
@@ -704,32 +824,50 @@ function SectionItem({
         {/* Lessons */}
         <CollapsibleContent>
           <div className="border-t px-3 pb-3">
-            <SortableContext
-              items={lessonIds}
-              strategy={verticalListSortingStrategy}
-            >
-              {section.lessons.length === 0 ? (
-                <p className="py-4 text-center text-muted-foreground text-xs">
-                  No lessons in this section yet.
-                </p>
-              ) : (
-                <div className="flex flex-col gap-1 pt-2">
-                  {section.lessons.map((lesson) => (
-                    <LessonItem
-                      expandedLessonId={expandedLessonId}
-                      isUpdating={isUpdating}
-                      key={lesson.id}
-                      lesson={lesson}
-                      onDeleteLesson={onDeleteLesson}
-                      onToggleExpand={onToggleLessonExpand}
-                      onToggleLock={onToggleLessonLock}
-                      onUpdateContent={onUpdateLessonContent}
-                      onUpdateTitle={onUpdateLessonTitle}
-                    />
-                  ))}
-                </div>
-              )}
-            </SortableContext>
+            {section.lessons.length === 0 ? (
+              <div className="flex min-h-16 flex-col items-center justify-center gap-2 rounded-md border border-dashed py-4 text-center text-muted-foreground text-xs">
+                <span>No lessons in this section yet.</span>
+              </div>
+            ) : (
+              <Sortable<Lesson>
+                className="flex flex-col gap-1 pt-2"
+                getItemValue={(l) => l.id}
+                onValueChange={(newLessons) =>
+                  onLessonsReorder(section.id, newLessons)
+                }
+                value={section.lessons}
+              >
+                {section.lessons.map((lesson) => (
+                  <SortableItem
+                    className="flex items-center gap-2 rounded-md border bg-background pl-1"
+                    key={lesson.id}
+                    value={lesson.id}
+                  >
+                    <SortableItemHandle className="shrink-0 touch-none text-muted-foreground hover:text-foreground">
+                      <GripVerticalIcon className="size-3.5" />
+                    </SortableItemHandle>
+                    <div className="min-w-0 flex-1">
+                      <LessonItem
+                        expandedLessonId={expandedLessonId}
+                        isUpdating={isUpdating}
+                        lesson={lesson}
+                        onDeleteLesson={onDeleteLesson}
+                        onMoveToSection={
+                          otherSections.length > 0
+                            ? onMoveLessonToSection
+                            : undefined
+                        }
+                        onToggleExpand={onToggleLessonExpand}
+                        onToggleLock={onToggleLessonLock}
+                        onUpdateContent={onUpdateLessonContent}
+                        onUpdateTitle={onUpdateLessonTitle}
+                        otherSections={otherSections}
+                      />
+                    </div>
+                  </SortableItem>
+                ))}
+              </Sortable>
+            )}
           </div>
         </CollapsibleContent>
       </Collapsible>
@@ -750,6 +888,8 @@ interface LessonItemProps {
   onToggleLock: (lessonId: string, isLocked: boolean) => void;
   onUpdateContent: (lessonId: string, content: Value) => void;
   onDeleteLesson: (lessonId: string) => void;
+  otherSections: Section[];
+  onMoveToSection?: (lessonId: string, targetSectionId: string) => void;
 }
 
 function LessonItem({
@@ -761,21 +901,9 @@ function LessonItem({
   onToggleLock,
   onUpdateContent,
   onDeleteLesson,
+  otherSections,
+  onMoveToSection,
 }: LessonItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: lesson.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
   const isExpanded = expandedLessonId === lesson.id;
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState(lesson.title);
@@ -807,27 +935,9 @@ function LessonItem({
   };
 
   return (
-    <div
-      className={cn(
-        "rounded-md border bg-background",
-        isDragging && "opacity-50",
-        isExpanded && "ring-1 ring-primary/20"
-      )}
-      ref={setNodeRef}
-      style={style}
-    >
+    <div className={cn(isExpanded && "rounded-md ring-1 ring-primary/20")}>
       {/* Lesson Header */}
       <div className="flex items-center gap-2 p-2">
-        {/* Drag Handle */}
-        <button
-          className="cursor-grab touch-none text-muted-foreground hover:text-foreground"
-          type="button"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVerticalIcon className="size-3.5" />
-        </button>
-
         {/* Expand/Collapse */}
         <button
           className="text-muted-foreground hover:text-foreground"
@@ -879,6 +989,35 @@ function LessonItem({
           )}
         </Button>
 
+        {/* Move to section */}
+        {onMoveToSection && otherSections.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  className="text-muted-foreground"
+                  size="sm"
+                  title="Move to section"
+                  type="button"
+                  variant="ghost"
+                >
+                  Move to…
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end" className="w-56">
+              {otherSections.map((sec) => (
+                <DropdownMenuItem
+                  key={sec.id}
+                  onClick={() => onMoveToSection(lesson.id, sec.id)}
+                >
+                  {sec.title}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
         {/* Delete Lesson */}
         <AlertDialog>
           <AlertDialogTrigger
@@ -914,7 +1053,7 @@ function LessonItem({
             onChange={setContent}
             placeholder="Write your lesson content..."
             value={content}
-            variant="basic"
+            variant="course"
           />
           <div className="mt-3 flex justify-end">
             <Button

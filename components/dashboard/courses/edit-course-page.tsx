@@ -4,6 +4,7 @@ import { BookOpenIcon, InfoIcon } from "lucide-react";
 
 import { EditCourseInfoForm } from "@/components/dashboard/courses/edit-course-info-form";
 import { EditCurriculumForm } from "@/components/dashboard/courses/edit-curriculum-form";
+import { BackButton } from "@/components/layout/back-button";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 
 interface EditCoursePageProps {
@@ -14,6 +15,7 @@ export function EditCoursePage({ courseId }: EditCoursePageProps) {
   return (
     <div className="flex flex-col gap-6">
       <div>
+        <BackButton className="px-0" />
         <h1 className="font-semibold text-2xl tracking-tight">Edit course</h1>
         <p className="mt-1 text-muted-foreground text-sm">
           Update course details, manage sections and lessons.
