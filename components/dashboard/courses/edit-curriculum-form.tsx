@@ -409,7 +409,9 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
       const allLessons = sections.flatMap((s) => s.lessons);
       const activeLesson = allLessons.find((l) => l.id === activeId);
       const overLesson = allLessons.find((l) => l.id === overId);
-      if (!(activeLesson && overLesson)) return;
+      if (!(activeLesson && overLesson)) {
+        return;
+      }
 
       if (activeLesson.sectionId === overLesson.sectionId) {
         applyLessonReorderSameSection(activeId, overId, activeLesson.sectionId);
@@ -425,7 +427,9 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
       const { active, over } = event;
       setActiveDragId(null);
       setActiveDragType(null);
-      if (!over || active.id === over.id) return;
+      if (!over || active.id === over.id) {
+        return;
+      }
 
       const activeId = active.id as string;
       const overId = over.id as string;
