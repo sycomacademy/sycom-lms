@@ -18,6 +18,7 @@ import "dotenv/config";
 import { eq, inArray, or } from "drizzle-orm";
 import { db } from "../packages/db";
 import { user } from "../packages/db/schema/auth";
+import { author, blogPost } from "../packages/db/schema/blog";
 import {
   category,
   course,
@@ -28,6 +29,8 @@ import {
   pathway,
   section,
 } from "../packages/db/schema/course";
+import { faq } from "../packages/db/schema/faq";
+import { feature } from "../packages/db/schema/feature";
 import { feedback } from "../packages/db/schema/feedback";
 import { profile } from "../packages/db/schema/profile";
 import { report } from "../packages/db/schema/report";
@@ -44,13 +47,15 @@ const doUsers = argv.includes("--users");
 const doCyber = argv.includes("--cyber");
 const doFeedback = argv.includes("--feedback");
 const doCourses = argv.includes("--courses");
+const doMarketing = argv.includes("--marketing");
 const doAll = !(
   doUnseed ||
   doCategories ||
   doUsers ||
   doCyber ||
   doFeedback ||
-  doCourses
+  doCourses ||
+  doMarketing
 );
 
 // ---------------------------------------------------------------------------
@@ -148,6 +153,11 @@ const SEED_COURSE_IDS = [
   "crs-security-plus",
 ] as const;
 
+const SEED_AUTHOR_IDS = ["1", "2", "3", "4"] as const;
+const SEED_BLOG_POST_IDS = ["1", "2", "3", "4", "5", "6"] as const;
+const SEED_FAQ_IDS = ["1", "2", "3", "4", "5", "6", "7", "8"] as const;
+const SEED_FEATURE_IDS = ["1", "2", "3"] as const;
+
 const SEED_PATHWAY_ID = "pth-cybersecurity-programme";
 
 // ---------------------------------------------------------------------------
@@ -172,6 +182,20 @@ async function unseed() {
     await db.delete(profile).where(inArray(profile.userId, seedUserIds));
     console.log("   Deleted profiles for seed users.");
   }
+
+  await db
+    .delete(blogPost)
+    .where(inArray(blogPost.id, [...SEED_BLOG_POST_IDS]));
+  console.log("   Deleted seed blog posts.");
+
+  await db.delete(author).where(inArray(author.id, [...SEED_AUTHOR_IDS]));
+  console.log("   Deleted seed authors.");
+
+  await db.delete(faq).where(inArray(faq.id, [...SEED_FAQ_IDS]));
+  console.log("   Deleted seed FAQs.");
+
+  await db.delete(feature).where(inArray(feature.id, [...SEED_FEATURE_IDS]));
+  console.log("   Deleted seed features.");
 
   await db
     .delete(enrollment)
@@ -255,6 +279,224 @@ async function seedCategories() {
   console.log("  [categories] Seeding...");
   await db.insert(category).values(CATEGORIES).onConflictDoNothing();
   console.log("  [categories] Done.");
+}
+
+// ---------------------------------------------------------------------------
+// Seed: marketing content (authors, blog posts, FAQ, features)
+// ---------------------------------------------------------------------------
+
+const authorData = [
+  {
+    id: "1",
+    name: "Sarah Johnson",
+    bio: "Cybersecurity expert with 15+ years of experience",
+    photoUrl: "/images/authors/sarah-johnson.jpg",
+  },
+  {
+    id: "2",
+    name: "Michael Chen",
+    bio: "Career transition specialist and cybersecurity consultant",
+    photoUrl: "/images/authors/michael-chen.jpg",
+  },
+  {
+    id: "3",
+    name: "David Martinez",
+    bio: "Security architect and consultant",
+    photoUrl: "/images/authors/david-martinez.jpg",
+  },
+  {
+    id: "4",
+    name: "Emily Rodriguez",
+    bio: "AI and cybersecurity researcher",
+    photoUrl: "/images/authors/emily-rodriguez.jpg",
+  },
+];
+
+const blogPostData = [
+  {
+    id: "1",
+    title: "What About Cybersecurity Training Programs?",
+    slug: "what-about-cybersecurity-training-programs",
+    excerpt:
+      "Explore the importance of comprehensive cybersecurity training programs and how they prepare professionals for real-world security challenges.",
+    content:
+      "# What About Cybersecurity Training Programs?\n\nCybersecurity training programs have become essential in today's digital landscape. As threats evolve, organizations need skilled professionals who can protect their systems and data.\n\n## The Growing Need for Cybersecurity Skills\n\nThe demand for cybersecurity professionals continues to grow exponentially. With cyber attacks becoming more sophisticated, companies are investing heavily in training their teams.\n\n## Key Components of Effective Training\n\n1. **Hands-on Labs**: Practical experience with real-world scenarios\n2. **Certification Prep**: Preparation for industry-recognized certifications\n3. **Expert Instruction**: Learning from experienced professionals\n4. **Continuous Updates**: Keeping pace with evolving threats\n\n## Benefits of Structured Training Programs\n\n- Improved security posture\n- Career advancement opportunities\n- Industry recognition through certifications\n- Practical skills applicable immediately\n\n## Conclusion\n\nInvesting in cybersecurity training is not just beneficial—it's necessary. Whether you're starting your career or advancing it, structured training programs provide the foundation for success.",
+    authorId: "1",
+    featuredImageUrl: "/images/landscape.png",
+    publishedAt: new Date("2024-08-01T10:00:00Z"),
+    category: "Training",
+    tags: ["training", "cybersecurity", "career"],
+    readingTime: 5,
+  },
+  {
+    id: "2",
+    title: "Transitioning into Cybersecurity",
+    slug: "transitioning-into-cybersecurity",
+    excerpt:
+      "A comprehensive guide for professionals looking to transition into cybersecurity from other IT fields or completely different industries.",
+    content:
+      "# Transitioning into Cybersecurity\n\nMaking a career transition into cybersecurity can seem daunting, but with the right approach, it's entirely achievable.\n\n## Why Transition to Cybersecurity?\n\nThe cybersecurity field offers:\n- High demand and job security\n- Competitive salaries\n- Continuous learning opportunities\n- Impactful work protecting organizations\n\n## Steps to Transition\n\n### 1. Assess Your Current Skills\nIdentify transferable skills from your current role that apply to cybersecurity.\n\n### 2. Choose Your Path\n- Security Analyst\n- Penetration Tester\n- Security Architect\n- Compliance Specialist\n\n### 3. Get Certified\nIndustry certifications validate your knowledge:\n- CompTIA Security+\n- CISSP\n- CEH\n- GSEC\n\n### 4. Gain Practical Experience\n- Hands-on labs\n- Capture the Flag (CTF) competitions\n- Personal projects\n- Internships\n\n## Common Challenges\n\nTransitioning careers comes with challenges:\n- Learning new technical skills\n- Building a professional network\n- Gaining experience\n- Staying motivated\n\n## Success Stories\n\nMany professionals have successfully transitioned into cybersecurity. With dedication and the right training, you can too.\n\n## Next Steps\n\n1. Research certification paths\n2. Enroll in training programs\n3. Join cybersecurity communities\n4. Start building your portfolio",
+    authorId: "2",
+    featuredImageUrl: "/images/landscape.png",
+    publishedAt: new Date("2024-08-20T14:30:00Z"),
+    category: "Career",
+    tags: ["career", "transition", "certification"],
+    readingTime: 8,
+  },
+  {
+    id: "3",
+    title: "How To Start Your Cybersecurity Journey",
+    slug: "how-to-start-your-cybersecurity-journey",
+    excerpt:
+      "A beginner's guide to starting a career in cybersecurity, covering essential first steps, recommended certifications, and learning resources.",
+    content:
+      "# How To Start Your Cybersecurity Journey\n\nStarting a career in cybersecurity is exciting and rewarding. Here's your roadmap to success.\n\n## Understanding Cybersecurity\n\nCybersecurity involves protecting systems, networks, and data from digital attacks. It's a diverse field with many specializations.\n\n## Essential First Steps\n\n### 1. Build a Foundation\n- Learn networking basics\n- Understand operating systems\n- Study security fundamentals\n\n### 2. Choose Your Focus Area\n- Network Security\n- Application Security\n- Cloud Security\n- Incident Response\n\n### 3. Get Hands-On Experience\n- Set up a home lab\n- Practice with virtual machines\n- Try online platforms like TryHackMe or HackTheBox\n\n## Recommended Certifications for Beginners\n\n1. **CompTIA Security+**: Entry-level certification covering security fundamentals\n2. **CompTIA Network+**: Networking knowledge essential for security\n3. **ISC2 CC**: Certified in Cybersecurity - perfect starting point\n\n## Conclusion\n\nStarting your cybersecurity journey requires dedication, but the rewards are significant. Begin with the fundamentals, practice consistently, and never stop learning.",
+    authorId: "1",
+    featuredImageUrl: "/images/landscape.png",
+    publishedAt: new Date("2024-08-22T09:15:00Z"),
+    category: "Beginner",
+    tags: ["beginner", "getting-started", "certification"],
+    readingTime: 10,
+  },
+  {
+    id: "4",
+    title: "10 Essential Cybersecurity Practices for 2024",
+    slug: "10-essential-cybersecurity-practices-2024",
+    excerpt:
+      "Stay ahead of threats with these proven security strategies that every organization should implement in 2024.",
+    content:
+      "# 10 Essential Cybersecurity Practices for 2024\n\nAs cyber threats evolve, organizations must adopt comprehensive security practices. Here are the essential strategies for 2024.\n\n## 1. Multi-Factor Authentication (MFA)\n\nImplement MFA across all systems and applications.\n\n## 2. Regular Security Training\n\nEducate employees about phishing, social engineering, and security best practices.\n\n## 3. Zero Trust Architecture\n\nAdopt a zero trust model: never trust, always verify.\n\n## 4. Patch Management\n\nKeep all systems updated with the latest security patches.\n\n## 5. Network Segmentation\n\nDivide networks into segments to limit lateral movement.\n\n## 6. Incident Response Plan\n\nDevelop and regularly test an incident response plan.\n\n## 7. Data Encryption\n\nEncrypt sensitive data both at rest and in transit.\n\n## 8. Security Monitoring\n\nImplement continuous monitoring and logging.\n\n## 9. Backup and Recovery\n\nMaintain regular backups and test recovery procedures.\n\n## 10. Vendor Risk Management\n\nAssess and monitor third-party vendors.\n\n## Conclusion\n\nImplementing these practices creates a strong security foundation.",
+    authorId: "3",
+    featuredImageUrl: "/images/landscape.png",
+    publishedAt: new Date("2024-01-15T11:00:00Z"),
+    category: "Security",
+    tags: ["security", "best-practices", "enterprise"],
+    readingTime: 7,
+  },
+  {
+    id: "5",
+    title: "Understanding Zero Trust Architecture",
+    slug: "understanding-zero-trust-architecture",
+    excerpt:
+      "A deep dive into the zero trust security model and how to implement it in your organization.",
+    content:
+      '# Understanding Zero Trust Architecture\n\nZero Trust is a security model that assumes no implicit trust based on location or network. Every access request must be verified.\n\n## What is Zero Trust?\n\nZero Trust operates on the principle: "Never trust, always verify."\n\n## Core Principles\n\n1. **Verify Explicitly**: Always authenticate and authorize based on available data\n2. **Use Least Privilege**: Limit user access with Just-In-Time and Just-Enough-Access\n3. **Assume Breach**: Minimize blast radius and segment access\n\n## Conclusion\n\nZero Trust is not a product but a strategy. Start with high-value assets and expand gradually.',
+    authorId: "3",
+    featuredImageUrl: "/images/landscape.png",
+    publishedAt: new Date("2024-01-10T09:00:00Z"),
+    category: "Infrastructure",
+    tags: ["zero-trust", "architecture", "security"],
+    readingTime: 9,
+  },
+  {
+    id: "6",
+    title: "The Rise of AI-Powered Threat Detection",
+    slug: "ai-powered-threat-detection",
+    excerpt:
+      "How artificial intelligence is revolutionizing the way we detect and respond to cyber threats.",
+    content:
+      "# The Rise of AI-Powered Threat Detection\n\nArtificial intelligence is transforming cybersecurity, enabling faster and more accurate threat detection.\n\n## The AI Revolution in Security\n\nAI and machine learning are becoming essential tools in the cybersecurity arsenal.\n\n## How AI Enhances Threat Detection\n\n### Pattern Recognition\nAI systems can identify patterns in vast amounts of data that humans would miss.\n\n### Behavioral Analysis\nMachine learning models learn normal behavior and flag anomalies.\n\n### Real-Time Processing\nAI can analyze data in real-time, enabling immediate response to threats.\n\n## Conclusion\n\nAI-powered threat detection is no longer optional—it's essential.",
+    authorId: "4",
+    featuredImageUrl: "/images/landscape.png",
+    publishedAt: new Date("2024-01-05T13:00:00Z"),
+    category: "AI & ML",
+    tags: ["ai", "machine-learning", "threat-detection"],
+    readingTime: 6,
+  },
+];
+
+const faqData = [
+  {
+    id: "1",
+    question: "What certifications do you offer?",
+    answer:
+      "We offer preparation courses for various industry-recognized certifications including CompTIA Security+, Network+, PenTest+, ISC2 Certified in Cybersecurity (CC), CISSP, and more. Our courses are designed to help you pass these certification exams.",
+    category: "Certifications",
+  },
+  {
+    id: "2",
+    question: "Do I need prior experience to start?",
+    answer:
+      "No prior experience is required for our beginner-level courses. We have pathways designed for complete beginners, as well as intermediate and advanced courses for experienced professionals. Each course clearly indicates its prerequisites.",
+    category: "Getting Started",
+  },
+  {
+    id: "3",
+    question: "How long do I have access to course materials?",
+    answer:
+      "Once enrolled, you have lifetime access to course materials, including any updates. This means you can review content at your own pace and return to materials whenever you need a refresher.",
+    category: "Access",
+  },
+  {
+    id: "4",
+    question: "Are the courses self-paced or scheduled?",
+    answer:
+      "All our courses are self-paced, allowing you to learn on your own schedule. You can complete courses as quickly or slowly as you need, fitting your learning around your work and personal commitments.",
+    category: "Learning Format",
+  },
+  {
+    id: "5",
+    question: "What support is available if I have questions?",
+    answer:
+      "We provide multiple support channels including course forums where you can ask questions and interact with instructors and other students. Our support team is also available to help with technical issues or course-related questions.",
+    category: "Support",
+  },
+  {
+    id: "6",
+    question: "Do you offer hands-on practice?",
+    answer:
+      "Yes! Our courses include interactive labs and hands-on exercises that allow you to practice skills in a safe, virtual environment. These labs simulate real-world scenarios you'll encounter in your cybersecurity career.",
+    category: "Learning Format",
+  },
+  {
+    id: "7",
+    question: "Can I get a refund if I'm not satisfied?",
+    answer:
+      "We offer a 30-day money-back guarantee. If you're not satisfied with your course within the first 30 days, you can request a full refund, no questions asked.",
+    category: "Pricing",
+  },
+  {
+    id: "8",
+    question: "How do pathways differ from individual courses?",
+    answer:
+      "Pathways are structured learning journeys that combine multiple courses in a logical sequence. They're designed to take you from beginner to certified professional, often including multiple certifications. Individual courses focus on specific topics or certifications.",
+    category: "Courses",
+  },
+];
+
+const featureData = [
+  {
+    id: "1",
+    title: "Interactive Labs",
+    description:
+      "Get hands-on experience with real-world cybersecurity scenarios in our virtual lab environment. Practice skills safely before applying them in production.",
+    icon: "FlaskConical",
+  },
+  {
+    id: "2",
+    title: "Expert Instructors",
+    description:
+      "Learn from industry professionals with years of real-world experience. Our instructors hold top certifications and bring practical insights to every lesson.",
+    icon: "Users",
+  },
+  {
+    id: "3",
+    title: "Certification Paths",
+    description:
+      "Follow structured learning pathways designed to prepare you for industry-recognized certifications like CompTIA, ISC2, and more.",
+    icon: "Award",
+  },
+];
+
+async function seedMarketingContent() {
+  console.log("  [marketing] Seeding authors, blog posts, FAQ, features...");
+
+  await db.insert(author).values(authorData).onConflictDoNothing();
+  await db.insert(blogPost).values(blogPostData).onConflictDoNothing();
+  await db.insert(faq).values(faqData).onConflictDoNothing();
+  await db.insert(feature).values(featureData).onConflictDoNothing();
+
+  console.log("  [marketing] Done.");
 }
 
 // ---------------------------------------------------------------------------
@@ -803,6 +1045,9 @@ async function main() {
 
   if (doAll || doCategories) {
     await seedCategories();
+  }
+  if (doAll || doMarketing) {
+    await seedMarketingContent();
   }
   if (doAll || doCyber) {
     await seedCybersecurityProgramme();

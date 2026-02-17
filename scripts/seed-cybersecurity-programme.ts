@@ -1216,9 +1216,7 @@ async function main() {
   console.log("\nSeed complete.");
 }
 
-if (import.meta.main) {
-  main().catch((err) => {
-    console.error("Seed failed:", err);
-    process.exit(1);
-  });
-}
+main().catch((err) => {
+  console.error("Seed failed:", err);
+  process.exit(1);
+});

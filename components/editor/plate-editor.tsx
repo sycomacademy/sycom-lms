@@ -12,8 +12,9 @@ import { FixedToolbar } from "@/components/editor/plate-ui/fixed-toolbar";
 interface PlateEditorProps {
   value?: Value;
   onChange?: (value: Value) => void;
-  variant?: "basic" | "course";
+  variant?: "basic" | "course" | "none";
   placeholder?: string;
+  readonly?: boolean;
 }
 
 export const DEFAULT_EDITOR_VALUE: Value = [
@@ -21,6 +22,7 @@ export const DEFAULT_EDITOR_VALUE: Value = [
 ];
 
 export function PlateEditor({
+  readonly = false,
   value = DEFAULT_EDITOR_VALUE,
   onChange,
   variant = "basic",
@@ -35,19 +37,30 @@ export function PlateEditor({
     id: `plate-editor-${variant}`,
     plugins: BaseEditorKit,
     value,
+    readOnly: readonly,
   });
 
   return (
     <div id={id}>
       <Plate
         editor={editor}
-        onValueChange={({ value: newValue }) => {
-          onChange?.(newValue);
-        }}
+        onValueChange={
+          readonly
+            ? undefined
+            : ({ value: newValue }) => {
+                onChange?.(newValue);
+              }
+        }
       >
-        <FixedToolbar className="flex flex-nowrap justify-start gap-1 shadow-xs">
-          {variant === "course" ? <CourseToolbarButtons /> : <ToolbarButtons />}
-        </FixedToolbar>
+        {variant !== "none" && (
+          <FixedToolbar className="flex flex-nowrap justify-start gap-1 shadow-xs">
+            {variant === "course" ? (
+              <CourseToolbarButtons />
+            ) : (
+              <ToolbarButtons />
+            )}
+          </FixedToolbar>
+        )}
         <EditorContainer variant={variant}>
           <Editor placeholder={placeholder} variant={variant} />
         </EditorContainer>

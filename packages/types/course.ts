@@ -19,6 +19,33 @@ export const listCoursesSchema = z.object({
     .optional(),
 });
 
+/** Student library: published courses only; no status filter. */
+export const listLibrarySchema = z.object({
+  limit: z.number().min(1).max(100).default(12),
+  offset: z.number().min(0).default(0),
+  search: z.string().optional(),
+  sortBy: z.enum(["title", "createdAt", "updatedAt"]).default("updatedAt"),
+  sortDirection: z.enum(["asc", "desc"]).default("desc"),
+  filterCategoryIds: z.array(z.string()).optional(),
+  filterDifficulties: z
+    .array(z.enum(["beginner", "intermediate", "advanced", "expert"]))
+    .optional(),
+});
+
+export const getEnrolledCourseSchema = z.object({
+  courseId: z.string(),
+});
+
+export const getEnrolledLessonSchema = z.object({
+  courseId: z.string(),
+  lessonId: z.string(),
+});
+
+export const markLessonCompleteSchema = z.object({
+  courseId: z.string(),
+  lessonId: z.string(),
+});
+
 export const createCourseSchema = z.object({
   title: z.string().min(1, "Title is required").max(200),
   description: z.string().max(2000).optional(),

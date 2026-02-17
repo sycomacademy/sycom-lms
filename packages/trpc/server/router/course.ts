@@ -22,6 +22,7 @@ import {
   courseInstructor,
   enrollment,
   lesson,
+  lessonCompletion,
   section,
 } from "@/packages/db/schema/course";
 import {
@@ -31,7 +32,11 @@ import {
   deleteCourseSchema,
   deleteLessonSchema,
   deleteSectionSchema,
+  getEnrolledCourseSchema,
+  getEnrolledLessonSchema,
   listCoursesSchema,
+  listLibrarySchema,
+  markLessonCompleteSchema,
   moveLessonSchema,
   reorderLessonsSchema,
   reorderSectionsSchema,
@@ -39,7 +44,7 @@ import {
   updateLessonSchema,
   updateSectionSchema,
 } from "@/packages/types/course";
-import { protectedProcedure, router, t } from "../init";
+import { protectedProcedure, publicProcedure, router, t } from "../init";
 
 // ---------------------------------------------------------------------------
 // Middleware
@@ -99,11 +104,248 @@ async function assertCourseAccess(
   return { instructorRole: row.role };
 }
 
+async function assertEnrolledCourseAccess(
+  db: Database,
+  courseId: string,
+  userId: string
+): Promise<{ courseRow: { id: string; title: string; status: string } }> {
+  const [courseRow] = await db
+    .select({ id: course.id, title: course.title, status: course.status })
+    .from(course)
+    .where(eq(course.id, courseId))
+    .limit(1);
+
+  if (!courseRow) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Course not found",
+    });
+  }
+
+  if (courseRow.status !== "published") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "This course is not available for learning",
+    });
+  }
+
+  const [enrolled] = await db
+    .select({ id: enrollment.id })
+    .from(enrollment)
+    .where(
+      and(eq(enrollment.userId, userId), eq(enrollment.courseId, courseId))
+    )
+    .limit(1);
+
+  if (!enrolled) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You are not enrolled in this course",
+    });
+  }
+
+  return { courseRow };
+}
+
 // ---------------------------------------------------------------------------
 // Router
 // ---------------------------------------------------------------------------
 
 export const courseRouter = router({
+  // -------------------------------------------------------------------------
+  // Public: list published courses (for marketing/landing)
+  // -------------------------------------------------------------------------
+  listPublic: publicProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).default(12),
+        offset: z.number().min(0).default(0),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const courses = await db
+        .select({
+          id: course.id,
+          title: course.title,
+          slug: course.slug,
+          description: course.description,
+          imageUrl: course.imageUrl,
+          difficulty: course.difficulty,
+          estimatedDuration: course.estimatedDuration,
+          enrollmentCount:
+            sql<number>`(SELECT count(*)::int FROM "enrollment" WHERE "enrollment"."course_id" = "course"."id")`.as(
+              "enrollment_count"
+            ),
+          lessonCount:
+            sql<number>`(SELECT count(*)::int FROM "lesson" JOIN "section" s ON "lesson"."section_id" = s."id" WHERE s."course_id" = "course"."id")`.as(
+              "lesson_count"
+            ),
+        })
+        .from(course)
+        .where(eq(course.status, "published"))
+        .orderBy(desc(course.updatedAt))
+        .limit(input.limit)
+        .offset(input.offset);
+
+      const courseIds = courses.map((c) => c.id);
+      const categoriesByCourse =
+        courseIds.length > 0
+          ? await db
+              .select({
+                courseId: courseCategory.courseId,
+                id: category.id,
+                name: category.name,
+                slug: category.slug,
+              })
+              .from(courseCategory)
+              .innerJoin(category, eq(category.id, courseCategory.categoryId))
+              .where(inArray(courseCategory.courseId, courseIds))
+          : [];
+
+      const categoriesMap = new Map<
+        string,
+        { id: string; name: string; slug: string }[]
+      >();
+      for (const row of categoriesByCourse) {
+        const list = categoriesMap.get(row.courseId) ?? [];
+        list.push({ id: row.id, name: row.name, slug: row.slug });
+        categoriesMap.set(row.courseId, list);
+      }
+
+      const [totalResult] = await db
+        .select({ count: count() })
+        .from(course)
+        .where(eq(course.status, "published"));
+
+      return {
+        courses: courses.map((c) => ({
+          ...c,
+          categories: categoriesMap.get(c.id) ?? [],
+        })),
+        total: totalResult?.count ?? 0,
+        limit: input.limit,
+        offset: input.offset,
+      };
+    }),
+
+  // -------------------------------------------------------------------------
+  // Public: get a single published course by slug or id
+  // -------------------------------------------------------------------------
+  getPublicBySlugOrId: publicProcedure
+    .input(z.object({ slugOrId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const slugOrId = input.slugOrId;
+
+      const [courseRow] = await db
+        .select({
+          id: course.id,
+          title: course.title,
+          slug: course.slug,
+          description: course.description,
+          imageUrl: course.imageUrl,
+          difficulty: course.difficulty,
+          estimatedDuration: course.estimatedDuration,
+          status: course.status,
+        })
+        .from(course)
+        .where(or(eq(course.id, slugOrId), eq(course.slug, slugOrId)))
+        .limit(1);
+
+      if (!courseRow || courseRow.status !== "published") {
+        return null;
+      }
+
+      const [sections, categories, enrollmentCount, lessonCount] =
+        await Promise.all([
+          db
+            .select({
+              id: section.id,
+              title: section.title,
+              description: section.description,
+              order: section.order,
+            })
+            .from(section)
+            .where(eq(section.courseId, courseRow.id))
+            .orderBy(asc(section.order)),
+          db
+            .select({
+              id: category.id,
+              name: category.name,
+              slug: category.slug,
+            })
+            .from(courseCategory)
+            .innerJoin(category, eq(category.id, courseCategory.categoryId))
+            .where(eq(courseCategory.courseId, courseRow.id)),
+          db
+            .select({ count: count() })
+            .from(enrollment)
+            .where(eq(enrollment.courseId, courseRow.id)),
+          db
+            .select({ count: count() })
+            .from(lesson)
+            .innerJoin(section, eq(section.id, lesson.sectionId))
+            .where(eq(section.courseId, courseRow.id)),
+        ]);
+
+      const sectionIds = sections.map((s) => s.id);
+      const lessons =
+        sectionIds.length > 0
+          ? await db
+              .select({
+                id: lesson.id,
+                sectionId: lesson.sectionId,
+                title: lesson.title,
+                type: lesson.type,
+                order: lesson.order,
+                isLocked: lesson.isLocked,
+                estimatedDuration: lesson.estimatedDuration,
+              })
+              .from(lesson)
+              .where(inArray(lesson.sectionId, sectionIds))
+              .orderBy(asc(lesson.order))
+          : [];
+
+      const lessonsBySection = new Map<string, typeof lessons>();
+      for (const l of lessons) {
+        const arr = lessonsBySection.get(l.sectionId) ?? [];
+        arr.push(l);
+        lessonsBySection.set(l.sectionId, arr);
+      }
+
+      return {
+        ...courseRow,
+        sections: sections.map((s) => ({
+          ...s,
+          lessons: lessonsBySection.get(s.id) ?? [],
+        })),
+        categories,
+        enrollmentCount: enrollmentCount[0]?.count ?? 0,
+        lessonCount: lessonCount[0]?.count ?? 0,
+      };
+    }),
+
+  // -------------------------------------------------------------------------
+  // Protected: check if user is enrolled in a course
+  // -------------------------------------------------------------------------
+  isEnrolled: protectedProcedure
+    .input(z.object({ courseId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+      const [row] = await db
+        .select({ id: enrollment.id })
+        .from(enrollment)
+        .where(
+          and(
+            eq(enrollment.userId, session.user.id),
+            eq(enrollment.courseId, input.courseId)
+          )
+        )
+        .limit(1);
+      return { enrolled: !!row };
+    }),
+
   // -------------------------------------------------------------------------
   // List courses with pagination, search, and filtering
   // -------------------------------------------------------------------------
@@ -262,6 +504,493 @@ export const courseRouter = router({
         limit,
         offset,
       };
+    }),
+
+  // -------------------------------------------------------------------------
+  // List published courses for student library (enrollment + progress)
+  // -------------------------------------------------------------------------
+  listLibrary: protectedProcedure
+    .input(listLibrarySchema)
+    .query(async ({ ctx, input }) => {
+      const {
+        limit,
+        offset,
+        search,
+        sortBy,
+        sortDirection,
+        filterCategoryIds,
+        filterDifficulties,
+      } = input;
+      const { db, session } = ctx;
+      const userId = session.user.id;
+
+      const conditions: ReturnType<typeof eq>[] = [
+        eq(course.status, "published"),
+      ];
+      if (filterDifficulties && filterDifficulties.length > 0) {
+        conditions.push(inArray(course.difficulty, filterDifficulties));
+      }
+      if (filterCategoryIds && filterCategoryIds.length > 0) {
+        conditions.push(
+          exists(
+            db
+              .select({ one: sql`1` })
+              .from(courseCategory)
+              .where(
+                and(
+                  eq(courseCategory.courseId, course.id),
+                  inArray(courseCategory.categoryId, filterCategoryIds)
+                )
+              )
+          )
+        );
+      }
+      const searchCondition = search
+        ? or(
+            ilike(course.title, `%${search}%`),
+            ilike(course.description, `%${search}%`)
+          )
+        : undefined;
+      const allConditions = [
+        ...conditions,
+        ...(searchCondition ? [searchCondition] : []),
+      ];
+      const where =
+        allConditions.length > 0 ? and(...allConditions) : undefined;
+
+      const ORDER_COLUMNS = {
+        title: course.title,
+        createdAt: course.createdAt,
+        updatedAt: course.updatedAt,
+      } as const;
+      const orderColumn = ORDER_COLUMNS[sortBy];
+      const orderBy =
+        sortDirection === "asc" ? asc(orderColumn) : desc(orderColumn);
+
+      const [courses, totalResult] = await Promise.all([
+        db
+          .select({
+            id: course.id,
+            title: course.title,
+            slug: course.slug,
+            description: course.description,
+            imageUrl: course.imageUrl,
+            difficulty: course.difficulty,
+            estimatedDuration: course.estimatedDuration,
+            status: course.status,
+            createdBy: course.createdBy,
+            createdAt: course.createdAt,
+            updatedAt: course.updatedAt,
+            sectionCount:
+              sql<number>`(SELECT count(*)::int FROM "section" WHERE "section"."course_id" = "course"."id")`.as(
+                "section_count"
+              ),
+            lessonCount:
+              sql<number>`(SELECT count(*)::int FROM "lesson" JOIN "section" s ON "lesson"."section_id" = s."id" WHERE s."course_id" = "course"."id")`.as(
+                "lesson_count"
+              ),
+            enrollmentCount:
+              sql<number>`(SELECT count(*)::int FROM "enrollment" WHERE "enrollment"."course_id" = "course"."id")`.as(
+                "enrollment_count"
+              ),
+          })
+          .from(course)
+          .where(where)
+          .orderBy(orderBy)
+          .limit(limit)
+          .offset(offset),
+        db.select({ count: count() }).from(course).where(where),
+      ]);
+
+      const courseIds = courses.map((c) => c.id);
+      if (courseIds.length === 0) {
+        return {
+          courses: [],
+          total: totalResult[0]?.count ?? 0,
+          limit,
+          offset,
+        };
+      }
+
+      const [categoriesByCourse, enrolledRows, completedByCourse] =
+        await Promise.all([
+          db
+            .select({
+              courseId: courseCategory.courseId,
+              id: category.id,
+              name: category.name,
+              slug: category.slug,
+            })
+            .from(courseCategory)
+            .innerJoin(category, eq(category.id, courseCategory.categoryId))
+            .where(inArray(courseCategory.courseId, courseIds)),
+          db
+            .select({ courseId: enrollment.courseId })
+            .from(enrollment)
+            .where(
+              and(
+                eq(enrollment.userId, userId),
+                inArray(enrollment.courseId, courseIds)
+              )
+            ),
+          db
+            .select({
+              courseId: section.courseId,
+              completed: count(lessonCompletion.id),
+            })
+            .from(lessonCompletion)
+            .innerJoin(lesson, eq(lesson.id, lessonCompletion.lessonId))
+            .innerJoin(section, eq(section.id, lesson.sectionId))
+            .where(
+              and(
+                eq(lessonCompletion.userId, userId),
+                inArray(section.courseId, courseIds)
+              )
+            )
+            .groupBy(section.courseId),
+        ]);
+
+      const categoriesMap = new Map<
+        string,
+        { id: string; name: string; slug: string }[]
+      >();
+      for (const row of categoriesByCourse) {
+        const list = categoriesMap.get(row.courseId) ?? [];
+        list.push({ id: row.id, name: row.name, slug: row.slug });
+        categoriesMap.set(row.courseId, list);
+      }
+      const enrolledSet = new Set(enrolledRows.map((r) => r.courseId));
+      const completedMap = new Map(
+        completedByCourse.map((r) => [r.courseId, Number(r.completed)])
+      );
+
+      return {
+        courses: courses.map((c) => ({
+          ...c,
+          categories: categoriesMap.get(c.id) ?? [],
+          isEnrolled: enrolledSet.has(c.id),
+          completedLessonCount: completedMap.get(c.id) ?? 0,
+        })),
+        total: totalResult[0]?.count ?? 0,
+        limit,
+        offset,
+      };
+    }),
+
+  // -------------------------------------------------------------------------
+  // Student learning: enrolled course curriculum with progress
+  // -------------------------------------------------------------------------
+  getEnrolledCourse: protectedProcedure
+    .input(getEnrolledCourseSchema)
+    .query(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+      const userId = session.user.id;
+
+      const { courseRow } = await assertEnrolledCourseAccess(
+        db,
+        input.courseId,
+        userId
+      );
+
+      const [sections, completedRows] = await Promise.all([
+        db
+          .select({
+            id: section.id,
+            title: section.title,
+            description: section.description,
+            order: section.order,
+          })
+          .from(section)
+          .where(eq(section.courseId, input.courseId))
+          .orderBy(asc(section.order)),
+        db
+          .select({ lessonId: lessonCompletion.lessonId })
+          .from(lessonCompletion)
+          .innerJoin(lesson, eq(lesson.id, lessonCompletion.lessonId))
+          .innerJoin(section, eq(section.id, lesson.sectionId))
+          .where(
+            and(
+              eq(lessonCompletion.userId, userId),
+              eq(section.courseId, input.courseId)
+            )
+          ),
+      ]);
+
+      const completedSet = new Set(completedRows.map((r) => r.lessonId));
+
+      const sectionIds = sections.map((s) => s.id);
+      const lessons =
+        sectionIds.length > 0
+          ? await db
+              .select({
+                id: lesson.id,
+                sectionId: lesson.sectionId,
+                title: lesson.title,
+                type: lesson.type,
+                order: lesson.order,
+                isLocked: lesson.isLocked,
+                estimatedDuration: lesson.estimatedDuration,
+              })
+              .from(lesson)
+              .innerJoin(section, eq(section.id, lesson.sectionId))
+              .where(inArray(lesson.sectionId, sectionIds))
+              .orderBy(asc(section.order), asc(lesson.order))
+          : [];
+
+      const lessonsBySection = new Map<string, typeof lessons>();
+      for (const l of lessons) {
+        const arr = lessonsBySection.get(l.sectionId) ?? [];
+        arr.push(l);
+        lessonsBySection.set(l.sectionId, arr);
+      }
+
+      const lessonCount = lessons.length;
+      const completedLessonCount = completedSet.size;
+      const percent =
+        lessonCount > 0
+          ? Math.round((completedLessonCount / lessonCount) * 100)
+          : 0;
+
+      return {
+        course: { id: courseRow.id, title: courseRow.title },
+        progress: { lessonCount, completedLessonCount, percent },
+        sections: sections.map((s) => {
+          const sectionLessons = (lessonsBySection.get(s.id) ?? []).map(
+            (l) => ({
+              ...l,
+              isCompleted: completedSet.has(l.id),
+            })
+          );
+          const isCompleted =
+            sectionLessons.length > 0 &&
+            sectionLessons.every((l) => l.isCompleted === true);
+
+          return {
+            ...s,
+            isCompleted,
+            lessons: sectionLessons,
+          };
+        }),
+      };
+    }),
+
+  // -------------------------------------------------------------------------
+  // Student learning: single lesson (with prev/next)
+  // -------------------------------------------------------------------------
+  getEnrolledLesson: protectedProcedure
+    .input(getEnrolledLessonSchema)
+    .query(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+      const userId = session.user.id;
+
+      const { courseRow } = await assertEnrolledCourseAccess(
+        db,
+        input.courseId,
+        userId
+      );
+
+      const [lessonRow] = await db
+        .select({
+          id: lesson.id,
+          title: lesson.title,
+          content: lesson.content,
+          type: lesson.type,
+          isLocked: lesson.isLocked,
+          estimatedDuration: lesson.estimatedDuration,
+          sectionId: lesson.sectionId,
+        })
+        .from(lesson)
+        .innerJoin(section, eq(section.id, lesson.sectionId))
+        .where(
+          and(
+            eq(lesson.id, input.lessonId),
+            eq(section.courseId, input.courseId)
+          )
+        )
+        .limit(1);
+
+      if (!lessonRow) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Lesson not found",
+        });
+      }
+
+      if (lessonRow.isLocked) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "This lesson is locked",
+        });
+      }
+
+      const [isCompletedRow, orderedLessons] = await Promise.all([
+        db
+          .select({ id: lessonCompletion.id })
+          .from(lessonCompletion)
+          .where(
+            and(
+              eq(lessonCompletion.userId, userId),
+              eq(lessonCompletion.lessonId, lessonRow.id)
+            )
+          )
+          .limit(1),
+        db
+          .select({
+            id: lesson.id,
+            isLocked: lesson.isLocked,
+          })
+          .from(lesson)
+          .innerJoin(section, eq(section.id, lesson.sectionId))
+          .where(eq(section.courseId, input.courseId))
+          .orderBy(asc(section.order), asc(lesson.order)),
+      ]);
+
+      const isCompleted = !!isCompletedRow;
+      const idx = orderedLessons.findIndex((l) => l.id === lessonRow.id);
+      const prevLessonId =
+        idx > 0 ? (orderedLessons[idx - 1]?.id ?? null) : null;
+      const nextLessonId =
+        idx >= 0 && idx < orderedLessons.length - 1
+          ? (orderedLessons[idx + 1]?.id ?? null)
+          : null;
+      const nextIsLocked =
+        nextLessonId !== null
+          ? (orderedLessons[idx + 1]?.isLocked ?? false)
+          : false;
+
+      return {
+        course: { id: courseRow.id, title: courseRow.title },
+        lesson: {
+          id: lessonRow.id,
+          title: lessonRow.title,
+          content: lessonRow.content,
+          type: lessonRow.type,
+          estimatedDuration: lessonRow.estimatedDuration,
+          isCompleted,
+        },
+        nav: { prevLessonId, nextLessonId, nextIsLocked },
+      };
+    }),
+
+  // -------------------------------------------------------------------------
+  // Student learning: mark lesson complete
+  // -------------------------------------------------------------------------
+  markLessonComplete: protectedProcedure
+    .input(markLessonCompleteSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+      const userId = session.user.id;
+
+      await assertEnrolledCourseAccess(db, input.courseId, userId);
+
+      const [lessonRow] = await db
+        .select({
+          id: lesson.id,
+          isLocked: lesson.isLocked,
+        })
+        .from(lesson)
+        .innerJoin(section, eq(section.id, lesson.sectionId))
+        .where(
+          and(
+            eq(lesson.id, input.lessonId),
+            eq(section.courseId, input.courseId)
+          )
+        )
+        .limit(1);
+
+      if (!lessonRow) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Lesson not found",
+        });
+      }
+
+      if (lessonRow.isLocked) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "This lesson is locked",
+        });
+      }
+
+      await db
+        .insert(lessonCompletion)
+        .values({ userId, lessonId: lessonRow.id })
+        .onConflictDoNothing();
+
+      const [totalLessonsRows, completedLessonsRows] = await Promise.all([
+        db
+          .select({ totalLessons: count(lesson.id) })
+          .from(lesson)
+          .innerJoin(section, eq(section.id, lesson.sectionId))
+          .where(eq(section.courseId, input.courseId)),
+        db
+          .select({ completedLessons: count(lessonCompletion.id) })
+          .from(lessonCompletion)
+          .innerJoin(lesson, eq(lesson.id, lessonCompletion.lessonId))
+          .innerJoin(section, eq(section.id, lesson.sectionId))
+          .where(
+            and(
+              eq(lessonCompletion.userId, userId),
+              eq(section.courseId, input.courseId)
+            )
+          ),
+      ]);
+
+      const total = Number(totalLessonsRows[0]?.totalLessons ?? 0);
+      const completed = Number(completedLessonsRows[0]?.completedLessons ?? 0);
+      const courseCompleted = total > 0 && completed >= total;
+
+      if (courseCompleted) {
+        await db
+          .update(enrollment)
+          .set({ completedAt: new Date() })
+          .where(
+            and(
+              eq(enrollment.userId, userId),
+              eq(enrollment.courseId, input.courseId)
+            )
+          );
+      }
+
+      return { completed: true, courseCompleted };
+    }),
+
+  // -------------------------------------------------------------------------
+  // Enroll current user in a published course
+  // -------------------------------------------------------------------------
+  enroll: protectedProcedure
+    .input(z.object({ courseId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+
+      const [courseRow] = await db
+        .select({ id: course.id, status: course.status })
+        .from(course)
+        .where(eq(course.id, input.courseId))
+        .limit(1);
+
+      if (!courseRow) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Course not found",
+        });
+      }
+      if (courseRow.status !== "published") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Only published courses can be enrolled in",
+        });
+      }
+
+      await db
+        .insert(enrollment)
+        .values({
+          userId: session.user.id,
+          courseId: input.courseId,
+        })
+        .onConflictDoNothing();
+
+      return { enrolled: true };
     }),
 
   // -------------------------------------------------------------------------

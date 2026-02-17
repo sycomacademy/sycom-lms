@@ -15,6 +15,7 @@ const editorContainerVariants = cva(
     },
     variants: {
       variant: {
+        none: "overflow-visible bg-transparent",
         basic: cn(
           "rounded-b-lg border border-input border-t-0 bg-background",
           "max-h-[200px]",

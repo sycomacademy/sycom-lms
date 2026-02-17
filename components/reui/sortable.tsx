@@ -1,3 +1,6 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: <sortable> */
+/** biome-ignore-all lint/style/noNestedTernary: <sortable> */
+/** biome-ignore-all lint/correctness/useHookAtTopLevel: <sortable> */
 "use client";
 
 import { mergeProps } from "@base-ui/react/merge-props";
@@ -147,7 +150,9 @@ function Sortable<T>({
       setActiveId(null);
       onDragEnd?.(event);
 
-      if (!over) return;
+      if (!over) {
+        return;
+      }
 
       // Handle item reordering
       const activeIndex = value.findIndex(
@@ -179,7 +184,6 @@ function Sortable<T>({
         return rectSortingStrategy;
       case "grid":
         return rectSortingStrategy;
-      case "vertical":
       default:
         return verticalListSortingStrategy;
     }
@@ -201,7 +205,9 @@ function Sortable<T>({
 
   // Find the active child for the overlay
   const overlayContent = useMemo(() => {
-    if (!activeId) return null;
+    if (!activeId) {
+      return null;
+    }
     let result: ReactNode = null;
     Children.forEach(children, (child) => {
       if (isValidElement(child) && (child.props as any).value === activeId) {
@@ -390,7 +396,9 @@ function SortableOverlay({
         : children
       : null;
 
-  if (!mounted) return null;
+  if (!mounted) {
+    return null;
+  }
 
   return createPortal(
     <DragOverlay
