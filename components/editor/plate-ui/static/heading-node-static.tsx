@@ -1,6 +1,6 @@
 import { cva, type VariantProps } from "class-variance-authority";
-import type { SlateElementProps } from "platejs/static";
-import { SlateElement } from "platejs/static";
+import type { PlateElementProps } from "platejs/react";
+import { PlateElement } from "platejs/react";
 
 const headingVariants = cva("relative mb-1", {
   variants: {
@@ -15,27 +15,29 @@ const headingVariants = cva("relative mb-1", {
   },
 });
 
+type HeadingElementStaticProps = PlateElementProps &
+  VariantProps<typeof headingVariants>;
+
 export function HeadingElementStatic({
   variant = "h1",
   ...props
-}: SlateElementProps & VariantProps<typeof headingVariants>) {
+}: HeadingElementStaticProps) {
   const id = props.element.id as string | undefined;
 
   return (
-    <SlateElement
-      // biome-ignore lint/style/noNonNullAssertion: <we need to use ! to avoid type errors>
-      as={variant!}
+    <PlateElement
+      as={variant ?? "h1"}
       className={headingVariants({ variant })}
       {...props}
     >
       {/* Bookmark anchor for DOCX TOC internal links */}
       {id && <span id={id} />}
       {props.children}
-    </SlateElement>
+    </PlateElement>
   );
 }
 
-export function H1ElementStatic(props: SlateElementProps) {
+export function H1ElementStatic(props: PlateElementProps) {
   return <HeadingElementStatic variant="h1" {...props} />;
 }
 

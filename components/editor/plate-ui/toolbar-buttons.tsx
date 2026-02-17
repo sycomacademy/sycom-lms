@@ -10,6 +10,7 @@ import {
   List,
   ListOrdered,
   QuoteIcon,
+  SeparatorHorizontal,
   StrikethroughIcon,
   UnderlineIcon,
 } from "lucide-react";
@@ -18,7 +19,7 @@ import { ToolbarGroup, ToolbarSeparator } from "@/components/ui/toolbar";
 import {
   RedoToolbarButton,
   UndoToolbarButton,
-} from "../history-toolbar-buttons";
+} from "./history-toolbar-buttons";
 import { MarkToolbarButton } from "./mark-toolbar-button";
 import { ToolbarButton } from "./toolbar-button";
 
@@ -111,6 +112,19 @@ function BlockquoteButton() {
   );
 }
 
+// Horizontal Rule button
+function HorizontalRuleButton() {
+  const editor = useEditorRef();
+  return (
+    <ToolbarButton
+      onClick={() => editor.tf.toggleBlock("hr")}
+      tooltip="Horizontal Rule"
+    >
+      <SeparatorHorizontal />
+    </ToolbarButton>
+  );
+}
+
 // Full toolbar buttons component for course variant
 export function ToolbarButtons() {
   return (
@@ -141,6 +155,7 @@ export function ToolbarButtons() {
         <MarkToolbarButton nodeType="highlight" tooltip="Highlight">
           <HighlighterIcon />
         </MarkToolbarButton>
+        <HorizontalRuleButton />
       </ToolbarGroup>
 
       <ToolbarSeparator />
