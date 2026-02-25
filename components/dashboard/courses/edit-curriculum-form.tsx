@@ -266,13 +266,13 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
 
   // Server data: initial and after refetch
   const sectionsFromServer = useMemo(
-    () => (course.sections ?? []) as Section[],
+    () => (course.sections ?? []) as unknown as Section[],
     [course.sections]
   );
 
   // Client-side sort state: source of truth for UI (ReUI pattern: value + onValueChange)
   const [localSections, setLocalSections] = useState<Section[]>(() =>
-    ((course?.sections ?? []) as Section[]).map((s) => ({
+    ((course?.sections ?? []) as unknown as Section[]).map((s) => ({
       ...s,
       lessons: [...s.lessons],
     }))

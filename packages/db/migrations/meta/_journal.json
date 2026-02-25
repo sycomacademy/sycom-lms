@@ -71,6 +71,13 @@
       "when": 1771986121025,
       "tag": "0009_lean_spitfire",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1772017858601,
+      "tag": "0010_workable_the_enforcers",
+      "breakpoints": true
     }
   ]
 }
