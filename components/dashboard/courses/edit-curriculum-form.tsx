@@ -76,6 +76,7 @@ interface Lesson {
   order: number;
   isLocked: boolean;
   estimatedDuration: number | null;
+  deadlineAt: Date | null;
 }
 
 interface EditCurriculumFormProps {
@@ -411,6 +412,13 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
     updateLessonMutation.mutate({ lessonId, isLocked: !isLocked });
   };
 
+  const handleUpdateLessonDeadline = (
+    lessonId: string,
+    deadlineAt: Date | null
+  ) => {
+    updateLessonMutation.mutate({ lessonId, deadlineAt });
+  };
+
   const handleUpdateLessonContent = (lessonId: string, content: Value) => {
     updateLessonMutation.mutate({ lessonId, content });
     toastManager.add({
@@ -689,6 +697,7 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
                 onToggleLessonExpand={toggleLessonExpand}
                 onToggleLessonLock={handleToggleLessonLock}
                 onUpdateLessonContent={handleUpdateLessonContent}
+                onUpdateLessonDeadline={handleUpdateLessonDeadline}
                 onUpdateLessonTitle={handleUpdateLessonTitle}
                 onUpdateSectionTitle={handleUpdateSectionTitle}
                 section={section}
@@ -734,6 +743,7 @@ interface SectionItemProps {
   onDeleteSection: (sectionId: string) => void;
   onUpdateLessonTitle: (lessonId: string, title: string) => void;
   onToggleLessonLock: (lessonId: string, isLocked: boolean) => void;
+  onUpdateLessonDeadline: (lessonId: string, deadlineAt: Date | null) => void;
   onUpdateLessonContent: (lessonId: string, content: Value) => void;
   onDeleteLesson: (lessonId: string) => void;
   onLessonsReorder: (sectionId: string, newLessons: Lesson[]) => void;
@@ -753,6 +763,7 @@ function SectionItem({
   onDeleteSection,
   onUpdateLessonTitle,
   onToggleLessonLock,
+  onUpdateLessonDeadline,
   onUpdateLessonContent,
   onDeleteLesson,
   onLessonsReorder,
@@ -910,6 +921,7 @@ function SectionItem({
                         onToggleExpand={onToggleLessonExpand}
                         onToggleLock={onToggleLessonLock}
                         onUpdateContent={onUpdateLessonContent}
+                        onUpdateDeadline={onUpdateLessonDeadline}
                         onUpdateTitle={onUpdateLessonTitle}
                         otherSections={otherSections}
                       />
@@ -936,10 +948,24 @@ interface LessonItemProps {
   onToggleExpand: (lessonId: string) => void;
   onUpdateTitle: (lessonId: string, title: string) => void;
   onToggleLock: (lessonId: string, isLocked: boolean) => void;
+  onUpdateDeadline: (lessonId: string, deadlineAt: Date | null) => void;
   onUpdateContent: (lessonId: string, content: Value) => void;
   onDeleteLesson: (lessonId: string) => void;
   otherSections: Section[];
   onMoveToSection?: (lessonId: string, targetSectionId: string) => void;
+}
+
+function toDatetimeLocalValue(d: Date | string | null): string {
+  if (!d) {
+    return "";
+  }
+  const date = d instanceof Date ? d : new Date(d);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const h = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  return `${y}-${m}-${day}T${h}:${min}`;
 }
 
 function LessonItem({
@@ -949,6 +975,7 @@ function LessonItem({
   onToggleExpand,
   onUpdateTitle,
   onToggleLock,
+  onUpdateDeadline,
   onUpdateContent,
   onDeleteLesson,
   otherSections,
@@ -1103,6 +1130,34 @@ function LessonItem({
       {/* Expanded Content */}
       {isExpanded && (
         <div className="border-t p-3">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <label
+              className="text-muted-foreground text-xs"
+              htmlFor={`deadline-${lesson.id}`}
+            >
+              Due by
+            </label>
+            <Input
+              className="h-8 w-auto min-w-48 text-sm"
+              id={`deadline-${lesson.id}`}
+              onChange={(e) => {
+                const v = e.target.value;
+                onUpdateDeadline(lesson.id, v ? new Date(v) : null);
+              }}
+              type="datetime-local"
+              value={toDatetimeLocalValue(lesson.deadlineAt ?? null)}
+            />
+            {(lesson.deadlineAt ?? null) !== null && (
+              <Button
+                onClick={() => onUpdateDeadline(lesson.id, null)}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                Clear
+              </Button>
+            )}
+          </div>
           <PlateEditor
             onChange={setContent}
             placeholder="Write your lesson content..."

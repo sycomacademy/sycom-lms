@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <explanation> */
+/** biome-ignore-all lint/a11y/noNoninteractiveElementInteractions: <explanation> */
 "use client";
 
 import {
@@ -5,8 +7,8 @@ import {
   useHTMLInputCursorState,
 } from "@platejs/combobox/react";
 import { KEYS } from "platejs";
-import { PlateElement, useEditorRef } from "platejs/react";
 import type { PlateElementProps } from "platejs/react";
+import { PlateElement, useEditorRef } from "platejs/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "@/packages/utils/cn";
@@ -76,7 +78,6 @@ export function SlashInputElement(props: PlateElementProps) {
         <span className="text-muted-foreground">/{search}</span>
         <input
           {...comboboxProps}
-          ref={inputRef}
           autoComplete="off"
           className="sr-only"
           onChange={(e) => setSearch(e.target.value)}
@@ -98,19 +99,20 @@ export function SlashInputElement(props: PlateElementProps) {
             }
             comboboxProps.onKeyDown?.(e);
           }}
+          ref={inputRef}
           value={search}
         />
         {filtered.length > 0 && (
           <div className="absolute top-full left-0 z-[500] mt-1 min-w-[180px] rounded-md border border-border bg-popover py-1 shadow-md">
             {filtered.map((cmd, i) => (
               <div
-                key={cmd.value}
                 className={cn(
                   "cursor-pointer px-3 py-1.5 text-sm",
                   i === selectedIndex
                     ? "bg-accent text-accent-foreground"
                     : "hover:bg-accent/50 hover:text-accent-foreground"
                 )}
+                key={cmd.value}
                 onMouseDown={(e) => {
                   e.preventDefault();
                   handleSelect(cmd.value);

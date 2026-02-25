@@ -26,7 +26,8 @@ export function LinkToolbarButton(
   const editor = useEditorRef();
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState("");
-  const [savedSelection, setSavedSelection] = useState<typeof editor.selection>(null);
+  const [savedSelection, setSavedSelection] =
+    useState<typeof editor.selection>(null);
 
   const submit = () => {
     const nextUrl = url.trim();

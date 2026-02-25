@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/complexity/noVoid: <explanation> */
 "use client";
 
 import { PlaceholderPlugin } from "@platejs/media/react";
@@ -220,7 +221,9 @@ export function MediaToolbarButton({
                 {currentConfig.icon}
                 Upload from computer
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setTimeout(() => setDialogOpen(true), 0)}>
+              <DropdownMenuItem
+                onSelect={() => setTimeout(() => setDialogOpen(true), 0)}
+              >
                 <LinkIcon />
                 Insert via URL
               </DropdownMenuItem>

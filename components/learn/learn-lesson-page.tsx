@@ -26,7 +26,7 @@ export function LearnLessonPage({
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const [canMarkComplete, setCanMarkComplete] = useState(false);
+  const [reachedEnd, setReachedEnd] = useState(false);
 
   const courseQueryOptions = trpc.course.getEnrolledCourse.queryOptions({
     courseId,
@@ -38,6 +38,15 @@ export function LearnLessonPage({
 
   const { data: courseData } = useSuspenseQuery(courseQueryOptions);
   const { data: lessonData } = useSuspenseQuery(lessonQueryOptions);
+
+  const lesson = lessonData.lesson as {
+    deadlineAt?: Date | string | null;
+    isPastDeadline?: boolean;
+    isCompleted: boolean;
+    [key: string]: unknown;
+  };
+  const isPastDeadline = lesson.isPastDeadline ?? false;
+  const canMarkComplete = reachedEnd && !isPastDeadline;
 
   const markCompleteMutation = useMutation(
     trpc.course.markLessonComplete.mutationOptions({
@@ -88,8 +97,10 @@ export function LearnLessonPage({
         <LessonBottomBar
           canMarkComplete={canMarkComplete}
           courseId={courseId}
+          deadlineAt={lesson.deadlineAt ?? null}
           isCompleted={lessonData.lesson.isCompleted}
           isMarkingComplete={markCompleteMutation.isPending}
+          isPastDeadline={isPastDeadline}
           nextIsLocked={lessonData.nav.nextIsLocked}
           nextLessonId={lessonData.nav.nextLessonId}
           onMarkComplete={() =>
@@ -101,7 +112,7 @@ export function LearnLessonPage({
       content={
         <LessonViewer
           key={lessonId}
-          onReachedEndChange={setCanMarkComplete}
+          onReachedEndChange={setReachedEnd}
           value={lessonData.lesson.content as MyValue}
         />
       }

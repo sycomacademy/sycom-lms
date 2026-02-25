@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/a11y/noNoninteractiveElementInteractions: <explanation> */
 "use client";
 
 import { Image, ImagePlugin, useMediaState } from "@platejs/media/react";
