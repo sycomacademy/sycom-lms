@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -123,6 +124,13 @@ export function CreateCourseForm() {
   const createMutation = useMutation(
     trpc.course.create.mutationOptions({
       onSuccess: (course) => {
+        posthog.capture("course_created", {
+          course_id: course.id,
+          course_title: course.title,
+          course_slug: course.slug,
+          difficulty: course.difficulty,
+          category_count: categoryIds.length,
+        });
         queryClient.invalidateQueries({
           queryKey: trpc.course.list.queryKey(),
         });

@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,14 @@ export function SignUpForm() {
       return;
     }
 
+    posthog.identify(data.email, {
+      email: data.email,
+      name: `${data.firstName} ${data.lastName}`,
+    });
+    posthog.capture("user_signed_up", {
+      email: data.email,
+      name: `${data.firstName} ${data.lastName}`,
+    });
     toastManager.add({
       description: "Check your email to verify.",
       title: "Account created",

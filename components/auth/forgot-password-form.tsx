@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeftIcon, MailIcon } from "lucide-react";
 import Link from "next/link";
+import posthog from "posthog-js";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,9 @@ export function ForgotPasswordForm() {
       return;
     }
 
+    posthog.capture("password_reset_requested", {
+      email: data.email,
+    });
     setIsLoading(false);
     setIsSubmitted(true);
   };

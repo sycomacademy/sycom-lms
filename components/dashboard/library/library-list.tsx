@@ -11,6 +11,7 @@ import {
   Loader2Icon,
   SearchIcon,
 } from "lucide-react";
+import posthog from "posthog-js";
 import { useDeferredValue, useState } from "react";
 import { CategoriesFilter } from "@/components/dashboard/courses/categories-filter";
 import { MultiSelectFilter } from "@/components/dashboard/courses/multi-select-filter";
@@ -72,7 +73,10 @@ export function LibraryList() {
 
   const enrollMutation = useMutation(
     trpc.course.enroll.mutationOptions({
-      onSuccess: () => {
+      onSuccess: (_data, variables) => {
+        posthog.capture("course_enrolled", {
+          course_id: variables.courseId,
+        });
         queryClient.invalidateQueries({
           queryKey: [["course", "listLibrary"]],
         });
@@ -99,6 +103,11 @@ export function LibraryList() {
   const handleSearchChange = (value: string) => {
     setSearch(value);
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+    if (value.trim().length > 0) {
+      posthog.capture("library_searched", {
+        query: value.trim(),
+      });
+    }
   };
 
   const handleEnroll = (courseId: string) => {

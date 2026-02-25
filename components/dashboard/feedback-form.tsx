@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
+import posthog from "posthog-js";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -33,7 +34,10 @@ export function FeedbackForm({ onSubmitted }: { onSubmitted?: () => void }) {
 
   const submitMutation = useMutation(
     trpc.feedback.submit.mutationOptions({
-      onSuccess: () => {
+      onSuccess: (_data, variables) => {
+        posthog.capture("feedback_submitted", {
+          message_length: variables.message.length,
+        });
         setIsSubmitted(true);
         toastManager.add({
           title: "Thank you!",

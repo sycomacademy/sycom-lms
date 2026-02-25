@@ -1,5 +1,6 @@
 "use server";
 
+import { getPostHogClient } from "@/lib/posthog-server";
 import { getSession } from "@/packages/auth/helper";
 import { db } from "@/packages/db";
 import { report } from "@/packages/db/schema/report";
@@ -48,6 +49,8 @@ export async function submitReport(
     };
   }
 
+  const posthog = getPostHogClient();
+
   try {
     await db.insert(report).values({
       userId: session.user.id,
@@ -58,9 +61,29 @@ export async function submitReport(
       imageUrl: imageUrl || null,
     });
 
+    posthog.capture({
+      distinctId: session.user.id,
+      event: "report_submitted",
+      properties: {
+        report_type: type,
+        has_screenshot: Boolean(imageUrl),
+        $set: { email },
+      },
+    });
+    await posthog.shutdown();
+
     return { success: true };
   } catch (error) {
     console.error("Failed to submit report:", error);
+    posthog.capture({
+      distinctId: session.user.id,
+      event: "report_submission_failed",
+      properties: {
+        report_type: type,
+        error_message: error instanceof Error ? error.message : "Unknown error",
+      },
+    });
+    await posthog.shutdown();
     return {
       success: false,
       error: "Failed to submit report. Please try again.",

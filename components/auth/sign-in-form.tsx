@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,10 @@ export function SignInForm() {
     });
 
     if (error) {
+      posthog.capture("user_sign_in_failed", {
+        error_message: error.message,
+        email: data.email,
+      });
       toastManager.add({
         description: error.message ?? "Invalid credentials. Please try again.",
         title: "Sign in failed",
@@ -49,6 +54,13 @@ export function SignInForm() {
       });
       setIsLoading(false);
     } else {
+      posthog.identify(data.email, {
+        email: data.email,
+      });
+      posthog.capture("user_signed_in", {
+        email: data.email,
+        remember_me: data.rememberMe,
+      });
       toastManager.add({
         description: "Signed in successfully",
         title: "Signed in",
