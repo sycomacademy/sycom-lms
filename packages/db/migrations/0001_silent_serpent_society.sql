@@ -1,1 +1,0 @@
-ALTER TABLE "profile" ADD COLUMN "settings" jsonb DEFAULT '{"useDeviceTimezone":true,"enableFacehash":true}'::jsonb;

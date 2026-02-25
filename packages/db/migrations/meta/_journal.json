@@ -5,64 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1770916309482,
-      "tag": "0000_ancient_magma",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1771019540317,
-      "tag": "0001_silent_serpent_society",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1771056224981,
-      "tag": "0002_right_crusher_hogan",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1771058065352,
-      "tag": "0003_mute_zemo",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1771059126645,
-      "tag": "0004_known_victor_mancha",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1771167670941,
-      "tag": "0005_adorable_cerise",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1771179593407,
-      "tag": "0006_clever_black_queen",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1771308772176,
-      "tag": "0007_hot_yellow_claw",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1771328677124,
-      "tag": "0008_curious_richard_fisk",
+      "when": 1771980000148,
+      "tag": "0000_breezy_serpent_society",
       "breakpoints": true
     }
   ]

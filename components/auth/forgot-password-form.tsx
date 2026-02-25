@@ -15,7 +15,7 @@ import { authClient } from "@/packages/auth/auth-client";
 import {
   type ForgotPasswordInput,
   forgotPasswordSchema,
-} from "@/packages/types/auth";
+} from "@/packages/utils/schema";
 
 export function ForgotPasswordForm() {
   const [isLoading, setIsLoading] = useState(false);

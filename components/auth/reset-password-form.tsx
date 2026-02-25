@@ -25,7 +25,7 @@ import { authClient } from "@/packages/auth/auth-client";
 import {
   type ResetPasswordInput,
   resetPasswordSchema,
-} from "@/packages/types/auth";
+} from "@/packages/utils/schema";
 
 export function ResetPasswordForm({
   token,

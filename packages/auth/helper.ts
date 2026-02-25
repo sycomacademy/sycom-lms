@@ -31,27 +31,3 @@ export const signInGuard = async () => {
     redirect("/dashboard");
   }
 };
-
-export const adminGuard = async () => {
-  const session = await getSession();
-  if (!session) {
-    redirect("/sign-in");
-  }
-  if (session.user.role !== "admin") {
-    redirect("/dashboard");
-  }
-  return session;
-};
-
-/** Requires instructor or admin role. Redirects otherwise. */
-export const instructorGuard = async () => {
-  const session = await getSession();
-  if (!session) {
-    redirect("/sign-in");
-  }
-  const role = session.user.role;
-  if (role !== "instructor" && role !== "admin") {
-    redirect("/dashboard");
-  }
-  return session;
-};

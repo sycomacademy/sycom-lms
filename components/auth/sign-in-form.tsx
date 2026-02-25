@@ -20,7 +20,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
 import { authClient } from "@/packages/auth/auth-client";
-import { type SignInInput, signInSchema } from "@/packages/types/auth";
+import { type SignInInput, signInSchema } from "@/packages/utils/schema";
 import { OAuthButtons } from "./oauth-buttons";
 
 export function SignInForm() {
