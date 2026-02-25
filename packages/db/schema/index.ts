@@ -1,4 +1,11 @@
-import { account, session, user, verification } from "./auth";
+import {
+  account,
+  passkey,
+  session,
+  twoFactor,
+  user,
+  verification,
+} from "./auth";
 import { author, blogPost } from "./blog";
 import {
   category,
@@ -40,6 +47,8 @@ export const schema = {
   report,
   section,
   session,
+  passkey,
+  twoFactor,
   uploadSessions,
   user,
   verification,

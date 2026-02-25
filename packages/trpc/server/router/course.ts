@@ -719,6 +719,7 @@ export const courseRouter = router({
       const completedSet = new Set(completedRows.map((r) => r.lessonId));
 
       const sectionIds = sections.map((s) => s.id);
+      const now = new Date();
       const lessons =
         sectionIds.length > 0
           ? await db
@@ -730,6 +731,7 @@ export const courseRouter = router({
                 order: lesson.order,
                 isLocked: lesson.isLocked,
                 estimatedDuration: lesson.estimatedDuration,
+                deadlineAt: lesson.deadlineAt,
               })
               .from(lesson)
               .innerJoin(section, eq(section.id, lesson.sectionId))
@@ -759,6 +761,7 @@ export const courseRouter = router({
             (l) => ({
               ...l,
               isCompleted: completedSet.has(l.id),
+              isPastDeadline: l.deadlineAt ? now > l.deadlineAt : false,
             })
           );
           const isCompleted =
@@ -797,6 +800,7 @@ export const courseRouter = router({
           type: lesson.type,
           isLocked: lesson.isLocked,
           estimatedDuration: lesson.estimatedDuration,
+          deadlineAt: lesson.deadlineAt,
           sectionId: lesson.sectionId,
         })
         .from(lesson)
@@ -823,6 +827,10 @@ export const courseRouter = router({
         });
       }
 
+      const isPastDeadline = lessonRow.deadlineAt
+        ? new Date() > lessonRow.deadlineAt
+        : false;
+
       const [isCompletedRow, orderedLessons] = await Promise.all([
         db
           .select({ id: lessonCompletion.id })
@@ -838,6 +846,7 @@ export const courseRouter = router({
           .select({
             id: lesson.id,
             isLocked: lesson.isLocked,
+            deadlineAt: lesson.deadlineAt,
           })
           .from(lesson)
           .innerJoin(section, eq(section.id, lesson.sectionId))
@@ -853,9 +862,12 @@ export const courseRouter = router({
         idx >= 0 && idx < orderedLessons.length - 1
           ? (orderedLessons[idx + 1]?.id ?? null)
           : null;
+      const nextLesson = nextLessonId ? orderedLessons[idx + 1] : undefined;
       const nextIsLocked =
-        nextLessonId !== null
-          ? (orderedLessons[idx + 1]?.isLocked ?? false)
+        nextLesson !== undefined
+          ? nextLesson.isLocked ||
+            (nextLesson.deadlineAt != null &&
+              new Date() > nextLesson.deadlineAt)
           : false;
 
       return {
@@ -866,6 +878,8 @@ export const courseRouter = router({
           content: lessonRow.content,
           type: lessonRow.type,
           estimatedDuration: lessonRow.estimatedDuration,
+          deadlineAt: lessonRow.deadlineAt,
+          isPastDeadline,
           isCompleted,
         },
         nav: { prevLessonId, nextLessonId, nextIsLocked },
@@ -887,6 +901,7 @@ export const courseRouter = router({
         .select({
           id: lesson.id,
           isLocked: lesson.isLocked,
+          deadlineAt: lesson.deadlineAt,
         })
         .from(lesson)
         .innerJoin(section, eq(section.id, lesson.sectionId))
@@ -909,6 +924,14 @@ export const courseRouter = router({
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "This lesson is locked",
+        });
+      }
+
+      const now = new Date();
+      if (lessonRow.deadlineAt != null && now > lessonRow.deadlineAt) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Deadline has passed for this lesson",
         });
       }
 
@@ -1505,6 +1528,7 @@ export const courseRouter = router({
           order: nextOrder,
           isLocked: input.isLocked ?? false,
           estimatedDuration: input.estimatedDuration,
+          deadlineAt: input.deadlineAt ?? null,
         })
         .returning();
       return created;
@@ -1585,6 +1609,9 @@ export const courseRouter = router({
       }
       if (input.estimatedDuration !== undefined) {
         updateData.estimatedDuration = input.estimatedDuration;
+      }
+      if (input.deadlineAt !== undefined) {
+        updateData.deadlineAt = input.deadlineAt;
       }
       if (Object.keys(updateData).length === 0) {
         throw new TRPCError({

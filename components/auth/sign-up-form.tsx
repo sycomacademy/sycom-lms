@@ -139,7 +139,7 @@ export function SignUpForm() {
                   </FieldLabel>
                   <FormControl>
                     <Input
-                      autoComplete="email"
+                      autoComplete="username webauthn"
                       placeholder="you@example.com"
                       type="email"
                       {...field}
@@ -165,7 +165,7 @@ export function SignUpForm() {
                   <FormControl>
                     <InputGroup>
                       <InputGroupInput
-                        autoComplete="new-password"
+                        autoComplete="new-password webauthn"
                         placeholder="Min. 8 characters"
                         type={showPassword ? "text" : "password"}
                         {...field}
@@ -204,6 +204,8 @@ export function SignUpForm() {
             {isLoading ? <Spinner className="mr-2" /> : null}
             Create account
           </Button>
+
+          {/* <PasskeySignInButton /> */}
         </form>
       </Form>
 

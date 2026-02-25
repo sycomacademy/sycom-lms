@@ -123,6 +123,7 @@ export const createLessonSchema = z.object({
   type: z.enum(["text", "video", "quiz"]).default("text"),
   isLocked: z.boolean().default(false),
   estimatedDuration: z.number().int().positive().optional(),
+  deadlineAt: z.coerce.date().optional(),
 });
 
 export const updateLessonSchema = z.object({
@@ -134,6 +135,7 @@ export const updateLessonSchema = z.object({
   order: z.number().int().min(0).optional(),
   isLocked: z.boolean().optional(),
   estimatedDuration: z.number().int().positive().nullish(),
+  deadlineAt: z.coerce.date().nullish(),
 });
 
 export const deleteLessonSchema = z.object({

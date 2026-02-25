@@ -1,9 +1,14 @@
+import { passkey } from "@better-auth/passkey";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { createAuthMiddleware } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { admin as adminPlugin, lastLoginMethod } from "better-auth/plugins";
+import { twoFactor } from "better-auth/plugins/two-factor";
+import { and, eq, ne } from "drizzle-orm";
 import { db } from "@/packages/db";
 import { schema } from "@/packages/db/schema";
+import { session } from "@/packages/db/schema/auth";
 import { profile } from "@/packages/db/schema/profile";
 import { render } from "@/packages/email/render";
 import { sendEmail } from "@/packages/email/resend";
@@ -70,9 +75,48 @@ export const auth = betterAuth({
     },
   },
   socialProviders: {},
+  advanced: {
+    useSecureCookies: process.env.NODE_ENV === "production",
+  },
+  hooks: {
+    after: createAuthMiddleware(async (ctx) => {
+      const newSession = ctx.context.newSession;
+      if (!(newSession?.session?.id && newSession?.user?.id)) {
+        return;
+      }
+
+      const isLoginFlow =
+        ctx.path.startsWith("/sign-in") ||
+        ctx.path.startsWith("/two-factor/verify");
+
+      if (!isLoginFlow) {
+        return;
+      }
+
+      await db
+        .delete(session)
+        .where(
+          and(
+            eq(session.userId, newSession.user.id),
+            ne(session.id, newSession.session.id)
+          )
+        );
+    }),
+  },
   plugins: [
     nextCookies(),
     lastLoginMethod(),
+    passkey({
+      rpID:
+        process.env.NODE_ENV === "production"
+          ? new URL(getWebsiteUrl()).hostname
+          : "localhost",
+      rpName: "Sycom LMS",
+      origin: getWebsiteUrl(),
+    }),
+    twoFactor({
+      issuer: "Sycom LMS",
+    }),
     adminPlugin({
       ac,
       roles: {

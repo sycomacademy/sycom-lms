@@ -216,6 +216,7 @@ export const lesson = pgTable(
     order: integer("order").notNull().default(0),
     isLocked: boolean("is_locked").notNull().default(false),
     estimatedDuration: integer("estimated_duration"), // minutes
+    deadlineAt: timestamp("deadline_at", { withTimezone: true }),
     createdAt,
     updatedAt,
   },

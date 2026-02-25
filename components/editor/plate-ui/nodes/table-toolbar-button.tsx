@@ -6,6 +6,7 @@
 /** biome-ignore-all lint/a11y/useFocusableInteractive: Custom focus management */
 "use client";
 
+import { deleteTable } from "@platejs/table";
 import { TablePlugin, useTableMergeState } from "@platejs/table/react";
 
 import {
@@ -48,6 +49,12 @@ export function TableToolbarButton(
   const [open, setOpen] = useState(false);
   const mergeState = useTableMergeState();
 
+  const runTableCommand = (command: () => void) => {
+    command();
+    editor.tf.focus();
+    setOpen(false);
+  };
+
   return (
     <DropdownMenu modal={false} onOpenChange={setOpen} open={open} {...props}>
       <DropdownMenuTrigger
@@ -86,8 +93,7 @@ export function TableToolbarButton(
                 className="min-w-[180px]"
                 disabled={!mergeState.canMerge}
                 onSelect={() => {
-                  tf.table.merge();
-                  editor.tf.focus();
+                  runTableCommand(() => tf.table.merge());
                 }}
               >
                 <Combine />
@@ -97,8 +103,7 @@ export function TableToolbarButton(
                 className="min-w-[180px]"
                 disabled={!mergeState.canSplit}
                 onSelect={() => {
-                  tf.table.split();
-                  editor.tf.focus();
+                  runTableCommand(() => tf.table.split());
                 }}
               >
                 <Ungroup />
@@ -120,8 +125,7 @@ export function TableToolbarButton(
                 className="min-w-[180px]"
                 disabled={!tableSelected}
                 onSelect={() => {
-                  tf.insert.tableRow({ before: true });
-                  editor.tf.focus();
+                  runTableCommand(() => tf.insert.tableRow({ before: true }));
                 }}
               >
                 <ArrowUp />
@@ -131,8 +135,7 @@ export function TableToolbarButton(
                 className="min-w-[180px]"
                 disabled={!tableSelected}
                 onSelect={() => {
-                  tf.insert.tableRow();
-                  editor.tf.focus();
+                  runTableCommand(() => tf.insert.tableRow());
                 }}
               >
                 <ArrowDown />
@@ -142,8 +145,7 @@ export function TableToolbarButton(
                 className="min-w-[180px]"
                 disabled={!tableSelected}
                 onSelect={() => {
-                  tf.remove.tableRow();
-                  editor.tf.focus();
+                  runTableCommand(() => tf.remove.tableRow());
                 }}
               >
                 <XIcon />
@@ -165,8 +167,9 @@ export function TableToolbarButton(
                 className="min-w-[180px]"
                 disabled={!tableSelected}
                 onSelect={() => {
-                  tf.insert.tableColumn({ before: true });
-                  editor.tf.focus();
+                  runTableCommand(() =>
+                    tf.insert.tableColumn({ before: true })
+                  );
                 }}
               >
                 <ArrowLeft />
@@ -176,8 +179,7 @@ export function TableToolbarButton(
                 className="min-w-[180px]"
                 disabled={!tableSelected}
                 onSelect={() => {
-                  tf.insert.tableColumn();
-                  editor.tf.focus();
+                  runTableCommand(() => tf.insert.tableColumn());
                 }}
               >
                 <ArrowRight />
@@ -187,8 +189,7 @@ export function TableToolbarButton(
                 className="min-w-[180px]"
                 disabled={!tableSelected}
                 onSelect={() => {
-                  tf.remove.tableColumn();
-                  editor.tf.focus();
+                  runTableCommand(() => tf.remove.tableColumn());
                 }}
               >
                 <XIcon />
@@ -201,8 +202,10 @@ export function TableToolbarButton(
             className="min-w-[180px]"
             disabled={!tableSelected}
             onSelect={() => {
-              tf.remove.table();
-              editor.tf.focus();
+              runTableCommand(() => {
+                deleteTable(editor);
+                tf.remove.table();
+              });
             }}
           >
             <Trash2Icon />

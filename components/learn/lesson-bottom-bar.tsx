@@ -6,6 +6,14 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/packages/utils/cn";
 
+function formatDeadline(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  return date.toLocaleString(undefined, {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
+
 export function LessonBottomBar({
   courseId,
   prevLessonId,
@@ -14,6 +22,8 @@ export function LessonBottomBar({
   canMarkComplete,
   isCompleted,
   isMarkingComplete,
+  isPastDeadline,
+  deadlineAt,
   onMarkComplete,
 }: {
   courseId: string;
@@ -23,6 +33,8 @@ export function LessonBottomBar({
   canMarkComplete: boolean;
   isCompleted: boolean;
   isMarkingComplete: boolean;
+  isPastDeadline?: boolean;
+  deadlineAt?: Date | string | null;
   onMarkComplete: () => void;
 }) {
   const prevHref = prevLessonId
@@ -35,6 +47,8 @@ export function LessonBottomBar({
   let markLabel = "Mark complete";
   if (isCompleted) {
     markLabel = "Completed";
+  } else if (isPastDeadline) {
+    markLabel = "Deadline passed";
   } else if (isMarkingComplete) {
     markLabel = "Marking...";
   }
@@ -80,13 +94,28 @@ export function LessonBottomBar({
       </div>
 
       <div className="flex items-center gap-3">
-        {isCompleted || canMarkComplete ? null : (
+        {deadlineAt != null && !isPastDeadline && (
+          <p className="text-muted-foreground text-xs">
+            Due by {formatDeadline(deadlineAt)}
+          </p>
+        )}
+        {isPastDeadline && (
+          <p className="text-muted-foreground text-xs">
+            Time limit passed. Completion is no longer available.
+          </p>
+        )}
+        {!(deadlineAt || isPastDeadline || isCompleted || canMarkComplete) && (
           <p className="text-muted-foreground text-xs">
             Scroll to the end to enable completion.
           </p>
         )}
         <Button
-          // disabled={!canMarkComplete || isCompleted || isMarkingComplete}
+          disabled={
+            !canMarkComplete ||
+            isCompleted ||
+            isMarkingComplete ||
+            isPastDeadline
+          }
           onClick={onMarkComplete}
           size="sm"
         >

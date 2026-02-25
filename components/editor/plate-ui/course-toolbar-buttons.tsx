@@ -9,24 +9,18 @@ import {
   CheckSquareIcon,
   CodeIcon,
   EyeIcon,
-  FileIcon,
   Heading1,
   Heading2,
   Heading3,
   HighlighterIcon,
-  ImageIcon,
   ItalicIcon,
-  LinkIcon,
   List,
   ListOrdered,
-  MusicIcon,
   PencilIcon,
   QuoteIcon,
   SeparatorHorizontal,
   StrikethroughIcon,
-  TableIcon,
   UnderlineIcon,
-  VideoIcon,
 } from "lucide-react";
 import { KEYS } from "platejs";
 import { useEditorReadOnly, useEditorRef, usePlateState } from "platejs/react";
@@ -36,6 +30,9 @@ import {
   UndoToolbarButton,
 } from "./history-toolbar-buttons";
 import { MarkToolbarButton } from "./mark-toolbar-button";
+import { LinkToolbarButton } from "./nodes/link-toolbar-button";
+import { MediaToolbarButton } from "./nodes/media-toolbar-button";
+import { TableToolbarButton } from "./nodes/table-toolbar-button";
 import { ToolbarButton } from "./toolbar-button";
 
 // List buttons - using indent list via setNodes
@@ -241,160 +238,6 @@ function AlignJustifyButton() {
   );
 }
 
-// Table button
-function TableButton() {
-  const editor = useEditorRef();
-
-  return (
-    <ToolbarButton
-      onClick={() => {
-        editor.tf.insertNodes({
-          type: "table",
-          children: [
-            {
-              type: "tr",
-              children: [
-                {
-                  type: "td",
-                  children: [{ type: "p", children: [{ text: "" }] }],
-                },
-                {
-                  type: "td",
-                  children: [{ type: "p", children: [{ text: "" }] }],
-                },
-              ],
-            },
-            {
-              type: "tr",
-              children: [
-                {
-                  type: "td",
-                  children: [{ type: "p", children: [{ text: "" }] }],
-                },
-                {
-                  type: "td",
-                  children: [{ type: "p", children: [{ text: "" }] }],
-                },
-              ],
-            },
-          ],
-        });
-        editor.tf.focus();
-      }}
-      tooltip="Insert Table"
-    >
-      <TableIcon />
-    </ToolbarButton>
-  );
-}
-
-// Link button - wraps selected text as a link
-function LinkButton() {
-  const editor = useEditorRef();
-
-  return (
-    <ToolbarButton
-      onClick={() => {
-        // Wrap selection with a link (URL can be edited via floating toolbar)
-        editor.tf.wrapNodes(
-          {
-            type: KEYS.link,
-            url: "https://",
-            children: [],
-          },
-          { split: true }
-        );
-        editor.tf.focus();
-      }}
-      tooltip="Insert Link"
-    >
-      <LinkIcon />
-    </ToolbarButton>
-  );
-}
-
-// Media buttons - insert placeholder media blocks
-function ImageButton() {
-  const editor = useEditorRef();
-
-  return (
-    <ToolbarButton
-      onClick={() => {
-        editor.tf.insertNodes({
-          type: KEYS.img,
-          url: "",
-          children: [{ text: "" }],
-        });
-        editor.tf.focus();
-      }}
-      tooltip="Insert Image"
-    >
-      <ImageIcon />
-    </ToolbarButton>
-  );
-}
-
-function VideoButton() {
-  const editor = useEditorRef();
-
-  return (
-    <ToolbarButton
-      onClick={() => {
-        editor.tf.insertNodes({
-          type: KEYS.video,
-          url: "",
-          children: [{ text: "" }],
-        });
-        editor.tf.focus();
-      }}
-      tooltip="Insert Video"
-    >
-      <VideoIcon />
-    </ToolbarButton>
-  );
-}
-
-function AudioButton() {
-  const editor = useEditorRef();
-
-  return (
-    <ToolbarButton
-      onClick={() => {
-        editor.tf.insertNodes({
-          type: KEYS.audio,
-          url: "",
-          children: [{ text: "" }],
-        });
-        editor.tf.focus();
-      }}
-      tooltip="Insert Audio"
-    >
-      <MusicIcon />
-    </ToolbarButton>
-  );
-}
-
-function FileButton() {
-  const editor = useEditorRef();
-
-  return (
-    <ToolbarButton
-      onClick={() => {
-        editor.tf.insertNodes({
-          type: KEYS.file,
-          url: "",
-          name: "file",
-          children: [{ text: "" }],
-        });
-        editor.tf.focus();
-      }}
-      tooltip="Insert File"
-    >
-      <FileIcon />
-    </ToolbarButton>
-  );
-}
-
 // Mode toggle button for switching between editing and viewing
 function ModeToggleButton() {
   const [readOnly, setReadOnly] = usePlateState("readOnly");
@@ -411,7 +254,15 @@ function ModeToggleButton() {
 }
 
 // Full toolbar buttons component for course variant
-export function CourseToolbarButtons() {
+interface CourseToolbarButtonsProps {
+  uploadEntityType?: string;
+  uploadEntityId?: string;
+}
+
+export function CourseToolbarButtons({
+  uploadEntityType,
+  uploadEntityId,
+}: CourseToolbarButtonsProps) {
   const readOnly = useEditorReadOnly();
 
   return (
@@ -475,18 +326,34 @@ export function CourseToolbarButtons() {
           <ToolbarSeparator />
 
           <ToolbarGroup>
-            <LinkButton />
-            <TableButton />
+            <LinkToolbarButton />
+            <TableToolbarButton />
             <HorizontalRuleButton />
           </ToolbarGroup>
 
           <ToolbarSeparator />
 
           <ToolbarGroup>
-            <ImageButton />
-            <VideoButton />
-            <AudioButton />
-            <FileButton />
+            <MediaToolbarButton
+              nodeType={KEYS.img}
+              uploadEntityId={uploadEntityId}
+              uploadEntityType={uploadEntityType}
+            />
+            <MediaToolbarButton
+              nodeType={KEYS.video}
+              uploadEntityId={uploadEntityId}
+              uploadEntityType={uploadEntityType}
+            />
+            <MediaToolbarButton
+              nodeType={KEYS.audio}
+              uploadEntityId={uploadEntityId}
+              uploadEntityType={uploadEntityType}
+            />
+            <MediaToolbarButton
+              nodeType={KEYS.file}
+              uploadEntityId={uploadEntityId}
+              uploadEntityType={uploadEntityType}
+            />
           </ToolbarGroup>
         </>
       )}

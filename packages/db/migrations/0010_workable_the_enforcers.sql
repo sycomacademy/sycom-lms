@@ -1,0 +1,1 @@
+ALTER TABLE "lesson" ADD COLUMN "deadline_at" timestamp with time zone;

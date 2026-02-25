@@ -76,6 +76,7 @@ interface Lesson {
   order: number;
   isLocked: boolean;
   estimatedDuration: number | null;
+  deadlineAt: Date | null;
 }
 
 interface EditCurriculumFormProps {
@@ -265,13 +266,13 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
 
   // Server data: initial and after refetch
   const sectionsFromServer = useMemo(
-    () => (course.sections ?? []) as Section[],
+    () => (course.sections ?? []) as unknown as Section[],
     [course.sections]
   );
 
   // Client-side sort state: source of truth for UI (ReUI pattern: value + onValueChange)
   const [localSections, setLocalSections] = useState<Section[]>(() =>
-    ((course?.sections ?? []) as Section[]).map((s) => ({
+    ((course?.sections ?? []) as unknown as Section[]).map((s) => ({
       ...s,
       lessons: [...s.lessons],
     }))
@@ -287,26 +288,12 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
     localSectionsRef.current = localSections;
   }, [localSections]);
 
-  // Sync local state from server only when not dirty and server data actually changed
+  // Sync local state from server whenever order isn't currently dirty
   useEffect(() => {
     if (hasOrderDirtyRef.current) {
       return;
     }
-    const serverSectionIds = sectionsFromServer.map((s) => s.id).join(",");
-    const lastSectionIds = lastSavedSectionIdsRef.current.join(",");
-    const serverLessonKeys = sectionsFromServer
-      .map((s) => s.lessons.map((l) => l.id).join(","))
-      .join("|");
-    const lastLessonKeys = Object.values(lastSavedLessonIdsBySectionRef.current)
-      .map((ids) => ids.join(","))
-      .join("|");
-    if (
-      serverSectionIds === lastSectionIds &&
-      serverLessonKeys === lastLessonKeys &&
-      lastSavedSectionIdsRef.current.length > 0
-    ) {
-      return;
-    }
+
     setLocalSections(
       sectionsFromServer.map((s) => ({ ...s, lessons: [...s.lessons] }))
     );
@@ -350,7 +337,33 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
   };
 
   const handleUpdateSectionTitle = (sectionId: string, title: string) => {
-    updateSectionMutation.mutate({ sectionId, title });
+    const nextTitle = title.trim();
+    const previousTitle =
+      localSections.find((section) => section.id === sectionId)?.title ?? null;
+
+    setLocalSections((prev) =>
+      prev.map((section) =>
+        section.id === sectionId ? { ...section, title: nextTitle } : section
+      )
+    );
+
+    updateSectionMutation.mutate(
+      { sectionId, title: nextTitle },
+      {
+        onError: () => {
+          if (!previousTitle) {
+            return;
+          }
+          setLocalSections((prev) =>
+            prev.map((section) =>
+              section.id === sectionId
+                ? { ...section, title: previousTitle }
+                : section
+            )
+          );
+        },
+      }
+    );
   };
 
   const handleDeleteSection = (sectionId: string) => {
@@ -358,11 +371,52 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
   };
 
   const handleUpdateLessonTitle = (lessonId: string, title: string) => {
-    updateLessonMutation.mutate({ lessonId, title });
+    const nextTitle = title.trim();
+    const previousTitle =
+      localSections
+        .flatMap((section) => section.lessons)
+        .find((lesson) => lesson.id === lessonId)?.title ?? null;
+
+    setLocalSections((prev) =>
+      prev.map((section) => ({
+        ...section,
+        lessons: section.lessons.map((lesson) =>
+          lesson.id === lessonId ? { ...lesson, title: nextTitle } : lesson
+        ),
+      }))
+    );
+
+    updateLessonMutation.mutate(
+      { lessonId, title: nextTitle },
+      {
+        onError: () => {
+          if (!previousTitle) {
+            return;
+          }
+          setLocalSections((prev) =>
+            prev.map((section) => ({
+              ...section,
+              lessons: section.lessons.map((lesson) =>
+                lesson.id === lessonId
+                  ? { ...lesson, title: previousTitle }
+                  : lesson
+              ),
+            }))
+          );
+        },
+      }
+    );
   };
 
   const handleToggleLessonLock = (lessonId: string, isLocked: boolean) => {
     updateLessonMutation.mutate({ lessonId, isLocked: !isLocked });
+  };
+
+  const handleUpdateLessonDeadline = (
+    lessonId: string,
+    deadlineAt: Date | null
+  ) => {
+    updateLessonMutation.mutate({ lessonId, deadlineAt });
   };
 
   const handleUpdateLessonContent = (lessonId: string, content: Value) => {
@@ -643,6 +697,7 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
                 onToggleLessonExpand={toggleLessonExpand}
                 onToggleLessonLock={handleToggleLessonLock}
                 onUpdateLessonContent={handleUpdateLessonContent}
+                onUpdateLessonDeadline={handleUpdateLessonDeadline}
                 onUpdateLessonTitle={handleUpdateLessonTitle}
                 onUpdateSectionTitle={handleUpdateSectionTitle}
                 section={section}
@@ -688,6 +743,7 @@ interface SectionItemProps {
   onDeleteSection: (sectionId: string) => void;
   onUpdateLessonTitle: (lessonId: string, title: string) => void;
   onToggleLessonLock: (lessonId: string, isLocked: boolean) => void;
+  onUpdateLessonDeadline: (lessonId: string, deadlineAt: Date | null) => void;
   onUpdateLessonContent: (lessonId: string, content: Value) => void;
   onDeleteLesson: (lessonId: string) => void;
   onLessonsReorder: (sectionId: string, newLessons: Lesson[]) => void;
@@ -707,6 +763,7 @@ function SectionItem({
   onDeleteSection,
   onUpdateLessonTitle,
   onToggleLessonLock,
+  onUpdateLessonDeadline,
   onUpdateLessonContent,
   onDeleteLesson,
   onLessonsReorder,
@@ -715,6 +772,10 @@ function SectionItem({
   const isCollapsed = collapsedSections.has(section.id);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState(section.title);
+
+  useEffect(() => {
+    setTitleValue(section.title);
+  }, [section.title]);
 
   const handleTitleBlur = () => {
     setIsEditingTitle(false);
@@ -860,6 +921,7 @@ function SectionItem({
                         onToggleExpand={onToggleLessonExpand}
                         onToggleLock={onToggleLessonLock}
                         onUpdateContent={onUpdateLessonContent}
+                        onUpdateDeadline={onUpdateLessonDeadline}
                         onUpdateTitle={onUpdateLessonTitle}
                         otherSections={otherSections}
                       />
@@ -886,10 +948,24 @@ interface LessonItemProps {
   onToggleExpand: (lessonId: string) => void;
   onUpdateTitle: (lessonId: string, title: string) => void;
   onToggleLock: (lessonId: string, isLocked: boolean) => void;
+  onUpdateDeadline: (lessonId: string, deadlineAt: Date | null) => void;
   onUpdateContent: (lessonId: string, content: Value) => void;
   onDeleteLesson: (lessonId: string) => void;
   otherSections: Section[];
   onMoveToSection?: (lessonId: string, targetSectionId: string) => void;
+}
+
+function toDatetimeLocalValue(d: Date | string | null): string {
+  if (!d) {
+    return "";
+  }
+  const date = d instanceof Date ? d : new Date(d);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const h = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  return `${y}-${m}-${day}T${h}:${min}`;
 }
 
 function LessonItem({
@@ -899,6 +975,7 @@ function LessonItem({
   onToggleExpand,
   onUpdateTitle,
   onToggleLock,
+  onUpdateDeadline,
   onUpdateContent,
   onDeleteLesson,
   otherSections,
@@ -911,6 +988,10 @@ function LessonItem({
     const raw = lesson.content;
     return Array.isArray(raw) && raw.length > 0 ? raw : DEFAULT_EDITOR_VALUE;
   });
+
+  useEffect(() => {
+    setTitleValue(lesson.title);
+  }, [lesson.title]);
 
   const handleTitleBlur = () => {
     setIsEditingTitle(false);
@@ -1049,9 +1130,39 @@ function LessonItem({
       {/* Expanded Content */}
       {isExpanded && (
         <div className="border-t p-3">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <label
+              className="text-muted-foreground text-xs"
+              htmlFor={`deadline-${lesson.id}`}
+            >
+              Due by
+            </label>
+            <Input
+              className="h-8 w-auto min-w-48 text-sm"
+              id={`deadline-${lesson.id}`}
+              onChange={(e) => {
+                const v = e.target.value;
+                onUpdateDeadline(lesson.id, v ? new Date(v) : null);
+              }}
+              type="datetime-local"
+              value={toDatetimeLocalValue(lesson.deadlineAt ?? null)}
+            />
+            {(lesson.deadlineAt ?? null) !== null && (
+              <Button
+                onClick={() => onUpdateDeadline(lesson.id, null)}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                Clear
+              </Button>
+            )}
+          </div>
           <PlateEditor
             onChange={setContent}
             placeholder="Write your lesson content..."
+            uploadEntityId={lesson.id}
+            uploadEntityType="lesson"
             value={content}
             variant="course"
           />

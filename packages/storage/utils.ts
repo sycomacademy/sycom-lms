@@ -109,12 +109,13 @@ export function validateFile(
       }
     }
 
-    const isAllowed = allAllowedTypes.some((type) => {
-      if (type.endsWith("*")) {
-        return contentType.startsWith(type.slice(0, -1));
-      }
-      return contentType === type;
-    });
+    const isAllowed =
+      allAllowedTypes.some((type) => {
+        if (type.endsWith("*")) {
+          return contentType.startsWith(type.slice(0, -1));
+        }
+        return contentType === type;
+      }) || contentType.startsWith("audio/");
 
     if (!isAllowed) {
       return {

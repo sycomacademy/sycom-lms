@@ -22,6 +22,7 @@ import { toastManager } from "@/components/ui/toast";
 import { authClient } from "@/packages/auth/auth-client";
 import { type SignInInput, signInSchema } from "@/packages/types/auth";
 import { OAuthButtons } from "./oauth-buttons";
+import { PasskeySignInButton } from "./passkey-sign-in-button";
 
 export function SignInForm() {
   const router = useRouter();
@@ -35,7 +36,7 @@ export function SignInForm() {
 
   const onSubmit = async (data: SignInInput) => {
     setIsLoading(true);
-    const { error } = await authClient.signIn.email({
+    const { data: response, error } = await authClient.signIn.email({
       email: data.email,
       password: data.password,
       rememberMe: data.rememberMe,
@@ -48,16 +49,32 @@ export function SignInForm() {
         type: "error",
       });
       setIsLoading(false);
-    } else {
-      toastManager.add({
-        description: "Signed in successfully",
-        title: "Signed in",
-        type: "success",
-      });
-      // Refresh invalidates the RSC cache so server components see the new session
-      router.refresh();
-      router.push("/dashboard");
+      return;
     }
+
+    if (
+      response &&
+      "twoFactorRedirect" in response &&
+      response.twoFactorRedirect
+    ) {
+      toastManager.add({
+        description: "Two-factor authentication required",
+        title: "Two-factor authentication required",
+        type: "info",
+      });
+      router.push("/two-factor");
+      return;
+    }
+
+    toastManager.add({
+      description: "Signed in successfully",
+      title: "Signed in",
+      type: "success",
+    });
+    await authClient.revokeOtherSessions();
+    // Refresh invalidates the RSC cache so server components see the new session
+    router.refresh();
+    router.push("/dashboard");
   };
 
   return (
@@ -85,7 +102,7 @@ export function SignInForm() {
                   </FieldLabel>
                   <FormControl>
                     <Input
-                      autoComplete="email"
+                      autoComplete="username webauthn"
                       autoFocus
                       placeholder="you@example.com"
                       type="email"
@@ -120,7 +137,7 @@ export function SignInForm() {
                   <FormControl>
                     <InputGroup>
                       <InputGroupInput
-                        autoComplete="current-password"
+                        autoComplete="current-password webauthn"
                         placeholder="Enter your password"
                         type={showPassword ? "text" : "password"}
                         {...field}
@@ -158,20 +175,22 @@ export function SignInForm() {
               <FormItem>
                 <div className="flex items-center gap-2">
                   <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      id="rememberMe"
-                      onCheckedChange={(checked) =>
-                        field.onChange(checked === true)
-                      }
-                    />
+                    <Field orientation="horizontal">
+                      <Checkbox
+                        checked={field.value}
+                        id="rememberMe"
+                        onCheckedChange={(checked) =>
+                          field.onChange(checked === true)
+                        }
+                      />{" "}
+                      <FieldLabel
+                        className="font-normal text-muted-foreground text-xs"
+                        htmlFor="rememberMe"
+                      >
+                        Remember me
+                      </FieldLabel>
+                    </Field>
                   </FormControl>
-                  <FieldLabel
-                    className="font-normal text-muted-foreground text-xs"
-                    htmlFor="rememberMe"
-                  >
-                    Remember me
-                  </FieldLabel>
                 </div>
               </FormItem>
             )}
@@ -181,6 +200,8 @@ export function SignInForm() {
             {isLoading ? <Spinner className="mr-2" /> : null}
             Continue
           </Button>
+
+          <PasskeySignInButton />
         </form>
       </Form>
 
