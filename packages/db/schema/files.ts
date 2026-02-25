@@ -36,7 +36,7 @@ export const FILE_CATEGORIES = {
   },
   attachment: {
     maxSize: 25 * 1024 * 1024, // 25MB
-    allowedTypes: null, // Any of the above types
+    allowedTypes: null, // Any of the above types + audio/*
   },
 } as const;
 

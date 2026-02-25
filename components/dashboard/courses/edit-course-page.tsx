@@ -1,6 +1,9 @@
 "use client";
 
 import { BookOpenIcon, InfoIcon } from "lucide-react";
+import type { Route } from "next";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback } from "react";
 
 import { EditCourseInfoForm } from "@/components/dashboard/courses/edit-course-info-form";
 import { EditCurriculumForm } from "@/components/dashboard/courses/edit-curriculum-form";
@@ -12,6 +15,30 @@ interface EditCoursePageProps {
 }
 
 export function EditCoursePage({ courseId }: EditCoursePageProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const activeTab =
+    searchParams.get("tab") === "curriculum" ? "curriculum" : "info";
+
+  const handleTabChange = useCallback(
+    (nextTab: string) => {
+      const nextValue = nextTab === "curriculum" ? "curriculum" : "info";
+
+      if (nextValue === activeTab) {
+        return;
+      }
+
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tab", nextValue);
+      router.replace(`${pathname}?${params.toString()}` as Route, {
+        scroll: false,
+      });
+    },
+    [activeTab, pathname, router, searchParams]
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -22,23 +49,23 @@ export function EditCoursePage({ courseId }: EditCoursePageProps) {
         </p>
       </div>
 
-      <Tabs defaultValue={0}>
+      <Tabs onValueChange={handleTabChange} value={activeTab}>
         <TabsList variant="underline">
-          <TabsTab value={0}>
+          <TabsTab value="info">
             <InfoIcon className="size-4" />
             Course Info
           </TabsTab>
-          <TabsTab value={1}>
+          <TabsTab value="curriculum">
             <BookOpenIcon className="size-4" />
             Curriculum
           </TabsTab>
         </TabsList>
 
-        <TabsPanel className="pt-6" value={0}>
+        <TabsPanel className="pt-6" value="info">
           <EditCourseInfoForm courseId={courseId} />
         </TabsPanel>
 
-        <TabsPanel className="pt-6" value={1}>
+        <TabsPanel className="pt-6" value="curriculum">
           <EditCurriculumForm courseId={courseId} />
         </TabsPanel>
       </Tabs>

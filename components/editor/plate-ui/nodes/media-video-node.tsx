@@ -1,6 +1,5 @@
 "use client";
 
-import { useDraggable } from "@platejs/dnd";
 import { parseTwitterUrl, parseVideoUrl } from "@platejs/media";
 import { useMediaState } from "@platejs/media/react";
 import { ResizableProvider, useResizableValue } from "@platejs/resizable";
@@ -8,7 +7,18 @@ import type { TResizableProps, TVideoElement } from "platejs";
 import type { PlateElementProps } from "platejs/react";
 import { PlateElement, useEditorMounted, withHOC } from "platejs/react";
 import LiteYouTubeEmbed from "react-lite-youtube-embed";
-import ReactPlayer from "react-player";
+import {
+  VideoPlayer,
+  VideoPlayerContent,
+  VideoPlayerControlBar,
+  VideoPlayerMuteButton,
+  VideoPlayerPlayButton,
+  VideoPlayerSeekBackwardButton,
+  VideoPlayerSeekForwardButton,
+  VideoPlayerTimeDisplay,
+  VideoPlayerTimeRange,
+  VideoPlayerVolumeRange,
+} from "@/components/kibo-ui/video-player";
 import { ResizableHandle, ResizablePanel } from "@/components/ui/resizable";
 import { cn } from "@/packages/utils/cn";
 import { Caption, CaptionTextarea } from "./caption";
@@ -32,24 +42,21 @@ export const VideoElement = withHOC(
 
     const isEditorMounted = useEditorMounted();
 
-    const { isDragging, handleRef } = useDraggable({
-      element: props.element,
-    });
-
     return (
       <PlateElement className="py-2.5" {...props}>
-        <figure className="relative m-0 cursor-default" contentEditable={false}>
-          <ResizablePanel
-            className={cn(isDragging && "opacity-50")}
-            collapsible={false}
-          >
+        <figure
+          className="relative m-0 cursor-default"
+          contentEditable={false}
+          onDragStart={(e) => e.preventDefault()}
+        >
+          <ResizablePanel collapsible={false}>
             <div className="group/media">
               <ResizableHandle className={cn("left-0")} withHandle />
 
               <ResizableHandle className={cn("right-0")} withHandle />
 
               {!isUpload && isYoutube && (
-                <div ref={handleRef}>
+                <div>
                   <LiteYouTubeEmbed
                     // biome-ignore lint/style/noNonNullAssertion: <ode>
                     id={embed!.id!}
@@ -75,13 +82,25 @@ export const VideoElement = withHOC(
               )}
 
               {isUpload && isEditorMounted && (
-                <div ref={handleRef}>
-                  <ReactPlayer
-                    controls
-                    height="100%"
-                    src={unsafeUrl}
-                    width="100%"
-                  />
+                <div>
+                  <VideoPlayer className="w-full overflow-hidden rounded-sm bg-black">
+                    <VideoPlayerContent
+                      className="aspect-video w-full rounded-sm"
+                      preload="metadata"
+                      slot="media"
+                      src={unsafeUrl}
+                    />
+
+                    <VideoPlayerControlBar>
+                      <VideoPlayerPlayButton />
+                      <VideoPlayerSeekBackwardButton seekOffset={10} />
+                      <VideoPlayerSeekForwardButton seekOffset={10} />
+                      <VideoPlayerTimeRange />
+                      <VideoPlayerTimeDisplay showDuration />
+                      <VideoPlayerMuteButton />
+                      <VideoPlayerVolumeRange />
+                    </VideoPlayerControlBar>
+                  </VideoPlayer>
                 </div>
               )}
             </div>

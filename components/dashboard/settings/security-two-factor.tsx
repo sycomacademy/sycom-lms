@@ -5,6 +5,7 @@ import { CopyIcon, RefreshCcwIcon, ShieldCheckIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { QRCode } from "@/components/kibo-ui/qr-code";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
@@ -161,6 +162,17 @@ export function SecurityTwoFactor() {
     await navigator.clipboard.writeText(backupCodes.join("\n"));
     toastManager.add({
       title: "Backup codes copied",
+      type: "success",
+    });
+  };
+
+  const copySetupUri = async () => {
+    if (!totpUri) {
+      return;
+    }
+    await navigator.clipboard.writeText(totpUri);
+    toastManager.add({
+      title: "Setup URI copied",
       type: "success",
     });
   };
@@ -344,7 +356,29 @@ export function SecurityTwoFactor() {
 
             {totpUri ? (
               <div className="space-y-3 rounded-md border border-border bg-muted/30 p-3">
-                <p className="font-medium text-xs">Authenticator setup URI</p>
+                <p className="font-medium text-xs">
+                  Scan in Microsoft Authenticator
+                </p>
+
+                <div className="mx-auto w-full max-w-52 rounded-md border border-border bg-background p-2">
+                  <QRCode
+                    className="aspect-square w-full"
+                    data={totpUri}
+                    robustness="H"
+                  />
+                </div>
+
+                <div className="flex justify-center">
+                  <button
+                    className="inline-flex items-center gap-1 text-xs underline hover:no-underline"
+                    onClick={copySetupUri}
+                    type="button"
+                  >
+                    <CopyIcon className="size-3" />
+                    Copy setup URI
+                  </button>
+                </div>
+
                 <p className="break-all text-muted-foreground text-xs">
                   {totpUri}
                 </p>

@@ -69,6 +69,8 @@ export function TwoFactorForm() {
       description: "You are now signed in.",
       type: "success",
     });
+    await authClient.revokeOtherSessions();
+
     router.refresh();
     router.push("/dashboard");
   };
@@ -93,6 +95,7 @@ export function TwoFactorForm() {
       description: "You are now signed in.",
       type: "success",
     });
+    await authClient.revokeOtherSessions();
     router.refresh();
     router.push("/dashboard");
   };

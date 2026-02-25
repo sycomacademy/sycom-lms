@@ -83,6 +83,7 @@ export function PasskeySignInButton() {
         description: "Passkey authentication successful.",
         type: "success",
       });
+      await authClient.revokeOtherSessions();
       router.refresh();
       router.push("/dashboard");
     } catch (error) {

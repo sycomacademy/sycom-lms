@@ -1,5 +1,5 @@
-import { BaseLinkPlugin } from "@platejs/link";
+import { LinkPlugin } from "@platejs/link/react";
 
-import { LinkElementStatic } from "@/components/editor/plate-ui/nodes/link-node-static";
+import { LinkElement } from "@/components/editor/plate-ui/nodes/link-node";
 
-export const BaseLinkKit = [BaseLinkPlugin.withComponent(LinkElementStatic)];
+export const BaseLinkKit = [LinkPlugin.withComponent(LinkElement)];

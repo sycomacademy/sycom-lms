@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,23 +24,6 @@ import { type SignInInput, signInSchema } from "@/packages/types/auth";
 import { OAuthButtons } from "./oauth-buttons";
 import { PasskeySignInButton } from "./passkey-sign-in-button";
 
-function isPasskeyDismissedError(error: unknown) {
-  if (!error) {
-    return false;
-  }
-
-  if (error instanceof DOMException) {
-    return error.name === "NotAllowedError" || error.name === "AbortError";
-  }
-
-  if (typeof error === "object" && error !== null && "name" in error) {
-    const name = String((error as { name?: unknown }).name ?? "");
-    return name === "NotAllowedError" || name === "AbortError";
-  }
-
-  return false;
-}
-
 export function SignInForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -50,37 +33,6 @@ export function SignInForm() {
     resolver: zodResolver(signInSchema),
     defaultValues: { email: "", password: "", rememberMe: false },
   });
-
-  useEffect(() => {
-    const canUseConditionalUI =
-      typeof window !== "undefined" &&
-      typeof PublicKeyCredential !== "undefined" &&
-      typeof PublicKeyCredential.isConditionalMediationAvailable === "function";
-
-    if (!canUseConditionalUI) {
-      return;
-    }
-
-    const startConditionalPasskey = async () => {
-      try {
-        const isAvailable =
-          await PublicKeyCredential.isConditionalMediationAvailable();
-        if (!isAvailable) {
-          return;
-        }
-        await authClient.signIn.passkey({ autoFill: true });
-      } catch (error) {
-        if (isPasskeyDismissedError(error)) {
-          return;
-        }
-        return;
-      }
-    };
-
-    startConditionalPasskey().catch(() => {
-      return;
-    });
-  }, []);
 
   const onSubmit = async (data: SignInInput) => {
     setIsLoading(true);
@@ -97,31 +49,32 @@ export function SignInForm() {
         type: "error",
       });
       setIsLoading(false);
-    } else {
-      if (
-        response &&
-        "twoFactorRedirect" in response &&
-        response.twoFactorRedirect
-      ) {
-        toastManager.add({
-          description: "Enter your authenticator code to finish sign-in.",
-          title: "Two-factor verification required",
-          type: "info",
-        });
-        window.location.href = "/two-factor";
-        setIsLoading(false);
-        return;
-      }
-
-      toastManager.add({
-        description: "Signed in successfully",
-        title: "Signed in",
-        type: "success",
-      });
-      // Refresh invalidates the RSC cache so server components see the new session
-      router.refresh();
-      router.push("/dashboard");
+      return;
     }
+
+    if (
+      response &&
+      "twoFactorRedirect" in response &&
+      response.twoFactorRedirect
+    ) {
+      toastManager.add({
+        description: "Two-factor authentication required",
+        title: "Two-factor authentication required",
+        type: "info",
+      });
+      router.push("/two-factor");
+      return;
+    }
+
+    toastManager.add({
+      description: "Signed in successfully",
+      title: "Signed in",
+      type: "success",
+    });
+    await authClient.revokeOtherSessions();
+    // Refresh invalidates the RSC cache so server components see the new session
+    router.refresh();
+    router.push("/dashboard");
   };
 
   return (
@@ -222,20 +175,22 @@ export function SignInForm() {
               <FormItem>
                 <div className="flex items-center gap-2">
                   <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      id="rememberMe"
-                      onCheckedChange={(checked) =>
-                        field.onChange(checked === true)
-                      }
-                    />
+                    <Field orientation="horizontal">
+                      <Checkbox
+                        checked={field.value}
+                        id="rememberMe"
+                        onCheckedChange={(checked) =>
+                          field.onChange(checked === true)
+                        }
+                      />{" "}
+                      <FieldLabel
+                        className="font-normal text-muted-foreground text-xs"
+                        htmlFor="rememberMe"
+                      >
+                        Remember me
+                      </FieldLabel>
+                    </Field>
                   </FormControl>
-                  <FieldLabel
-                    className="font-normal text-muted-foreground text-xs"
-                    htmlFor="rememberMe"
-                  >
-                    Remember me
-                  </FieldLabel>
                 </div>
               </FormItem>
             )}

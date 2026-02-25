@@ -15,6 +15,8 @@ interface PlateEditorProps {
   variant?: "basic" | "course" | "none";
   placeholder?: string;
   readonly?: boolean;
+  uploadEntityType?: string;
+  uploadEntityId?: string;
 }
 
 export const DEFAULT_EDITOR_VALUE: Value = [
@@ -27,6 +29,8 @@ export function PlateEditor({
   onChange,
   variant = "basic",
   placeholder = "Start typing...",
+  uploadEntityType,
+  uploadEntityId,
 }: PlateEditorProps) {
   const id = useId();
 
@@ -34,28 +38,29 @@ export function PlateEditor({
   // const plugins = variant === "course" ? CourseEditorKit : BaseEditorKit;
 
   const editor = usePlateEditor({
-    id: `plate-editor-${variant}`,
+    id: `plate-editor-${variant}-${id}`,
     plugins: BaseEditorKit,
     value,
     readOnly: readonly,
   });
 
+  const handleValueChange = ({ value: newValue }: { value: Value }) => {
+    onChange?.(newValue);
+  };
+
   return (
     <div id={id}>
       <Plate
         editor={editor}
-        onValueChange={
-          readonly
-            ? undefined
-            : ({ value: newValue }) => {
-                onChange?.(newValue);
-              }
-        }
+        onValueChange={readonly ? undefined : handleValueChange}
       >
         {variant !== "none" && (
           <FixedToolbar className="flex flex-nowrap justify-start gap-1 shadow-xs">
             {variant === "course" ? (
-              <CourseToolbarButtons />
+              <CourseToolbarButtons
+                uploadEntityId={uploadEntityId}
+                uploadEntityType={uploadEntityType}
+              />
             ) : (
               <ToolbarButtons />
             )}

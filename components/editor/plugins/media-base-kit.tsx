@@ -1,24 +1,24 @@
 import { BaseCaptionPlugin } from "@platejs/caption";
 import {
-  BaseAudioPlugin,
-  BaseFilePlugin,
-  BaseImagePlugin,
-  BaseMediaEmbedPlugin,
-  BasePlaceholderPlugin,
-  BaseVideoPlugin,
-} from "@platejs/media";
+  AudioPlugin,
+  FilePlugin,
+  ImagePlugin,
+  MediaEmbedPlugin,
+  PlaceholderPlugin,
+  VideoPlugin,
+} from "@platejs/media/react";
 import { KEYS } from "platejs";
 
-import { AudioElementStatic } from "@/components/editor/plate-ui/nodes/media-audio-node-static";
-import { FileElementStatic } from "@/components/editor/plate-ui/nodes/media-file-node-static";
-import { ImageElementStatic } from "@/components/editor/plate-ui/nodes/media-image-node-static";
-import { VideoElementStatic } from "@/components/editor/plate-ui/nodes/media-video-node-static";
+import { AudioElement } from "@/components/editor/plate-ui/nodes/media-audio-node";
+import { FileElement } from "@/components/editor/plate-ui/nodes/media-file-node";
+import { ImageElement } from "@/components/editor/plate-ui/nodes/media-image-node";
+import { VideoElement } from "@/components/editor/plate-ui/nodes/media-video-node";
 
 export const BaseMediaKit = [
-  BaseImagePlugin.withComponent(ImageElementStatic),
-  BaseVideoPlugin.withComponent(VideoElementStatic),
-  BaseAudioPlugin.withComponent(AudioElementStatic),
-  BaseFilePlugin.withComponent(FileElementStatic),
+  ImagePlugin.withComponent(ImageElement),
+  VideoPlugin.withComponent(VideoElement),
+  AudioPlugin.withComponent(AudioElement),
+  FilePlugin.withComponent(FileElement),
   BaseCaptionPlugin.configure({
     options: {
       query: {
@@ -26,6 +26,6 @@ export const BaseMediaKit = [
       },
     },
   }),
-  BaseMediaEmbedPlugin,
-  BasePlaceholderPlugin,
+  MediaEmbedPlugin,
+  PlaceholderPlugin,
 ];
