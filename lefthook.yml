@@ -10,8 +10,3 @@ pre-push:
         - "*.jsonc"
         - "*.css"
     - run: bun x tsc --noEmit
-
-post-checkout:
-  jobs:
-    - name: Switch Neon DB branch
-      run: bash scripts/switch-db-branch.sh

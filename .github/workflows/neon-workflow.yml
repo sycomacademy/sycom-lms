@@ -1,11 +1,7 @@
-name: Neon Branch Sync
+# PR-only: temp Neon branches for schema compatibility check; migrate on merge; cleanup.
+name: Neon PR Schema Check
 
 on:
-  push:
-    branches-ignore:
-      - main
-      - staging
-  delete:
   pull_request:
     types: [opened, synchronize, closed]
     branches:
@@ -13,7 +9,7 @@ on:
       - main
 
 concurrency:
-  group: neon-${{ github.event_name }}-${{ github.event.ref || github.event.pull_request.head.ref }}
+  group: neon-pr-${{ github.event.pull_request.number }}
   cancel-in-progress: false
 
 env:
@@ -21,83 +17,140 @@ env:
   NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
 
 jobs:
-  # ── Create Neon branch when a feature branch is first pushed ──
-  create_neon_branch:
-    name: Create Neon Branch
-    if: |
-      github.event_name == 'push' &&
-      !contains(github.event.ref, 'refs/heads/main') &&
-      !contains(github.event.ref, 'refs/heads/staging') &&
-      github.event.created == true
-    runs-on: ubuntu-latest
-    steps:
-      - name: Extract and sanitize branch name
-        id: branch
-        run: |
-          RAW="${GITHUB_REF#refs/heads/}"
-          echo "name=$(echo "$RAW" | tr '/' '-')" >> "$GITHUB_OUTPUT"
-
-      - name: Create Neon branch from staging
-        uses: neondatabase/create-branch-action@v6
-        with:
-          project_id: ${{ env.NEON_PROJECT_ID }}
-          branch_name: ${{ steps.branch.outputs.name }}
-          parent_branch: staging
-          api_key: ${{ env.NEON_API_KEY }}
-
-  # ── Create Neon branch when a PR is opened/updated (so it exists for the PR) ──
-  create_neon_branch_on_pr:
-    name: Create Neon Branch (PR)
+  # ── On PR open/sync: temp branches + generate/migrate + compatibility check ──
+  pr_schema_check:
+    name: Schema compatibility check
     if: |
       github.event_name == 'pull_request' &&
       (github.event.action == 'opened' || github.event.action == 'synchronize')
     runs-on: ubuntu-latest
     steps:
-      - name: Extract and sanitize branch name
-        id: branch
-        run: |
-          RAW="${{ github.head_ref || github.event.pull_request.head.ref }}"
-          echo "name=$(echo "$RAW" | tr '/' '-')" >> "$GITHUB_OUTPUT"
+      - name: Checkout head ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Create Neon branch from staging
+      - name: Create temp Neon branch (head)
+        id: head_branch
         uses: neondatabase/create-branch-action@v6
         with:
           project_id: ${{ env.NEON_PROJECT_ID }}
-          branch_name: ${{ steps.branch.outputs.name }}
+          branch_name: pr-${{ github.event.pull_request.number }}-head
           parent_branch: staging
           api_key: ${{ env.NEON_API_KEY }}
 
-  # ── Delete Neon branch when a git branch is deleted ──
-  delete_neon_branch:
-    name: Delete Neon Branch
-    if: |
-      github.event_name == 'delete' &&
-      github.event.ref_type == 'branch' &&
-      github.event.ref != 'main' &&
-      github.event.ref != 'staging'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Sanitize branch name
-        id: branch
-        run: echo "name=$(echo '${{ github.event.ref }}' | tr '/' '-')" >> "$GITHUB_OUTPUT"
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
 
-      - name: Delete Neon branch
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Generate and run migrations on head branch
+        run: bun run db:generate && bun run db:migrate
+        env:
+          DATABASE_URL: ${{ steps.head_branch.outputs.db_url_pooled }}
+          BETTER_AUTH_SECRET: "ci-placeholder-secret-that-is-at-least-32-characters-long"
+          NEXT_PUBLIC_APP_URL: "https://placeholder.vercel.app"
+          RESEND_API_KEY: "placeholder"
+          EMAIL_FROM: "noreply@placeholder.local"
+          SENDGRID_API_KEY: "placeholder"
+          SENDGRID_FROM: "noreply@placeholder.local"
+
+      - name: Create temp Neon branch (compat test)
+        id: compat_branch
+        uses: neondatabase/create-branch-action@v6
+        with:
+          project_id: ${{ env.NEON_PROJECT_ID }}
+          branch_name: pr-${{ github.event.pull_request.number }}-compat
+          parent_branch: staging
+          api_key: ${{ env.NEON_API_KEY }}
+
+      - name: Checkout base ref (target)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+
+      - name: Apply target schema to compat branch
+        run: bun run db:generate && bun run db:migrate
+        env:
+          DATABASE_URL: ${{ steps.compat_branch.outputs.db_url_pooled }}
+          BETTER_AUTH_SECRET: "ci-placeholder-secret-that-is-at-least-32-characters-long"
+          NEXT_PUBLIC_APP_URL: "https://placeholder.vercel.app"
+          RESEND_API_KEY: "placeholder"
+          EMAIL_FROM: "noreply@placeholder.local"
+          SENDGRID_API_KEY: "placeholder"
+          SENDGRID_FROM: "noreply@placeholder.local"
+
+      - name: Checkout head ref again
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Install dependencies (head)
+        run: bun install --frozen-lockfile
+
+      - name: Apply head migrations to compat branch (mergeability check)
+        run: bun run db:migrate
+        env:
+          DATABASE_URL: ${{ steps.compat_branch.outputs.db_url_pooled }}
+          BETTER_AUTH_SECRET: "ci-placeholder-secret-that-is-at-least-32-characters-long"
+          NEXT_PUBLIC_APP_URL: "https://placeholder.vercel.app"
+          RESEND_API_KEY: "placeholder"
+          EMAIL_FROM: "noreply@placeholder.local"
+          SENDGRID_API_KEY: "placeholder"
+          SENDGRID_FROM: "noreply@placeholder.local"
+
+      - name: Delete temp Neon branch (head)
+        if: always()
         uses: neondatabase/delete-branch-action@v3
         with:
           project_id: ${{ env.NEON_PROJECT_ID }}
-          branch: ${{ steps.branch.outputs.name }}
+          branch: pr-${{ github.event.pull_request.number }}-head
           api_key: ${{ env.NEON_API_KEY }}
+        continue-on-error: true
 
-  # ── Run migrations when a PR is merged ──
+      - name: Delete temp Neon branch (compat)
+        if: always()
+        uses: neondatabase/delete-branch-action@v3
+        with:
+          project_id: ${{ env.NEON_PROJECT_ID }}
+          branch: pr-${{ github.event.pull_request.number }}-compat
+          api_key: ${{ env.NEON_API_KEY }}
+        continue-on-error: true
+
+  # ── On PR closed: cleanup temp branches (and run migrate if merged into main/staging) ──
+  on_pr_closed:
+    name: On PR closed
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete temp Neon branches (cleanup)
+        uses: neondatabase/delete-branch-action@v3
+        with:
+          project_id: ${{ env.NEON_PROJECT_ID }}
+          branch: pr-${{ github.event.pull_request.number }}-head
+          api_key: ${{ env.NEON_API_KEY }}
+        continue-on-error: true
+
+      - name: Delete temp compat branch
+        uses: neondatabase/delete-branch-action@v3
+        with:
+          project_id: ${{ env.NEON_PROJECT_ID }}
+          branch: pr-${{ github.event.pull_request.number }}-compat
+          api_key: ${{ env.NEON_API_KEY }}
+        continue-on-error: true
+
+  # ── Run migrations on target when PR is merged (only if target is main or staging) ──
   migrate_on_merge:
-    name: Migrate on PR Merge
+    name: Migrate on PR merge
     if: |
       github.event_name == 'pull_request' &&
       github.event.action == 'closed' &&
-      github.event.pull_request.merged == true
+      github.event.pull_request.merged == true &&
+      (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'staging')
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout merged code
+      - name: Checkout merged code (target branch)
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.ref }}
@@ -105,7 +158,7 @@ jobs:
       - name: Check for schema or migration changes
         id: diff
         run: |
-          CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'packages/db/schema/' 'packages/db/migrations/' || true)
+          CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'packages/db/schema/' 'packages/db/migrations/' 2>/dev/null || true)
           if [ -n "$CHANGED" ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
@@ -120,10 +173,14 @@ jobs:
         if: steps.diff.outputs.changed == 'true'
         run: bun install --frozen-lockfile
 
-      - name: Generate and run migrations
+      - name: Generate and run migrations on target Neon
         if: steps.diff.outputs.changed == 'true'
         run: bun run db:generate && bun run db:migrate
         env:
           DATABASE_URL: ${{ github.event.pull_request.base.ref == 'main' && secrets.DATABASE_URL_MAIN || secrets.DATABASE_URL_STAGING }}
           BETTER_AUTH_SECRET: "ci-placeholder-secret-that-is-at-least-32-characters-long"
           NEXT_PUBLIC_APP_URL: "https://placeholder.vercel.app"
+          RESEND_API_KEY: "placeholder"
+          EMAIL_FROM: "noreply@placeholder.local"
+          SENDGRID_API_KEY: "placeholder"
+          SENDGRID_FROM: "noreply@placeholder.local"

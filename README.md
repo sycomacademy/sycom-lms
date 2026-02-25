@@ -108,26 +108,43 @@ feature/new-login ──► staging ──► main
 | `staging` | `staging` | Preview | Permanent |
 | `feature/*`, `fix/*`, etc. | `feature-*`, `fix-*`, etc. | Preview | Created/deleted automatically |
 
-### What happens automatically
+### What happens automatically (PR-only workflow)
 
-| Event | GitHub Action | Neon | Vercel |
-|---|---|---|---|
-| Push new branch | Creates Neon branch from `staging` | New branch appears | Preview deploy |
-| PR merged into `staging` | Runs `db:generate` + `db:migrate` against staging DB | Schema updated | Preview deploy |
-| PR merged into `main` | Runs `db:generate` + `db:migrate` against production DB | Schema updated | Production deploy |
-| Branch deleted (without merge) | Deletes matching Neon branch | Branch removed | Preview removed |
+| Event | GitHub Action | Neon |
+|---|---|---|
+| PR opened / updated | Creates temp Neon branches, runs `db:generate` + `db:migrate` for head and target schema, checks head migrations apply cleanly to target → pass/fail; then deletes temp branches | Temp branches only |
+| PR merged into `staging` | Runs `db:generate` + `db:migrate` against staging DB | Schema updated |
+| PR merged into `main` | Runs `db:generate` + `db:migrate` against production DB | Schema updated |
+| PR closed | Deletes temp branches `pr-<number>-head` and `pr-<number>-compat` | Cleanup |
 
-### Local database switching
+Neon branches for feature branches are **not** created by the workflow; create them locally with `bun run db:switch` when on that branch.
 
-When you check out a git branch, a `post-checkout` hook automatically updates `DATABASE_URL` in `.env.local` to point at the matching Neon branch. This is handled by `scripts/switch-db-branch.sh` via Lefthook.
+### Local database switching (manual)
 
+Switch `.env.local` to the Neon branch for your current git branch and create the Neon branch if it doesn’t exist:
+
+```bash
+bun run db:switch
 ```
-git checkout staging          # .env.local → Neon "staging" connection string
-git checkout feature/new-login # .env.local → Neon "feature-new-login" connection string
-git checkout main             # .env.local → Neon "production" connection string
+
+Examples:
+
+```bash
+git checkout staging
+bun run db:switch   # .env.local → Neon "staging"
+git checkout feature/new-login
+bun run db:switch   # Creates Neon "feature-new-login" from staging if needed, updates .env.local
+git checkout main
+bun run db:switch   # .env.local → Neon "production"
 ```
 
-**Note:** When you first create a branch locally (`git checkout -b feature/x`), the Neon branch doesn't exist yet — it's created on the first `git push`. During that window, your `.env.local` keeps its current `DATABASE_URL` (which is correct since the Neon branch will be forked from the same data). After pushing, run `bash scripts/switch-db-branch.sh` or switch away and back to pick up the new connection string.
+To apply another branch’s migrations to your current branch’s Neon DB (e.g. bring in `staging`’s schema):
+
+```bash
+bun run db:neon-merge -- staging
+```
+
+You cannot merge a branch into itself; the script exits with an error in that case.
 
 ### Setup for new developers
 
@@ -153,7 +170,7 @@ git checkout main             # .env.local → Neon "production" connection stri
 4. **Create your `.env.local`** with the required variables:
 
    ```
-   DATABASE_URL='<will be managed by the post-checkout hook>'
+   DATABASE_URL='<run `bun run db:switch` to set from Neon>'
    BETTER_AUTH_SECRET='<ask a team member or generate with: openssl rand -base64 32>'
    BLOB_READ_WRITE_TOKEN='<from Vercel dashboard → Storage>'
    NEXT_PUBLIC_APP_URL='http://localhost:3000'
@@ -165,12 +182,12 @@ git checkout main             # .env.local → Neon "production" connection stri
    bun run prep
    ```
 
-   This registers the `pre-push` (lint + typecheck) and `post-checkout` (DB switch) hooks.
+   This registers the `pre-push` (lint + typecheck) hook.
 
-6. **Switch to your branch** to populate the correct `DATABASE_URL`:
+6. **Point `.env.local` at your branch’s Neon DB:**
 
    ```bash
-   git checkout staging
+   bun run db:switch
    ```
 
 ### Required GitHub secrets and variables
