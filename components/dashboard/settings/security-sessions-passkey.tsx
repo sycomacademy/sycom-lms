@@ -1,24 +1,46 @@
 "use client";
 
 import {
+  CirclePlusIcon,
   FingerprintIcon,
   LaptopIcon,
   Loader2Icon,
   SmartphoneIcon,
+  Trash2Icon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toastManager } from "@/components/ui/toast";
 import { authClient } from "@/packages/auth/auth-client";
 import { useUserQuery } from "@/packages/hooks/use-user";
 import { formatDeviceLabel, isMobileAgent } from "@/packages/utils/device";
 
+function isPasskeyDismissedMessage(message?: string) {
+  if (!message) {
+    return false;
+  }
+
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("timed out or was not allowed") ||
+    normalized.includes("abort signal")
+  );
+}
+
 interface SessionItem {
   id: string;
   token: string;
   userAgent?: string | null;
+}
+
+interface PasskeyItem {
+  id: string;
+  name?: string | null;
+  createdAt?: string | Date | null;
+  deviceType?: string | null;
 }
 
 export function SecuritySessionsPasskey() {
@@ -27,6 +49,13 @@ export function SecuritySessionsPasskey() {
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [revokingToken, setRevokingToken] = useState<string | null>(null);
+  const [passkeys, setPasskeys] = useState<PasskeyItem[]>([]);
+  const [passkeysLoading, setPasskeysLoading] = useState(true);
+  const [isAddingPasskey, setIsAddingPasskey] = useState(false);
+  const [newPasskeyName, setNewPasskeyName] = useState("");
+  const [deletingPasskeyId, setDeletingPasskeyId] = useState<string | null>(
+    null
+  );
 
   const fetchSessions = useCallback(async () => {
     const { data, error } = await authClient.listSessions();
@@ -46,6 +75,26 @@ export function SecuritySessionsPasskey() {
     fetchSessions();
   }, [fetchSessions]);
 
+  const fetchPasskeys = useCallback(async () => {
+    const { data, error } = await authClient.passkey.listUserPasskeys({});
+    if (error) {
+      toastManager.add({
+        title: "Failed to fetch passkeys",
+        description: error.message,
+        type: "error",
+      });
+      setPasskeysLoading(false);
+      return;
+    }
+
+    setPasskeys(data ?? []);
+    setPasskeysLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchPasskeys();
+  }, [fetchPasskeys]);
+
   const handleRevoke = async (token: string) => {
     setRevokingToken(token);
     const { error } = await authClient.revokeSession({ token });
@@ -55,6 +104,7 @@ export function SecuritySessionsPasskey() {
         description: error.message,
         type: "error",
       });
+      setRevokingToken(null);
       return;
     }
     const isCurrent = token === currentSession.token;
@@ -136,6 +186,58 @@ export function SecuritySessionsPasskey() {
     );
   };
 
+  const handleAddPasskey = async () => {
+    setIsAddingPasskey(true);
+    const passkeyName = newPasskeyName.trim();
+    const { error } = await authClient.passkey.addPasskey({
+      name: passkeyName || undefined,
+    });
+    if (error) {
+      if (isPasskeyDismissedMessage(error.message)) {
+        setIsAddingPasskey(false);
+        return;
+      }
+
+      toastManager.add({
+        title: "Failed to add passkey",
+        description: error.message,
+        type: "error",
+      });
+      setIsAddingPasskey(false);
+      return;
+    }
+
+    toastManager.add({
+      title: "Passkey added",
+      description: "You can now sign in with this device passkey.",
+      type: "success",
+    });
+    setNewPasskeyName("");
+    setIsAddingPasskey(false);
+    fetchPasskeys();
+  };
+
+  const handleDeletePasskey = async (id: string) => {
+    setDeletingPasskeyId(id);
+    const { error } = await authClient.passkey.deletePasskey({ id });
+    if (error) {
+      toastManager.add({
+        title: "Failed to delete passkey",
+        description: error.message,
+        type: "error",
+      });
+      setDeletingPasskeyId(null);
+      return;
+    }
+
+    toastManager.add({
+      title: "Passkey deleted",
+      type: "success",
+    });
+    setPasskeys((prev) => prev.filter((item) => item.id !== id));
+    setDeletingPasskeyId(null);
+  };
+
   return (
     <Card>
       <CardContent className="pt-6">
@@ -157,14 +259,84 @@ export function SecuritySessionsPasskey() {
         </div>
 
         <div className="mt-4 rounded-md border border-border bg-muted/30 p-3">
-          <div className="flex items-center gap-2 text-foreground text-sm">
-            <FingerprintIcon className="size-4 shrink-0 text-muted-foreground" />
-            <span className="font-medium text-xs">Passkeys</span>
+          <div className="flex items-center justify-between gap-2 text-foreground text-sm">
+            <div className="flex items-center gap-2">
+              <FingerprintIcon className="size-4 shrink-0 text-muted-foreground" />
+              <span className="font-medium text-xs">Passkeys</span>
+            </div>
           </div>
+
           <p className="mt-1 text-muted-foreground text-xs">
-            Use passkeys to sign in without a password. Passkey functionality is
-            not yet available.
+            Register passkeys to sign in without your password.
           </p>
+
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Input
+              className="h-8"
+              onChange={(event) => setNewPasskeyName(event.target.value)}
+              placeholder="Optional name (e.g. Work MacBook)"
+              value={newPasskeyName}
+            />
+            <button
+              className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-border px-3 text-xs underline hover:no-underline disabled:opacity-70"
+              disabled={isAddingPasskey}
+              onClick={handleAddPasskey}
+              type="button"
+            >
+              {isAddingPasskey ? (
+                <Loader2Icon className="size-3 animate-spin" />
+              ) : (
+                <CirclePlusIcon className="size-3" />
+              )}
+              Save passkey
+            </button>
+          </div>
+
+          <div className="mt-3">
+            {passkeysLoading ? <Skeleton className="h-10 w-full" /> : null}
+            {!passkeysLoading && passkeys.length === 0 ? (
+              <p className="text-muted-foreground text-xs">
+                No passkeys registered.
+              </p>
+            ) : null}
+            {!passkeysLoading && passkeys.length > 0 ? (
+              <ul className="flex flex-col gap-2">
+                {passkeys.map((item) => {
+                  const isDeleting = deletingPasskeyId === item.id;
+                  return (
+                    <li
+                      className="flex items-center justify-between gap-2 rounded-md border border-border bg-background p-2.5"
+                      key={item.id}
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-xs">
+                          {item.name || "Unnamed passkey"}
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          {item.deviceType || "Unknown device"}
+                        </p>
+                      </div>
+                      <button
+                        className="text-destructive text-xs underline hover:no-underline disabled:opacity-70"
+                        disabled={isDeleting}
+                        onClick={() => handleDeletePasskey(item.id)}
+                        type="button"
+                      >
+                        {isDeleting ? (
+                          <Loader2Icon className="inline size-3 animate-spin" />
+                        ) : (
+                          <span className="inline-flex items-center gap-1">
+                            <Trash2Icon className="size-3" />
+                            Remove
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -26,6 +26,7 @@
     "@coss": "https://coss.com/ui/r/{name}.json",
     "@animate-ui": "https://animate-ui.com/r/{name}.json",
     "@plate": "https://platejs.org/r/{name}.json",
-    "@reui": "https://reui.io/r/{style}/{name}.json"
+    "@reui": "https://reui.io/r/{style}/{name}.json",
+    "@kibo-ui": "https://www.kibo-ui.com/r/{name}.json"
   }
 }

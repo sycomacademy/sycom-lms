@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,6 +22,24 @@ import { toastManager } from "@/components/ui/toast";
 import { authClient } from "@/packages/auth/auth-client";
 import { type SignInInput, signInSchema } from "@/packages/types/auth";
 import { OAuthButtons } from "./oauth-buttons";
+import { PasskeySignInButton } from "./passkey-sign-in-button";
+
+function isPasskeyDismissedError(error: unknown) {
+  if (!error) {
+    return false;
+  }
+
+  if (error instanceof DOMException) {
+    return error.name === "NotAllowedError" || error.name === "AbortError";
+  }
+
+  if (typeof error === "object" && error !== null && "name" in error) {
+    const name = String((error as { name?: unknown }).name ?? "");
+    return name === "NotAllowedError" || name === "AbortError";
+  }
+
+  return false;
+}
 
 export function SignInForm() {
   const router = useRouter();
@@ -33,9 +51,40 @@ export function SignInForm() {
     defaultValues: { email: "", password: "", rememberMe: false },
   });
 
+  useEffect(() => {
+    const canUseConditionalUI =
+      typeof window !== "undefined" &&
+      typeof PublicKeyCredential !== "undefined" &&
+      typeof PublicKeyCredential.isConditionalMediationAvailable === "function";
+
+    if (!canUseConditionalUI) {
+      return;
+    }
+
+    const startConditionalPasskey = async () => {
+      try {
+        const isAvailable =
+          await PublicKeyCredential.isConditionalMediationAvailable();
+        if (!isAvailable) {
+          return;
+        }
+        await authClient.signIn.passkey({ autoFill: true });
+      } catch (error) {
+        if (isPasskeyDismissedError(error)) {
+          return;
+        }
+        return;
+      }
+    };
+
+    startConditionalPasskey().catch(() => {
+      return;
+    });
+  }, []);
+
   const onSubmit = async (data: SignInInput) => {
     setIsLoading(true);
-    const { error } = await authClient.signIn.email({
+    const { data: response, error } = await authClient.signIn.email({
       email: data.email,
       password: data.password,
       rememberMe: data.rememberMe,
@@ -49,6 +98,21 @@ export function SignInForm() {
       });
       setIsLoading(false);
     } else {
+      if (
+        response &&
+        "twoFactorRedirect" in response &&
+        response.twoFactorRedirect
+      ) {
+        toastManager.add({
+          description: "Enter your authenticator code to finish sign-in.",
+          title: "Two-factor verification required",
+          type: "info",
+        });
+        window.location.href = "/two-factor";
+        setIsLoading(false);
+        return;
+      }
+
       toastManager.add({
         description: "Signed in successfully",
         title: "Signed in",
@@ -85,7 +149,7 @@ export function SignInForm() {
                   </FieldLabel>
                   <FormControl>
                     <Input
-                      autoComplete="email"
+                      autoComplete="username webauthn"
                       autoFocus
                       placeholder="you@example.com"
                       type="email"
@@ -120,7 +184,7 @@ export function SignInForm() {
                   <FormControl>
                     <InputGroup>
                       <InputGroupInput
-                        autoComplete="current-password"
+                        autoComplete="current-password webauthn"
                         placeholder="Enter your password"
                         type={showPassword ? "text" : "password"}
                         {...field}
@@ -181,6 +245,8 @@ export function SignInForm() {
             {isLoading ? <Spinner className="mr-2" /> : null}
             Continue
           </Button>
+
+          <PasskeySignInButton />
         </form>
       </Form>
 
