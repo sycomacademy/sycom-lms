@@ -9,7 +9,6 @@ pre-push:
         - "*.json"
         - "*.jsonc"
         - "*.css"
-      stage_fixed: true
     - run: bun x tsc --noEmit
 
 post-checkout:

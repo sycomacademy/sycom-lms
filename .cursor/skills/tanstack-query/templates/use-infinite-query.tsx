@@ -1,42 +1,46 @@
 // src/hooks/useInfiniteTodos.ts
-import { useInfiniteQuery } from '@tanstack/react-query'
-import { useEffect, useRef } from 'react'
-import type { Todo } from './useTodos'
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
+import type { Todo } from "./useTodos";
 
 /**
  * Paginated response type
  */
 type TodosPage = {
-  data: Todo[]
-  nextCursor: number | null
-  previousCursor: number | null
-}
+  data: Todo[];
+  nextCursor: number | null;
+  previousCursor: number | null;
+};
 
 /**
  * Fetch paginated todos
  *
  * In real API: cursor would be offset, page number, or last item ID
  */
-async function fetchTodosPage({ pageParam }: { pageParam: number }): Promise<TodosPage> {
-  const limit = 20
-  const start = pageParam * limit
-  const end = start + limit
+async function fetchTodosPage({
+  pageParam,
+}: {
+  pageParam: number;
+}): Promise<TodosPage> {
+  const limit = 20;
+  const start = pageParam * limit;
+  const end = start + limit;
 
   const response = await fetch(
     `https://jsonplaceholder.typicode.com/todos?_start=${start}&_limit=${limit}`
-  )
+  );
 
   if (!response.ok) {
-    throw new Error('Failed to fetch todos')
+    throw new Error("Failed to fetch todos");
   }
 
-  const data: Todo[] = await response.json()
+  const data: Todo[] = await response.json();
 
   return {
     data,
     nextCursor: data.length === limit ? pageParam + 1 : null,
     previousCursor: pageParam > 0 ? pageParam - 1 : null,
-  }
+  };
 }
 
 /**
@@ -47,7 +51,7 @@ async function fetchTodosPage({ pageParam }: { pageParam: number }): Promise<Tod
  */
 export function useInfiniteTodos() {
   return useInfiniteQuery({
-    queryKey: ['todos', 'infinite'],
+    queryKey: ["todos", "infinite"],
     queryFn: fetchTodosPage,
 
     // v5 REQUIRES initialPageParam (was optional in v4)
@@ -61,7 +65,7 @@ export function useInfiniteTodos() {
 
     // How many pages to keep in memory (default: Infinity)
     maxPages: undefined,
-  })
+  });
 }
 
 /**
@@ -76,10 +80,10 @@ export function InfiniteTodosManual() {
     isPending,
     isError,
     error,
-  } = useInfiniteTodos()
+  } = useInfiniteTodos();
 
-  if (isPending) return <div>Loading...</div>
-  if (isError) return <div>Error: {error.message}</div>
+  if (isPending) return <div>Loading...</div>;
+  if (isError) return <div>Error: {error.message}</div>;
 
   return (
     <div>
@@ -92,7 +96,7 @@ export function InfiniteTodosManual() {
           <ul>
             {page.data.map((todo) => (
               <li key={todo.id}>
-                <input type="checkbox" checked={todo.completed} readOnly />
+                <input checked={todo.completed} readOnly type="checkbox" />
                 {todo.title}
               </li>
             ))}
@@ -102,17 +106,17 @@ export function InfiniteTodosManual() {
 
       {/* Load more button */}
       <button
-        onClick={() => fetchNextPage()}
         disabled={!hasNextPage || isFetchingNextPage}
+        onClick={() => fetchNextPage()}
       >
         {isFetchingNextPage
-          ? 'Loading more...'
+          ? "Loading more..."
           : hasNextPage
-          ? 'Load More'
-          : 'No more todos'}
+            ? "Load More"
+            : "No more todos"}
       </button>
     </div>
-  )
+  );
 }
 
 /**
@@ -128,9 +132,9 @@ export function InfiniteTodosAuto() {
     isPending,
     isError,
     error,
-  } = useInfiniteTodos()
+  } = useInfiniteTodos();
 
-  const loadMoreRef = useRef<HTMLDivElement>(null)
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // Intersection Observer for automatic loading
   useEffect(() => {
@@ -138,23 +142,23 @@ export function InfiniteTodosAuto() {
       (entries) => {
         // When sentinel element is visible and there are more pages
         if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage()
+          fetchNextPage();
         }
       },
       { threshold: 0.1 } // Trigger when 10% of element is visible
-    )
+    );
 
     if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current)
+      observer.observe(loadMoreRef.current);
     }
 
     return () => {
-      observer.disconnect()
-    }
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
+      observer.disconnect();
+    };
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  if (isPending) return <div>Loading...</div>
-  if (isError) return <div>Error: {error.message}</div>
+  if (isPending) return <div>Loading...</div>;
+  if (isError) return <div>Error: {error.message}</div>;
 
   return (
     <div>
@@ -165,7 +169,7 @@ export function InfiniteTodosAuto() {
         <div key={i}>
           {page.data.map((todo) => (
             <div key={todo.id}>
-              <input type="checkbox" checked={todo.completed} readOnly />
+              <input checked={todo.completed} readOnly type="checkbox" />
               {todo.title}
             </div>
           ))}
@@ -183,7 +187,7 @@ export function InfiniteTodosAuto() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 /**

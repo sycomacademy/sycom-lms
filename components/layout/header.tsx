@@ -2,9 +2,8 @@ import type { Route } from "next";
 import Link from "next/link";
 import { HeaderAuth } from "./header-auth";
 
-const navLinks = [
-  { href: "/blog", label: "Blog" },
-  { href: "/courses", label: "Courses" },
+const navLinks: { href: Route; label: string }[] = [
+  { href: "/style-guide", label: "Style Guide" },
 ];
 
 export function Header() {
@@ -27,7 +26,7 @@ export function Header() {
           {navLinks.map((item) => (
             <Link
               className="font-sans text-primary text-sm transition-colors hover:text-primary/70"
-              href={item.href as Route}
+              href={item.href}
               key={item.href}
             >
               {item.label}

@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { ModeSwitcher } from "@/components/layout/theme-toggle";
-import { componentRegistry } from "@/components/style/component-registry";
-import { ComponentWrapper } from "@/components/style/demo/component-wrapper";
+import { componentRegistry } from "@/components/style-guide/component-registry";
+import { ComponentWrapper } from "@/components/style-guide/demo/component-wrapper";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 

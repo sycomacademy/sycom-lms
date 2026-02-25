@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ModeSwitcher } from "@/components/layout/theme-toggle";
-import { componentRegistry } from "@/components/style/component-registry";
-import { Example } from "@/components/style/demo/example";
+import { componentRegistry } from "@/components/style-guide/component-registry";
+import { Example } from "@/components/style-guide/demo/example";
 
 interface Props {
   params: Promise<{ name: string }>;

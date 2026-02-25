@@ -7,18 +7,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": [
-      "!**/node_modules",
-      "!**/build",
-      "!**/.cursor",
-      "!**/.opencode",
-      "!**/.next",
-      "!**/dist",
-      "!**/.turbo",
-      "!**/dev-dist",
-      "!**/.vscode",
-      "!**/.source"
-    ]
+    "includes": ["!node_modules", "!.next", "!dist", "!build", "!old"]
   },
   "formatter": {
     "enabled": true,
@@ -29,10 +18,15 @@
     "enabled": true,
     "rules": {
       "recommended": true,
-      "correctness": {
-        "useExhaustiveDependencies": "info",
-        "noUnusedImports": "warn",
-        "noUnusedVariables": "warn"
+      "a11y": {
+        "noSvgWithoutTitle": "off",
+        "useKeyWithClickEvents": "off",
+        "noStaticElementInteractions": "off",
+        "useSemanticElements": "off",
+        "useAriaPropsSupportedByRole": "off"
+      },
+      "style": {
+        "noNonNullAssertion": "warn"
       },
       "nursery": {
         "useSortedClasses": {
@@ -43,21 +37,27 @@
           }
         }
       },
-      "style": {
-        "noParameterAssign": "error",
-        "useAsConstAssertion": "error",
-        "useDefaultParameterLast": "error",
-        "useEnumInitializers": "error",
-        "useSelfClosingElements": "error",
-        "useSingleVarDeclarator": "error",
-        "noUnusedTemplateLiteral": "error",
-        "useNumberNamespace": "error",
-        "noInferrableTypes": "error",
-        "noUselessElse": "error"
+      "correctness": {
+        "useExhaustiveDependencies": "info",
+        "noUnusedFunctionParameters": "warn",
+        "noUnusedVariables": "warn",
+        "useHookAtTopLevel": "warn"
       },
       "suspicious": {
-        "noUnknownAtRules": "off",
-        "useAwait": "off"
+        "noExplicitAny": "warn",
+        "noNonNullAssertedOptionalChain": "warn",
+        "noUnknownAtRules": "warn",
+        "noTemplateCurlyInString": "warn",
+        "noDuplicateElseIf": "warn",
+        "noImplicitAnyLet": "warn",
+        "noDocumentCookie": "warn",
+        "useIterableCallbackReturn": "warn"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
+      },
+      "performance": {
+        "noImgElement": "warn"
       }
     },
     "domains": {

@@ -1,0 +1,30 @@
+---
+description: Drizzle DB workflow, query layer, helper usage, and schema exports
+alwaysApply: true
+---
+
+# Database Conventions (academy)
+
+Rules for Drizzle schema changes, queries, and schema exports.
+
+## Migration workflow
+
+When making DB changes:
+
+1. **Generate migrations:** run `drizzle generate` (from the db package or monorepo root as appropriate).
+2. **Apply migrations:** run the migrate step (e.g. `drizzle-kit migrate` or your project’s migrate script).
+3. **Do not rely only on `drizzle-kit push`** for applying schema changes; use generate then migrate.
+
+## Query layer
+
+- **Always use a dedicated function** for DB interactions (queries and mutations).
+- **Do not call the DB directly** from server components or API routes; go through a function in your queries layer (e.g. under `packages/db/` or a `queries/` module).
+
+## Helper and reuse
+
+- **Use `@academy/packages/db/helper.ts`** before duplicating DB logic.
+- When managing DB (timestamps, enums, JSONB types, etc.), check the helper for existing utilities and reuse them.
+
+## Schema index
+
+- **Whenever a new table is created**, update `packages/db/schema/index.ts` to export it (add to the relevant import and to the `schema` object).

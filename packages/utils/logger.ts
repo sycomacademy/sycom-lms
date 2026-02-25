@@ -136,4 +136,11 @@ export function createLoggerWithContext(context: string) {
   return createLoggerAdapter(childLogger, context);
 }
 
+/**
+ * Change the log level at runtime. Affects all existing child loggers.
+ */
+export function setLogLevel(level: string) {
+  baseLogger.level = level;
+}
+
 export default logger;

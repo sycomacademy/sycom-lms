@@ -1,7 +1,7 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import type { NextRequest } from "next/server";
-import { createContext } from "@/packages/trpc/server/context";
-import { appRouter } from "@/packages/trpc/server/router";
+import { appRouter } from "@/app/api/trpc/router";
+import { createContext } from "@/packages/trpc/context";
 import { createLoggerWithContext } from "@/packages/utils/logger";
 
 const trpcLogger = createLoggerWithContext("trpc:handler");
