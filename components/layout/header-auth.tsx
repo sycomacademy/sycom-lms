@@ -25,7 +25,7 @@ export function HeaderAuth() {
   return (
     <Button
       nativeButton={false}
-      render={<Link href="/dashboard">Go to Dashboard</Link>}
+      render={<Link href="/">Go to Dashboard</Link>}
       variant="outline"
     />
   );

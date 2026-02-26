@@ -1,15 +1,14 @@
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { checkHealth } from "@/packages/db/queries";
 import { publicProcedure, router } from "../init";
+import { userRouter } from "./user";
 
 export const appRouter = router({
   healthCheck: publicProcedure.query(async ({ ctx }) => {
     const result = await checkHealth(ctx.db);
-    return {
-      dbHealth: result,
-      apiHealth: "OK",
-    };
+    return result;
   }),
+  user: userRouter,
 });
 
 export type AppRouter = typeof appRouter;

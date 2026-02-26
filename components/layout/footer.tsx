@@ -1,12 +1,7 @@
 import { MailIcon, MapPinIcon, PhoneIcon } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
-import {
-  FacebookIcon,
-  InstagramIcon,
-  TwitterIcon,
-} from "@/components/icons/social-icons";
-import { ModeSwitcher } from "./theme-toggle";
+import { ModeSwitcher } from "./mode-switcher";
 
 const popularCourses = [
   { href: "/courses", label: "Browse Courses" },
@@ -18,20 +13,6 @@ const recentPosts = [
   { href: "/blog", title: "Latest Articles", date: "2024" },
   { href: "/blog", title: "Cybersecurity Tips", date: "2024" },
   { href: "/blog", title: "Industry News", date: "2024" },
-];
-
-const socialLinks = [
-  {
-    href: "https://www.facebook.com/sycomsolutions",
-    label: "Facebook",
-    icon: FacebookIcon,
-  },
-  { href: "https://x.com/sycomsolutions", label: "Twitter", icon: TwitterIcon },
-  {
-    href: "https://www.instagram.com/sycomsolutions",
-    label: "Instagram",
-    icon: InstagramIcon,
-  },
 ];
 
 export function Footer() {
@@ -140,7 +121,7 @@ export function Footer() {
               +44-113-328-0244
             </a>
             <div className="flex items-center gap-2">
-              {socialLinks.map((item) => (
+              {/* {socialLinks.map((item) => (
                 <a
                   aria-label={item.label}
                   className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-muted-foreground/10 hover:text-foreground"
@@ -151,7 +132,7 @@ export function Footer() {
                 >
                   <item.icon className="size-4" />
                 </a>
-              ))}
+              ))} */}
             </div>
           </div>
         </div>

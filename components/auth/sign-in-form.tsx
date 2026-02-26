@@ -37,6 +37,7 @@ export function SignInForm() {
 
   const onSubmit = async (data: SignInInput) => {
     setIsLoading(true);
+
     await authClient.signIn.email(
       {
         email: data.email,
@@ -51,6 +52,7 @@ export function SignInForm() {
             title: "Sign in failed",
             type: "error",
           });
+          setIsLoading(false);
         },
         onSuccess: () => {
           identify(data.email, {
@@ -65,9 +67,6 @@ export function SignInForm() {
             type: "success",
           });
           router.push("/");
-          setIsLoading(false);
-        },
-        onSettled: () => {
           setIsLoading(false);
         },
       }

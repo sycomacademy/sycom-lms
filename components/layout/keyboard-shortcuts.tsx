@@ -51,13 +51,6 @@ export function useKeyboardShortcutLabels() {
     [icons.cmd, icons.ctrl]
   );
 }
-
-/** @deprecated Use useKeyboardShortcutLabels() for correct platform-specific labels */
-export const KEYBOARD_SHORTCUTS = {
-  TOGGLE_THEME: `${MAC_ICONS.cmd} D`,
-  LOGOUT: `${MAC_ICONS.ctrl} L`,
-};
-
 export function KeyboardShortcuts() {
   const pathname = usePathname();
   const router = useRouter();

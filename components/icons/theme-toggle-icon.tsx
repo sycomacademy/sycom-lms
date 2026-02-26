@@ -1,5 +1,3 @@
-/** biome-ignore-all lint/a11y/noNoninteractiveElementInteractions: <This is an icon> */
-/** biome-ignore-all lint/a11y/noStaticElementInteractions: <This is an icon> */
 "use client";
 
 import type { Variants } from "motion/react";
@@ -32,10 +30,6 @@ const ROTATE_TRANSITION = { duration: 0.35, ease: "easeInOut" as const };
 
 const ICON_VARIANTS: Variants = {
   normal: { rotate: 0 },
-  animate: {
-    rotate: [0, -20, 20, 0],
-    transition: { duration: 0.5, ease: "easeInOut" },
-  },
   light: { rotate: 0, transition: ROTATE_TRANSITION },
   dark: { rotate: 180, transition: ROTATE_TRANSITION },
 };
@@ -95,22 +89,25 @@ const ThemeToggleIcon = forwardRef<ThemeToggleIconHandle, ThemeToggleIconProps>(
       <motion.span
         animate={controls}
         aria-hidden="true"
-        className={cn(className)}
+        className={cn(
+          "inline-flex shrink-0 origin-center items-center justify-center",
+          className
+        )}
         initial={initial}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         role="presentation"
+        style={{ width: size, height: size }}
         variants={ICON_VARIANTS}
       >
         <svg
+          className="size-full"
           fill="none"
-          height={size}
           stroke="currentColor"
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth="2"
           viewBox="0 0 24 24"
-          width={size}
           xmlns="http://www.w3.org/2000/svg"
         >
           <title>Toggle theme</title>

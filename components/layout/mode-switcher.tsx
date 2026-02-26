@@ -1,7 +1,9 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { ThemeToggleIcon } from "@/components/icons/theme-toggle-icon";
+import { useKeyboardShortcutLabels } from "@/components/layout/keyboard-shortcuts";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import {
@@ -10,33 +12,22 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+export const DARK_MODE_FORWARD_TYPE = "dark-mode-forward";
+
 export function ModeSwitcher() {
   const { setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const shortcuts = useKeyboardShortcutLabels();
+  useEffect(() => setMounted(true), []);
+
+  // Defer theme to icon until after mount so server and first client render match (initial="normal").
+  const themeForIcon = mounted
+    ? (resolvedTheme as "dark" | "light")
+    : undefined;
 
   const toggleTheme = useCallback(() => {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
   }, [resolvedTheme, setTheme]);
-
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if ((e.key === "d" || e.key === "D") && !e.metaKey && !e.ctrlKey) {
-        if (
-          (e.target instanceof HTMLElement && e.target.isContentEditable) ||
-          e.target instanceof HTMLInputElement ||
-          e.target instanceof HTMLTextAreaElement ||
-          e.target instanceof HTMLSelectElement
-        ) {
-          return;
-        }
-
-        e.preventDefault();
-        toggleTheme();
-      }
-    };
-
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
-  }, [toggleTheme]);
 
   return (
     <Tooltip>
@@ -48,32 +39,13 @@ export function ModeSwitcher() {
             size="icon"
             variant="ghost"
           >
-            <svg
-              className="size-4.5"
-              fill="none"
-              height="24"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              width="24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <title>Toggle theme</title>
-              <path d="M0 0h24v24H0z" fill="none" stroke="none" />
-              <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
-              <path d="M12 3l0 18" />
-              <path d="M12 9l4.65 -4.65" />
-              <path d="M12 14.3l7.37 -7.37" />
-              <path d="M12 19.6l8.85 -8.85" />
-            </svg>
+            <ThemeToggleIcon size={14} theme={themeForIcon} />
             <span className="sr-only">Toggle theme</span>
           </Button>
         }
       />
       <TooltipContent className="flex items-center gap-2 pr-1">
-        Toggle Mode <Kbd>D</Kbd>
+        Toggle Mode <Kbd>{shortcuts.TOGGLE_THEME}</Kbd>
       </TooltipContent>
     </Tooltip>
   );

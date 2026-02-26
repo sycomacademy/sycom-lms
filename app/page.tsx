@@ -26,21 +26,6 @@ export default async function HomePage() {
             <TestimonialCards />
           </div>
         </section>
-
-        <section className="bg-muted py-16 lg:py-24">
-          <div className="container mx-auto px-4">
-            <SectionLabel label="FAQ" />
-            <div className="mb-12 text-center">
-              <h2 className="mb-4 font-bold text-3xl text-foreground md:text-4xl">
-                Frequently Asked Questions
-              </h2>
-              <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-                Find answers to common questions about our courses,
-                certifications, and learning platform.
-              </p>
-            </div>
-          </div>
-        </section>
       </main>
       <Footer />
     </>
