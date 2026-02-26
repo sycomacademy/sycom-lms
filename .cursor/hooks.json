@@ -4,6 +4,14 @@
     "afterFileEdit": [
       {
         "command": "bun run fix"
+      },
+      {
+        "command": "bash .cursor/hooks/validate-edit.sh"
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": "bash .cursor/hooks/validate-shell.sh"
       }
     ]
   }
