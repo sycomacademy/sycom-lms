@@ -15,6 +15,8 @@ export const env = createEnv({
     SENDGRID_FROM: z.string().min(1).optional(),
     BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
     HEALTH_IP_ALLOWLIST: z.string().min(1).optional(),
+    POSTHOG_KEY: z.string().min(1).optional(),
+    POSTHOG_HOST: z.url().optional(),
     NODE_ENV: z
       .enum(["development", "production", "test"])
       .default("development"),

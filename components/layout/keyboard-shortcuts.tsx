@@ -3,6 +3,8 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { reset, track } from "@/packages/analytics/client";
+import { analyticsEvents } from "@/packages/analytics/events";
 import { authClient } from "@/packages/auth/auth-client";
 import { useKeyboard } from "@/packages/hooks/use-keyboard";
 
@@ -72,6 +74,11 @@ export function KeyboardShortcuts() {
     authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
+          track({
+            event: analyticsEvents.signOut,
+            method: "keyboard_shortcut",
+          });
+          reset();
           // Refresh invalidates the RSC cache so server components see the logged-out state
           router.refresh();
           router.push("/");

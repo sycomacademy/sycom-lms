@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import posthog from "posthog-js";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,8 @@ import {
 } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
+import { identify, track } from "@/packages/analytics/client";
+import { analyticsEvents } from "@/packages/analytics/events";
 import { authClient } from "@/packages/auth/auth-client";
 import { type SignUpInput, signUpSchema } from "@/packages/utils/schema";
 import { OAuthButtons } from "./oauth-buttons";
@@ -51,11 +52,12 @@ export function SignUpForm() {
       return;
     }
 
-    posthog.identify(data.email, {
+    identify(data.email, {
       email: data.email,
       name: `${data.firstName} ${data.lastName}`,
     });
-    posthog.capture("user_signed_up", {
+    track({
+      event: analyticsEvents.signUp,
       email: data.email,
       name: `${data.firstName} ${data.lastName}`,
     });

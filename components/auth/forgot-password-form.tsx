@@ -3,7 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeftIcon, MailIcon } from "lucide-react";
 import Link from "next/link";
-import posthog from "posthog-js";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,8 @@ import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
+import { track } from "@/packages/analytics/client";
+import { analyticsEvents } from "@/packages/analytics/events";
 import { authClient } from "@/packages/auth/auth-client";
 import {
   type ForgotPasswordInput,
@@ -45,7 +46,8 @@ export function ForgotPasswordForm() {
       return;
     }
 
-    posthog.capture("password_reset_requested", {
+    track({
+      event: analyticsEvents.passwordResetRequested,
       email: data.email,
     });
     setIsLoading(false);

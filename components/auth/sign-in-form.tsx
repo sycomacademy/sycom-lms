@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import posthog from "posthog-js";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -20,6 +19,8 @@ import {
 } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
+import { identify, track } from "@/packages/analytics/client";
+import { analyticsEvents } from "@/packages/analytics/events";
 import { authClient } from "@/packages/auth/auth-client";
 import { type SignInInput, signInSchema } from "@/packages/utils/schema";
 import { OAuthButtons } from "./oauth-buttons";
@@ -36,40 +37,41 @@ export function SignInForm() {
 
   const onSubmit = async (data: SignInInput) => {
     setIsLoading(true);
-    const { error } = await authClient.signIn.email({
-      email: data.email,
-      password: data.password,
-      rememberMe: data.rememberMe,
-    });
-
-    if (error) {
-      posthog.capture("user_sign_in_failed", {
-        error_message: error.message,
+    await authClient.signIn.email(
+      {
         email: data.email,
-      });
-      toastManager.add({
-        description: error.message ?? "Invalid credentials. Please try again.",
-        title: "Sign in failed",
-        type: "error",
-      });
-      setIsLoading(false);
-    } else {
-      posthog.identify(data.email, {
-        email: data.email,
-      });
-      posthog.capture("user_signed_in", {
-        email: data.email,
-        remember_me: data.rememberMe,
-      });
-      toastManager.add({
-        description: "Signed in successfully",
-        title: "Signed in",
-        type: "success",
-      });
-      // Refresh invalidates the RSC cache so server components see the new session
-      router.refresh();
-      router.push("/");
-    }
+        password: data.password,
+        rememberMe: data.rememberMe,
+      },
+      {
+        onError: ({ error }) => {
+          toastManager.add({
+            description:
+              error.message ?? "Invalid credentials. Please try again.",
+            title: "Sign in failed",
+            type: "error",
+          });
+        },
+        onSuccess: () => {
+          identify(data.email, {
+            email: data.email,
+          });
+          track({
+            event: analyticsEvents.signIn,
+          });
+          toastManager.add({
+            description: "Signed in successfully",
+            title: "Signed in",
+            type: "success",
+          });
+          router.push("/");
+          setIsLoading(false);
+        },
+        onSettled: () => {
+          setIsLoading(false);
+        },
+      }
+    );
   };
 
   return (
