@@ -1,7 +1,8 @@
 import { sql } from "drizzle-orm";
+import type { Database } from "@/packages/db";
 import { db } from "@/packages/db";
 
-export async function checkHealth() {
-  const result = await db.execute(sql`SELECT 1`);
-  return result.rows[0].count === 1;
+export async function checkHealth(database: Database = db) {
+  await database.execute(sql`SELECT 1`);
+  return true;
 }

@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { createLoggerWithContext } from "@/packages/utils/logger";
 
-const logger = createLoggerWithContext("DashboardError");
+const logger = createLoggerWithContext("Error");
 export default function DashboardError({
   error,
   reset,

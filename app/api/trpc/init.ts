@@ -4,7 +4,7 @@ import { treeifyError, ZodError } from "zod";
 import type { Context } from "@/packages/trpc/context";
 import { createLoggerWithContext } from "@/packages/utils/logger";
 
-const trpcLogger = createLoggerWithContext("trpc:procedure");
+const trpcLogger = createLoggerWithContext("trpc:init");
 
 export const t = initTRPC.context<Context>().create({
   transformer: superjson,

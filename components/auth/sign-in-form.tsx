@@ -68,7 +68,7 @@ export function SignInForm() {
       });
       // Refresh invalidates the RSC cache so server components see the new session
       router.refresh();
-      router.push("/dashboard");
+      router.push("/");
     }
   };
 

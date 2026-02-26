@@ -46,7 +46,7 @@ export function AnimatedTextHero() {
             />
             <Button
               nativeButton={false}
-              render={<Link href="/courses">See courses</Link>}
+              render={<Link href="/">See courses</Link>}
               size="lg"
               variant="outline"
             >
