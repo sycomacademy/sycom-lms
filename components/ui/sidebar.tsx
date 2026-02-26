@@ -3,6 +3,7 @@
 import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
 import { cva, type VariantProps } from "class-variance-authority";
+import { MenuIcon, PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react";
 import type React from "react";
 import {
   createContext,
@@ -11,7 +12,6 @@ import {
   useMemo,
   useState,
 } from "react";
-import { Icon } from "@/components/icons/";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -28,11 +28,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useAnimatedIcon } from "@/packages/hooks/use-animated-icon";
 import { useIsMobile } from "@/packages/hooks/use-mobile";
 import { cn } from "@/packages/utils/cn";
-
-const { MenuIcon, PanelLeftCloseIcon, PanelLeftOpenIcon } = Icon;
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -266,15 +263,9 @@ function SidebarTrigger({
   ...props
 }: React.ComponentProps<typeof Button>) {
   const { toggleSidebar, isMobile, open } = useSidebar();
-  const [iconRef, iconHover] = useAnimatedIcon();
-  const [mobileIconRef, mobileIconHover] = useAnimatedIcon({
-    trigger: "click",
-  });
 
   return (
     <Button
-      {...iconHover}
-      {...mobileIconHover}
       className={cn(className)}
       data-sidebar="trigger"
       data-slot="sidebar-trigger"
@@ -286,9 +277,9 @@ function SidebarTrigger({
       variant="ghost"
       {...props}
     >
-      {isMobile && <MenuIcon ref={mobileIconRef} />}
-      {!isMobile && open && <PanelLeftCloseIcon ref={iconRef} />}
-      {!(isMobile || open) && <PanelLeftOpenIcon ref={iconRef} />}
+      {isMobile && <MenuIcon />}
+      {!isMobile && open && <PanelLeftCloseIcon />}
+      {!(isMobile || open) && <PanelLeftOpenIcon />}
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );

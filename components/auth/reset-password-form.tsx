@@ -129,6 +129,7 @@ export function ResetPasswordForm({
                         autoComplete="new-password"
                         autoFocus
                         placeholder="Min. 8 characters"
+                        required
                         type={showPassword ? "text" : "password"}
                         {...field}
                       />
@@ -175,7 +176,9 @@ export function ResetPasswordForm({
                     <InputGroup>
                       <InputGroupInput
                         autoComplete="new-password"
+                        autoFocus
                         placeholder="Re-enter your password"
+                        required
                         type={showConfirm ? "text" : "password"}
                         {...field}
                       />

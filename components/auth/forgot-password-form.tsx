@@ -125,6 +125,7 @@ export function ForgotPasswordForm() {
                       autoComplete="email"
                       autoFocus
                       placeholder="you@example.com"
+                      required
                       type="email"
                       {...field}
                     />

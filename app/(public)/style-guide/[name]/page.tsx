@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ModeSwitcher } from "@/components/layout/theme-toggle";
+import { ModeSwitcher } from "@/components/layout/mode-switcher";
 import { componentRegistry } from "@/components/style-guide/component-registry";
 import { Example } from "@/components/style-guide/demo/example";
 

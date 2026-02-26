@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ModeSwitcher } from "@/components/layout/theme-toggle";
+import { ModeSwitcher } from "@/components/layout/mode-switcher";
 import { componentRegistry } from "@/components/style-guide/component-registry";
 import { ComponentWrapper } from "@/components/style-guide/demo/component-wrapper";
 import { Button } from "@/components/ui/button";

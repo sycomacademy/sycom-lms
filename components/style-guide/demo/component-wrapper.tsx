@@ -1,8 +1,8 @@
 "use client";
 
+import { EyeIcon } from "lucide-react";
 import Link from "next/link";
 import React from "react";
-import { EyeIcon } from "@/components/icons/eye";
 import { cn } from "@/packages/utils/cn";
 
 export function ComponentWrapper({
