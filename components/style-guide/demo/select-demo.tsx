@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/suspicious/noArrayIndexKey: this is a demo */
 import {
   ChartBarIcon,
   ChartLineIcon,

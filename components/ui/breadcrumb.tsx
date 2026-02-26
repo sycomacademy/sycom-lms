@@ -60,7 +60,6 @@ function BreadcrumbLink({
 
 function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
   return (
-    // biome-ignore lint/a11y/useSemanticElements: Link component
     <span
       aria-current="page"
       aria-disabled="true"

@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/suspicious/noArrayIndexKey: this is a demo */
 "use client";
 
 import { Minus, Plus } from "lucide-react";

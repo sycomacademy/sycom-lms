@@ -1,12 +1,6 @@
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { checkHealth } from "@/packages/db/queries";
 import { publicProcedure, router } from "../init";
-import { adminRouter } from "./admin";
-import { categoryRouter } from "./category";
-import { courseRouter } from "./course";
-import { feedbackRouter } from "./feedback";
-import { fileRouter } from "./file";
-import { profileRouter } from "./profile";
 
 export const appRouter = router({
   healthCheck: publicProcedure.query(async ({ ctx }) => {
@@ -16,12 +10,6 @@ export const appRouter = router({
       apiHealth: "OK",
     };
   }),
-  admin: adminRouter,
-  category: categoryRouter,
-  course: courseRouter,
-  feedback: feedbackRouter,
-  file: fileRouter,
-  profile: profileRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -129,7 +129,6 @@ function Carousel({
         canScrollNext,
       }}
     >
-      {/** biome-ignore lint/a11y/useSemanticElements: Region component */}
       <div
         aria-roledescription="carousel"
         className={cn("relative", className)}
@@ -169,7 +168,6 @@ function CarouselItem({ className, ...props }: React.ComponentProps<"div">) {
   const { orientation } = useCarousel();
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements: Group component
     <div
       aria-roledescription="slide"
       className={cn(

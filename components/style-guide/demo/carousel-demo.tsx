@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/suspicious/noArrayIndexKey: this is a demo */
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Carousel,
