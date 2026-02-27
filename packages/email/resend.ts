@@ -5,7 +5,7 @@ import { createLoggerWithContext } from "../utils/logger";
 export const resend = new Resend(env.RESEND_API_KEY);
 
 const DEFAULT_FROM = env.EMAIL_FROM;
-const logger = createLoggerWithContext("email:send");
+const emailLogger = createLoggerWithContext("email:send");
 
 /**
  * Send an email via Resend.
@@ -21,11 +21,13 @@ export async function sendEmail({
   html: string;
   from?: string;
 }) {
-  const { error, data } = await resend.emails.send({ from, to, subject, html });
-  if (error) {
-    logger.error("Error sending email", { error });
-    throw new Error(error.message);
+  const response = await resend.emails.send({ from, to, subject, html });
+  if (response.error) {
+    emailLogger.error("Error sending email", {
+      subject,
+      to,
+      error: response.error,
+    });
   }
-  logger.info("Email sent", { data });
-  return data;
+  return response;
 }

@@ -8,31 +8,13 @@ export const metadata: Metadata = {
   description: "Email verification status for your Sycom account.",
 };
 
-const verificationErrorContent: Record<
-  string,
-  { title: string; description: string }
-> = {
-  invalid_token: {
-    title: "Invalid verification link",
-    description:
-      "This verification link is invalid. Request a new email and try again.",
-  },
-  token_expired: {
-    title: "Verification link expired",
-    description:
-      "This verification link has expired. Request a new verification email to continue.",
-  },
-  unauthorized: {
-    title: "Verification not allowed",
-    description:
-      "This verification request is not authorized. Please sign in and request a new verification email.",
-  },
-  user_not_found: {
-    title: "Account not found",
-    description:
-      "We could not find an account for this verification link. Try signing up again.",
-  },
-};
+const formatErrorCode = (error: string) =>
+  error
+    .trim()
+    .replaceAll("_", " ")
+    .replaceAll("-", " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 
 export default async function VerifyEmailPage({
   searchParams,
@@ -43,8 +25,11 @@ export default async function VerifyEmailPage({
   const session = await getSession();
 
   const hasError = !!error;
-  const content = (error ? verificationErrorContent[error] : null) ?? {
-    title: hasError ? "Verification failed" : "Email verified",
+  const normalizedError = error ? formatErrorCode(error) : null;
+  const content = {
+    title: hasError
+      ? `Verification failed: ${normalizedError}`
+      : "Email verified",
     description: hasError
       ? "We could not verify your email. Request a new verification email and try again."
       : "Your email has been verified successfully. You can continue to your account.",

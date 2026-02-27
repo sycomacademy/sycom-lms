@@ -27,7 +27,6 @@ import { OAuthButtons } from "./oauth-buttons";
 
 export function SignInForm() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<SignInInput>({
@@ -36,41 +35,32 @@ export function SignInForm() {
   });
 
   const onSubmit = async (data: SignInInput) => {
-    setIsLoading(true);
-
-    await authClient.signIn.email(
-      {
-        email: data.email,
-        password: data.password,
-        rememberMe: data.rememberMe,
-      },
-      {
-        onError: ({ error }) => {
-          toastManager.add({
-            description:
-              error.message ?? "Invalid credentials. Please try again.",
-            title: "Sign in failed",
-            type: "error",
-          });
-          setIsLoading(false);
-        },
-        onSuccess: () => {
-          identify(data.email, {
-            email: data.email,
-          });
-          track({
-            event: analyticsEvents.signIn,
-          });
-          toastManager.add({
-            description: "Signed in successfully",
-            title: "Signed in",
-            type: "success",
-          });
-          router.push("/");
-          setIsLoading(false);
-        },
-      }
-    );
+    const { error } = await authClient.signIn.email({
+      email: data.email,
+      password: data.password,
+      rememberMe: data.rememberMe,
+    });
+    if (error) {
+      toastManager.add({
+        description: error.message ?? "Something went wrong. Please try again.",
+        title: "Something went wrong",
+        type: "error",
+      });
+      return;
+    }
+    identify(data.email, {
+      email: data.email,
+    });
+    track({
+      event: analyticsEvents.signIn,
+      email: data.email,
+    });
+    toastManager.add({
+      description: "Signed in successfully",
+      title: "Signed in",
+      type: "success",
+    });
+    router.push("/");
   };
 
   return (
@@ -101,6 +91,7 @@ export function SignInForm() {
                       autoComplete="email"
                       autoFocus
                       placeholder="you@example.com"
+                      required
                       type="email"
                       {...field}
                     />
@@ -135,6 +126,7 @@ export function SignInForm() {
                       <InputGroupInput
                         autoComplete="current-password"
                         placeholder="Enter your password"
+                        required
                         type={showPassword ? "text" : "password"}
                         {...field}
                       />
@@ -171,27 +163,33 @@ export function SignInForm() {
               <FormItem>
                 <div className="flex items-center gap-2">
                   <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      id="rememberMe"
-                      onCheckedChange={(checked) =>
-                        field.onChange(checked === true)
-                      }
-                    />
+                    <Field orientation="horizontal">
+                      <Checkbox
+                        checked={field.value}
+                        id="rememberMe"
+                        onCheckedChange={(checked) =>
+                          field.onChange(checked === true)
+                        }
+                      />
+                      <FieldLabel
+                        className="font-normal text-muted-foreground text-xs"
+                        htmlFor="rememberMe"
+                      >
+                        Remember me
+                      </FieldLabel>
+                    </Field>
                   </FormControl>
-                  <FieldLabel
-                    className="font-normal text-muted-foreground text-xs"
-                    htmlFor="rememberMe"
-                  >
-                    Remember me
-                  </FieldLabel>
                 </div>
               </FormItem>
             )}
           />
 
-          <Button className="mt-1 w-full" disabled={isLoading} type="submit">
-            {isLoading ? <Spinner className="mr-2" /> : null}
+          <Button
+            className="mt-1 w-full"
+            disabled={form.formState.isSubmitting}
+            type="submit"
+          >
+            {form.formState.isSubmitting ? <Spinner className="mr-2" /> : null}
             Continue
           </Button>
         </form>

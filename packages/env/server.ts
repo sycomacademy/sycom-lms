@@ -11,12 +11,10 @@ export const env = createEnv({
     BETTER_AUTH_SECRET: z.string().min(32),
     RESEND_API_KEY: z.string().min(1),
     EMAIL_FROM: z.string().min(1),
-    SENDGRID_API_KEY: z.string().min(1).optional(),
-    SENDGRID_FROM: z.string().min(1).optional(),
     BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
     HEALTH_IP_ALLOWLIST: z.string().min(1).optional(),
-    POSTHOG_KEY: z.string().min(1).optional(),
-    POSTHOG_HOST: z.url().optional(),
+    GOOGLE_CLIENT_ID: z.string().min(1),
+    GOOGLE_CLIENT_SECRET: z.string().min(1),
     NODE_ENV: z
       .enum(["development", "production", "test"])
       .default("development"),

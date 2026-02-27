@@ -34,7 +34,6 @@ export function ResetPasswordForm({
   token: string;
   isInvite?: boolean;
 }) {
-  const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -45,8 +44,6 @@ export function ResetPasswordForm({
   });
 
   const onSubmit = async (data: ResetPasswordInput) => {
-    setIsLoading(true);
-
     const { error } = await authClient.resetPassword({
       newPassword: data.password,
       token,
@@ -58,11 +55,9 @@ export function ResetPasswordForm({
         title: "Reset failed",
         type: "error",
       });
-      setIsLoading(false);
       return;
     }
 
-    setIsLoading(false);
     setIsSuccess(true);
   };
 
@@ -208,8 +203,12 @@ export function ResetPasswordForm({
             )}
           />
 
-          <Button className="mt-1 w-full" disabled={isLoading} type="submit">
-            {isLoading ? <Spinner className="mr-2" /> : null}
+          <Button
+            className="mt-1 w-full"
+            disabled={form.formState.isSubmitting}
+            type="submit"
+          >
+            {form.formState.isSubmitting ? <Spinner className="mr-2" /> : null}
             {isInvite ? "Set password" : "Reset password"}
           </Button>
         </form>

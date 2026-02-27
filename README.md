@@ -172,9 +172,14 @@ You cannot merge a branch into itself; the script exits with an error in that ca
    ```
    DATABASE_URL='<run `bun run db:switch` to set from Neon>'
    BETTER_AUTH_SECRET='<ask a team member or generate with: openssl rand -base64 32>'
+   GOOGLE_CLIENT_ID='<from Google Cloud OAuth credentials>'
+   GOOGLE_CLIENT_SECRET='<from Google Cloud OAuth credentials>'
    BLOB_READ_WRITE_TOKEN='<from Vercel dashboard → Storage>'
    NEXT_PUBLIC_APP_URL='http://localhost:3000'
    ```
+
+   For Google OAuth, configure this redirect URI in Google Cloud Console:
+   `http://localhost:3000/api/auth/callback/google`
 
 5. **Install git hooks**
 
@@ -207,6 +212,8 @@ Configured in **GitHub → Repo → Settings → Secrets and variables → Actio
 |---|---|---|
 | `DATABASE_URL` | Production Neon connection string | Staging Neon connection string |
 | `BETTER_AUTH_SECRET` | Production secret | Staging secret |
+| `GOOGLE_CLIENT_ID` | OAuth client ID | OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | OAuth client secret | OAuth client secret |
 | `NEXT_PUBLIC_APP_URL` | Production URL | Staging/preview URL |
 | `BLOB_READ_WRITE_TOKEN` | All environments | All environments |
 

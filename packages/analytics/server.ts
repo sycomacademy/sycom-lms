@@ -1,6 +1,6 @@
 import { PostHog } from "posthog-node";
 import type { AnalyticsEventName } from "@/packages/analytics/events";
-import { env } from "@/packages/env/server";
+import { env } from "@/packages/env/client";
 import { createLoggerWithContext } from "@/packages/utils/logger";
 
 type ServerEventProperties = Record<string, unknown>;
@@ -8,8 +8,8 @@ type ServerEventProperties = Record<string, unknown>;
 const analyticsLogger = createLoggerWithContext("analytics:server");
 
 function getServerClient() {
-  const posthogKey = env.POSTHOG_KEY ?? process.env.NEXT_PUBLIC_POSTHOG_KEY;
-  const posthogHost = env.POSTHOG_HOST ?? process.env.NEXT_PUBLIC_POSTHOG_HOST;
+  const posthogKey = env.NEXT_PUBLIC_POSTHOG_KEY;
+  const posthogHost = env.NEXT_PUBLIC_POSTHOG_HOST;
 
   if (!(posthogKey && posthogHost)) {
     return null;

@@ -26,7 +26,6 @@ import { OAuthButtons } from "./oauth-buttons";
 
 export function SignUpForm() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<SignUpInput>({
@@ -35,7 +34,6 @@ export function SignUpForm() {
   });
 
   const onSubmit = async (data: SignUpInput) => {
-    setIsLoading(true);
     const { error } = await authClient.signUp.email({
       name: `${data.firstName} ${data.lastName}`,
       email: data.email,
@@ -48,7 +46,24 @@ export function SignUpForm() {
         title: "Something went wrong",
         type: "error",
       });
-      setIsLoading(false);
+      return;
+    }
+
+    const { error: verificationError } = await authClient.sendVerificationEmail(
+      {
+        email: data.email,
+        callbackURL: "/verify-email",
+      }
+    );
+
+    if (verificationError) {
+      toastManager.add({
+        description:
+          verificationError.message ??
+          "Something went wrong. Please try again.",
+        title: "Something went wrong",
+        type: "error",
+      });
       return;
     }
 
@@ -66,7 +81,6 @@ export function SignUpForm() {
       title: "Account created",
       type: "success",
     });
-    setIsLoading(false);
     router.push("/sign-in");
   };
 
@@ -103,6 +117,7 @@ export function SignUpForm() {
                         autoComplete="given-name"
                         autoFocus
                         placeholder="Jane"
+                        required
                         {...field}
                       />
                     </FormControl>
@@ -127,6 +142,7 @@ export function SignUpForm() {
                       <Input
                         autoComplete="family-name"
                         placeholder="Doe"
+                        required
                         {...field}
                       />
                     </FormControl>
@@ -152,6 +168,7 @@ export function SignUpForm() {
                     <Input
                       autoComplete="email"
                       placeholder="you@example.com"
+                      required
                       type="email"
                       {...field}
                     />
@@ -178,6 +195,7 @@ export function SignUpForm() {
                       <InputGroupInput
                         autoComplete="new-password"
                         placeholder="Min. 8 characters"
+                        required
                         type={showPassword ? "text" : "password"}
                         {...field}
                       />
@@ -211,8 +229,12 @@ export function SignUpForm() {
             )}
           />
 
-          <Button className="mt-1 w-full" disabled={isLoading} type="submit">
-            {isLoading ? <Spinner className="mr-2" /> : null}
+          <Button
+            className="mt-1 w-full"
+            disabled={form.formState.isSubmitting}
+            type="submit"
+          >
+            {form.formState.isSubmitting ? <Spinner className="mr-2" /> : null}
             Create account
           </Button>
         </form>
