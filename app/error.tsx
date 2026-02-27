@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { captureException } from "@/packages/analytics/client";
 import { createLoggerWithContext } from "@/packages/utils/logger";
 
 const logger = createLoggerWithContext("Error");
@@ -15,6 +16,7 @@ export default function DashboardError({
 }) {
   useEffect(() => {
     logger.error("unhandled error", error);
+    captureException(error, { digest: error.digest });
   }, [error]);
 
   return (

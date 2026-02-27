@@ -11,6 +11,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toastManager } from "@/components/ui/toast";
+import { track } from "@/packages/analytics/client";
+import { analyticsEvents } from "@/packages/analytics/events";
 import { authClient } from "@/packages/auth/auth-client";
 import { cn } from "@/packages/utils/cn";
 
@@ -121,12 +123,19 @@ export function OAuthButtons({ callbackUrl }: OAuthButtonsProps) {
 
   async function handleOAuthSignIn(provider: OAuthProvider) {
     setLoadingProvider(provider);
+    track({ event: analyticsEvents.oauthSignInStarted, provider });
     const { error } = await authClient.signIn.social({
       provider,
       callbackURL: callbackUrl ?? "/dashboard",
     });
 
     if (error) {
+      track({
+        event: analyticsEvents.oauthSignInFailed,
+        provider,
+        error_message: error.message,
+        error_code: error.code,
+      });
       toastManager.add({
         description: error.message ?? "Failed to sign in. Please try again.",
         title: "Sign in failed",

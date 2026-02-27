@@ -41,6 +41,12 @@ export function SignInForm() {
       rememberMe: data.rememberMe,
     });
     if (error) {
+      track({
+        event: analyticsEvents.signInFailed,
+        email: data.email,
+        error_message: error.message,
+        error_code: error.code,
+      });
       toastManager.add({
         description: error.message ?? "Something went wrong. Please try again.",
         title: "Something went wrong",

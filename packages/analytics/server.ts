@@ -6,6 +6,7 @@ import { createLoggerWithContext } from "@/packages/utils/logger";
 type ServerEventProperties = Record<string, unknown>;
 
 const analyticsLogger = createLoggerWithContext("analytics:server");
+const isProd = process.env.NODE_ENV === "production";
 
 function getServerClient() {
   const posthogKey = env.NEXT_PUBLIC_POSTHOG_KEY;
@@ -32,6 +33,13 @@ export async function trackServerEvent(options: {
   if (!client) {
     analyticsLogger.debug("posthog server client not configured", {
       event: options.event,
+    });
+    return;
+  }
+  if (!isProd) {
+    analyticsLogger.debug("posthog server event", {
+      event: options.event,
+      properties: options.properties,
     });
     return;
   }

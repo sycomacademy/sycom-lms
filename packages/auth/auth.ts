@@ -11,8 +11,11 @@ import { ResetPasswordEmail } from "@/packages/email/templates/reset-password";
 import { VerifyEmail } from "@/packages/email/templates/verify-email";
 import { env } from "@/packages/env/server";
 import { getWebsiteUrl } from "@/packages/env/utils";
+import { createLoggerWithContext } from "../utils/logger";
 
 const baseURL = getWebsiteUrl();
+const logger = createLoggerWithContext("auth:email-verification");
+
 const sendVerificationEmail = async ({
   user,
   url,
@@ -75,7 +78,7 @@ export const auth = betterAuth({
     sendVerificationEmail,
     sendOnSignUp: false,
     afterEmailVerification: async (user, request) => {
-      console.log("afterEmailVerification", user, request);
+      logger.debug("afterEmailVerification", { user, request });
     },
   },
   socialProviders: {

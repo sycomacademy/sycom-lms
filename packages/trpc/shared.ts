@@ -3,6 +3,9 @@ import {
   QueryClient,
 } from "@tanstack/react-query";
 import superjson from "superjson";
+import { createLoggerWithContext } from "@/packages/utils/logger";
+
+const logger = createLoggerWithContext("trpc:shared");
 
 export function makeQueryClient() {
   return new QueryClient({
@@ -12,7 +15,9 @@ export function makeQueryClient() {
       },
       mutations: {
         onError: (error) => {
-          console.error("[mutation error]", error.message, error);
+          logger.error("mutation error", {
+            error,
+          });
         },
       },
       dehydrate: {

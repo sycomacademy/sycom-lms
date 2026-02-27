@@ -2,16 +2,21 @@
 
 import posthog from "posthog-js";
 import type { AnalyticsEventName } from "@/packages/analytics/events";
+import { createLoggerWithContext } from "@/packages/utils/logger";
 
 type EventProperties = Record<string, unknown>;
 
 const isProd = process.env.NODE_ENV === "production";
+const analyticsLogger = createLoggerWithContext("analytics:client");
 
 export const track = (
   options: { event: AnalyticsEventName } & EventProperties
 ) => {
   if (!isProd) {
-    console.log("Track", options);
+    analyticsLogger.debug("posthog client event", {
+      event: options.event,
+      properties: options.properties,
+    });
     return;
   }
 
@@ -21,7 +26,10 @@ export const track = (
 
 export const identify = (distinctId: string, properties?: EventProperties) => {
   if (!isProd) {
-    console.log("Identify", { distinctId, properties });
+    analyticsLogger.debug("posthog client identify", {
+      distinctId,
+      properties,
+    });
     return;
   }
 
@@ -33,7 +41,10 @@ export const captureException = (
   properties?: EventProperties
 ) => {
   if (!isProd) {
-    console.log("CaptureException", { error, properties });
+    analyticsLogger.debug("posthog client captureException", {
+      error,
+      properties,
+    });
     return;
   }
 
@@ -42,7 +53,7 @@ export const captureException = (
 
 export const reset = () => {
   if (!isProd) {
-    console.log("Reset");
+    analyticsLogger.debug("posthog client reset");
     return;
   }
 

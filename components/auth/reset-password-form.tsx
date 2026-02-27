@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
+import { track } from "@/packages/analytics/client";
+import { analyticsEvents } from "@/packages/analytics/events";
 import { authClient } from "@/packages/auth/auth-client";
 import {
   type ResetPasswordInput,
@@ -58,6 +60,10 @@ export function ResetPasswordForm({
       return;
     }
 
+    track({
+      event: analyticsEvents.passwordResetCompleted,
+      is_invite: isInvite,
+    });
     setIsSuccess(true);
   };
 

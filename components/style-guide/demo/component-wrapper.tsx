@@ -4,6 +4,9 @@ import { EyeIcon } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 import { cn } from "@/packages/utils/cn";
+import { createLoggerWithContext } from "@/packages/utils/logger";
+
+const logger = createLoggerWithContext("style-guide:demo:component-wrapper");
 
 export function ComponentWrapper({
   className,
@@ -54,7 +57,11 @@ class ComponentErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error(`Error in component ${this.props.name}:`, error, errorInfo);
+    logger.error("component error", {
+      name: this.props.name,
+      error,
+      errorInfo,
+    });
   }
 
   render() {

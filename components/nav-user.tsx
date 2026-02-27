@@ -24,6 +24,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { reset, track } from "@/packages/analytics/client";
+import { analyticsEvents } from "@/packages/analytics/events";
 
 export function NavUser({
   user,
@@ -35,6 +37,12 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+
+  const handleSignOut = () => {
+    track({ event: analyticsEvents.signOut, email: user.email });
+    reset();
+  };
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -97,7 +105,7 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSignOut}>
               <LogOutIcon />
               Log out
             </DropdownMenuItem>
