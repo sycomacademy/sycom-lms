@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
-import { identify, track } from "@/packages/analytics/client";
+import { track } from "@/packages/analytics/client";
 import { analyticsEvents } from "@/packages/analytics/events";
 import { authClient } from "@/packages/auth/auth-client";
 import { type SignUpInput, signUpSchema } from "@/packages/utils/schema";
@@ -27,6 +27,20 @@ import { OAuthButtons } from "./oauth-buttons";
 export function SignUpForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+
+  const setLastLoginMethodCookie = async () => {
+    if (!("cookieStore" in globalThis)) {
+      return;
+    }
+
+    await globalThis.cookieStore.set({
+      expires: Date.now() + 1000 * 60 * 60 * 24 * 30,
+      name: "better-auth.last_used_login_method",
+      path: "/",
+      sameSite: "lax",
+      value: "email",
+    });
+  };
 
   const form = useForm<SignUpInput>({
     resolver: zodResolver(signUpSchema),
@@ -67,15 +81,12 @@ export function SignUpForm() {
       return;
     }
 
-    identify(data.email, {
-      email: data.email,
-      name: `${data.firstName} ${data.lastName}`,
-    });
     track({
       event: analyticsEvents.signUp,
       email: data.email,
       name: `${data.firstName} ${data.lastName}`,
     });
+    await setLastLoginMethodCookie();
     toastManager.add({
       description: "Check your email to verify.",
       title: "Account created",

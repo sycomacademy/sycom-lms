@@ -5,9 +5,11 @@ export const analyticsEvents = {
   signUp: "user_signed_up",
   signUpFailed: "user_sign_up_failed",
   passwordResetRequested: "password_reset_requested",
+  passwordResetRequestedFailed: "password_reset_requested_failed",
   passwordResetCompleted: "password_reset_completed",
   oauthSignInStarted: "oauth_sign_in_started",
   oauthSignInFailed: "oauth_sign_in_failed",
+  oauthSignInSuccess: "oauth_sign_in_success",
   healthCheckBlocked: "health_check_blocked",
   healthDependenciesNotOk: "health_dependencies_not_ok",
 } as const;

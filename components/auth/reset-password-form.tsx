@@ -52,6 +52,10 @@ export function ResetPasswordForm({
     });
 
     if (error) {
+      track({
+        event: analyticsEvents.passwordResetRequestedFailed,
+        is_invite: isInvite,
+      });
       toastManager.add({
         description: error.message ?? "Something went wrong. Please try again.",
         title: "Reset failed",

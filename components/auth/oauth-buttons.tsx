@@ -114,7 +114,8 @@ export function OAuthButtons({ callbackUrl }: OAuthButtonsProps) {
   );
   const [isHydrated, setIsHydrated] = useState(false);
   const [lastMethod, setLastMethod] = useState<string | null>(null);
-  const shouldOpenAccordion = isHydrated && lastMethod !== null;
+  const shouldOpenAccordion =
+    isHydrated && lastMethod !== null && lastMethod !== "email";
 
   useEffect(() => {
     setIsHydrated(true);
@@ -144,6 +145,8 @@ export function OAuthButtons({ callbackUrl }: OAuthButtonsProps) {
       setLoadingProvider(null);
       return;
     }
+
+    track({ event: analyticsEvents.oauthSignInSuccess, provider });
   }
 
   return (

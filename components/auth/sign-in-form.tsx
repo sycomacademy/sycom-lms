@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
-import { identify, track } from "@/packages/analytics/client";
+import { track } from "@/packages/analytics/client";
 import { analyticsEvents } from "@/packages/analytics/events";
 import { authClient } from "@/packages/auth/auth-client";
 import { type SignInInput, signInSchema } from "@/packages/utils/schema";
@@ -54,9 +54,6 @@ export function SignInForm() {
       });
       return;
     }
-    identify(data.email, {
-      email: data.email,
-    });
     track({
       event: analyticsEvents.signIn,
       email: data.email,

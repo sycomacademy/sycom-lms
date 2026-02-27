@@ -8,6 +8,7 @@ import {
   LogOutIcon,
   SparklesIcon,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -26,6 +27,7 @@ import {
 } from "@/components/ui/sidebar";
 import { reset, track } from "@/packages/analytics/client";
 import { analyticsEvents } from "@/packages/analytics/events";
+import { authClient } from "@/packages/auth/auth-client";
 
 export function NavUser({
   user,
@@ -37,10 +39,12 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
-
+  const router = useRouter();
   const handleSignOut = () => {
+    authClient.signOut();
     track({ event: analyticsEvents.signOut, email: user.email });
     reset();
+    router.push("/");
   };
 
   return (
