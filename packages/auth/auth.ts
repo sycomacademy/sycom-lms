@@ -1,6 +1,5 @@
 /** biome-ignore-all lint/complexity/noVoid: we don't want to await these functions. see https://www.better-auth.com/docs/concepts/email#1-during-sign-up */
 
-import { tasks } from "@trigger.dev/sdk";
 import { APIError, betterAuth, type User } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
@@ -13,7 +12,8 @@ import { ResetPasswordEmail } from "@/packages/email/templates/reset-password";
 import { VerifyEmail } from "@/packages/email/templates/verify-email";
 import { env } from "@/packages/env/server";
 import { getWebsiteUrl } from "@/packages/env/utils";
-import type { welcomeEmailTask } from "@/packages/trigger/tasks/welcome-email";
+import { welcomeEmailTask } from "@/packages/trigger/tasks/welcome-email";
+import { triggerJob } from "@/packages/trigger/trigger-job";
 
 const baseURL = getWebsiteUrl();
 
@@ -56,10 +56,13 @@ const sendResetPassword = async ({
 };
 
 const afterEmailVerification = async (user: User) => {
-  await tasks.trigger<typeof welcomeEmailTask>("welcome-email", {
-    userId: user.id,
-    email: user.email,
-    name: user.name,
+  triggerJob({
+    task: welcomeEmailTask,
+    payload: {
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+    },
   });
 };
 

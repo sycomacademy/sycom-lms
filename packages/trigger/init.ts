@@ -1,7 +1,4 @@
-import { tasks } from "@trigger.dev/sdk";
-import { createLoggerWithContext } from "../utils/logger";
-
-const logger = createLoggerWithContext("trigger:init");
+import { logger, tasks } from "@trigger.dev/sdk";
 
 tasks.onStartAttempt(({ ctx, payload, task }) => {
   logger.info("Run started", { ctx, payload, task });
