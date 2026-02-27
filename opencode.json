@@ -1,6 +1,12 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "instructions": [
-    ".cursor/rules/*.mdc"
-  ]
+  "instructions": [".cursor/rules/*.mdc"],
+
+  "mcp": {
+    "trigger": {
+      "command": ["npx", "trigger.dev@4.4.1", "mcp", "--dev-only"],
+      "enabled": true,
+      "type": "local"
+    }
+  }
 }

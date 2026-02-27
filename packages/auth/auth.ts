@@ -1,4 +1,6 @@
 /** biome-ignore-all lint/complexity/noVoid: we don't want to await these functions. see https://www.better-auth.com/docs/concepts/email#1-during-sign-up */
+
+import { tasks } from "@trigger.dev/sdk";
 import { APIError, betterAuth, type User } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
@@ -11,10 +13,9 @@ import { ResetPasswordEmail } from "@/packages/email/templates/reset-password";
 import { VerifyEmail } from "@/packages/email/templates/verify-email";
 import { env } from "@/packages/env/server";
 import { getWebsiteUrl } from "@/packages/env/utils";
-import { createLoggerWithContext } from "../utils/logger";
+import type { welcomeEmailTask } from "@/packages/trigger/tasks/welcome-email";
 
 const baseURL = getWebsiteUrl();
-const logger = createLoggerWithContext("auth:email-verification");
 
 const sendVerificationEmail = async ({
   user,
@@ -54,6 +55,14 @@ const sendResetPassword = async ({
   }
 };
 
+const afterEmailVerification = async (user: User) => {
+  await tasks.trigger<typeof welcomeEmailTask>("welcome-email", {
+    userId: user.id,
+    email: user.email,
+    name: user.name,
+  });
+};
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -77,9 +86,7 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
     sendVerificationEmail,
     sendOnSignUp: false,
-    afterEmailVerification: async (user, request) => {
-      logger.debug("afterEmailVerification", { user, request });
-    },
+    afterEmailVerification,
   },
   socialProviders: {
     google: {
