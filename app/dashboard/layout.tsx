@@ -1,20 +1,23 @@
-import { redirect } from "next/navigation";
-import { getQueryClient, HydrateClient, trpc } from "@/packages/trpc/server";
+import { cookies } from "next/headers";
+import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import { dashboardGuard } from "@/packages/auth/helper";
+import { HydrateClient, prefetch, trpc } from "@/packages/trpc/server";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const queryClient = getQueryClient();
+  await dashboardGuard();
+  const cookieStore = await cookies();
+  const sidebarState = cookieStore.get("sidebar_state");
+  const open = sidebarState?.value === "true";
 
-  const user = await queryClient
-    .fetchQuery(trpc.user.me.queryOptions())
-    .catch(() => null);
+  await prefetch(trpc.user.me.queryOptions());
 
-  if (!user) {
-    redirect("/sign-in");
-  }
-
-  return <HydrateClient>{children}</HydrateClient>;
+  return (
+    <HydrateClient>
+      <DashboardShell defaultOpen={open}>{children}</DashboardShell>
+    </HydrateClient>
+  );
 }
