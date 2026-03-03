@@ -1,130 +1,56 @@
-import { timestamp } from "drizzle-orm/pg-core";
+import { pgEnum, timestamp } from "drizzle-orm/pg-core";
 
-// // ── Timestamp helpers ──
-
+// ── Timestamp helpers ──
 export const createdAt = timestamp("created_at").defaultNow().notNull();
 export const updatedAt = timestamp("updated_at")
   .defaultNow()
   .$onUpdate(() => /* @__PURE__ */ new Date())
   .notNull();
 
-// // ── Enums ──
+// ── Enum helpers ──
+export const userRoleEnum = pgEnum("platform_role", [
+  "platform_admin",
+  "content_creator",
+  "member",
+]);
+export type UserRole = (typeof userRoleEnum.enumValues)[number];
+export const organizationRoleEnum = pgEnum("organization_role", [
+  "owner",
+  "admin",
+  "auditor" as const,
+  "teacher" as const,
+  "student" as const,
+]);
+export type OrganizationRole = (typeof organizationRoleEnum.enumValues)[number];
 
-// export const courseStatusEnum = pgEnum("course_status", [
-//   "draft",
-//   "published",
-//   "archived",
-// ]);
+// ── Custom errors ──
+export class DatabaseError extends Error {
+  code: string;
 
-// export const courseDifficultyEnum = pgEnum("course_difficulty", [
-//   "beginner",
-//   "intermediate",
-//   "advanced",
-// ]);
+  constructor(message: string, code: string) {
+    super(message);
+    this.name = "DatabaseError";
+    this.code = code;
+  }
+}
 
-// export const lessonTypeEnum = pgEnum("lesson_type", [
-//   "video",
-//   "article",
-//   "quiz",
-// ]);
+export class NotFoundError extends DatabaseError {
+  constructor(message = "Resource not found") {
+    super(message, "NOT_FOUND");
+    this.name = "NotFoundError";
+  }
+}
 
-// export const questionTypeEnum = pgEnum("question_type", [
-//   "multiple_choice",
-//   "multi_select",
-//   "true_false",
-// ]);
+export class UnauthorizedError extends DatabaseError {
+  constructor(message = "Unauthorized") {
+    super(message, "UNAUTHORIZED");
+    this.name = "UnauthorizedError";
+  }
+}
 
-// // Role string constants (single source of truth for seed, auth, and enums)
-// export const userRoleEnum = pgEnum("user_role", [
-//   "platform_admin",
-//   "content_creator",
-//   "member",
-// ]);
-
-// export const USER_ROLES = {
-//   PLATFORM_ADMIN: "platform_admin",
-//   CONTENT_CREATOR: "content_creator",
-//   MEMBER: "member",
-// } as const;
-
-// export const orgRoleEnum = pgEnum("org_role", [
-//   "org_owner",
-//   "org_admin",
-//   "teacher",
-//   "student",
-//   "org_auditor",
-// ]);
-
-// export const ORG_ROLES = {
-//   ORG_OWNER: "org_owner",
-//   ORG_ADMIN: "org_admin",
-//   TEACHER: "teacher",
-//   STUDENT: "student",
-//   ORG_AUDITOR: "org_auditor",
-// } as const;
-
-// export const cohortRoleEnum = pgEnum("cohort_role", ["teacher", "student"]);
-
-// export const COHORT_ROLES = {
-//   TEACHER: "teacher",
-//   STUDENT: "student",
-// } as const;
-
-// // ── JSONB types ──
-
-// export interface VideoMetadata {
-//   durationSeconds?: number;
-//   provider?: string;
-//   thumbnailUrl?: string;
-//   url: string;
-// }
-
-// export interface ArticleMetadata {
-//   content: string;
-//   estimatedReadMinutes?: number;
-// }
-
-// export interface QuizMetadata {
-//   maxAttempts?: number;
-//   passingScore: number;
-//   shuffleQuestions?: boolean;
-//   timeLimitSeconds?: number;
-// }
-
-// export interface QuestionMetadata {
-//   explanation?: string;
-//   hint?: string;
-// }
-
-// // ── Custom errors ──
-
-// export class DatabaseError extends Error {
-//   code: string;
-
-//   constructor(message: string, code: string) {
-//     super(message);
-//     this.name = "DatabaseError";
-//     this.code = code;
-//   }
-// }
-
-// export class NotFoundError extends DatabaseError {
-//   constructor(message = "Resource not found") {
-//     super(message, "NOT_FOUND");
-//     this.name = "NotFoundError";
-//   }
-// }
-
-// export class UnauthorizedError extends DatabaseError {
-//   constructor(message = "Unauthorized") {
-//     super(message, "UNAUTHORIZED");
-//     this.name = "UnauthorizedError";
-//   }
-// }
-
-// export class ValidationError extends DatabaseError {
-//   constructor(message = "Validation failed") {
-//     super(message, "VALIDATION_ERROR");
-//     this.name = "ValidationError";
-//   }
-// }
+export class ValidationError extends DatabaseError {
+  constructor(message = "Validation failed") {
+    super(message, "VALIDATION_ERROR");
+    this.name = "ValidationError";
+  }
+}

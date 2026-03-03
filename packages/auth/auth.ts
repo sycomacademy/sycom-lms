@@ -1,10 +1,16 @@
 /** biome-ignore-all lint/complexity/noVoid: we don't want to await these functions. see https://www.better-auth.com/docs/concepts/email#1-during-sign-up */
 
+import { dash } from "@better-auth/infra";
 import { APIError, betterAuth, type User } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
-import { lastLoginMethod } from "better-auth/plugins";
+import {
+  admin as adminPlugin,
+  lastLoginMethod,
+  organization,
+} from "better-auth/plugins";
 import { db } from "@/packages/db";
+import type { UserRole } from "@/packages/db/helper";
 import { schema } from "@/packages/db/schema";
 import { render } from "@/packages/email/render";
 import { sendEmail } from "@/packages/email/resend";
@@ -14,6 +20,18 @@ import { env } from "@/packages/env/server";
 import { getWebsiteUrl } from "@/packages/env/utils";
 import { welcomeEmailTask } from "@/packages/trigger/tasks/welcome-email";
 import { triggerJob } from "@/packages/trigger/trigger-job";
+import {
+  contentCreator,
+  orgAc,
+  orgAdmin,
+  orgAuditor,
+  orgOwner,
+  orgStudent,
+  orgTeacher,
+  platformAc,
+  platformAdmin,
+  student,
+} from "./permissions";
 
 const baseURL = getWebsiteUrl();
 
@@ -98,5 +116,49 @@ export const auth = betterAuth({
       prompt: "select_account",
     },
   },
-  plugins: [nextCookies(), lastLoginMethod()],
+  plugins: [
+    dash(),
+    nextCookies(),
+    lastLoginMethod(),
+    adminPlugin({
+      ac: platformAc,
+      roles: {
+        platform_admin: platformAdmin,
+        content_creator: contentCreator,
+        student,
+      },
+      defaultRole: "student",
+    }),
+    organization({
+      ac: orgAc,
+      roles: {
+        owner: orgOwner,
+        admin: orgAdmin,
+        auditor: orgAuditor,
+        teacher: orgTeacher,
+        student: orgStudent,
+      },
+      teams: {
+        enabled: true,
+      },
+      schema: {
+        team: {
+          modelName: "cohort",
+        },
+      },
+      allowUserToCreateOrganization: async (user) => {
+        // Only platform admins can create organizations
+        const role = user.role as UserRole;
+        return role === "platform_admin";
+      },
+      sendInvitationEmail: async (data) => {
+        const inviteLink = `${baseURL}/invite/${data.id}`;
+        await sendEmail({
+          to: data.email,
+          subject: `You've been invited to join ${data.organization.name}`,
+          html: `<p>You've been invited to join <strong>${data.organization.name}</strong> by ${data.inviter.user.name}.</p><p><a href="${inviteLink}">Accept invitation</a></p>`,
+        });
+      },
+    }),
+  ],
 });

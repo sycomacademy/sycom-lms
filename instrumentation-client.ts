@@ -9,7 +9,6 @@ if (typeof window !== "undefined" && posthogKey && isProd) {
     ui_host: "https://eu.posthog.com",
     capture_exceptions: true,
     debug: process.env.NODE_ENV === "development",
-    enable_recording_console_log: false,
     defaults: "2026-01-30",
   });
 }

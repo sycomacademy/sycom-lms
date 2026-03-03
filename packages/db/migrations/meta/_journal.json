@@ -8,6 +8,20 @@
       "when": 1771980000148,
       "tag": "0000_breezy_serpent_society",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772294696929,
+      "tag": "0001_black_nightmare",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772377945648,
+      "tag": "0002_wandering_mandrill",
+      "breakpoints": true
     }
   ]
 }
