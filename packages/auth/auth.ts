@@ -9,9 +9,11 @@ import {
   lastLoginMethod,
   organization,
 } from "better-auth/plugins";
+import { and, eq, ne } from "drizzle-orm";
 import { db } from "@/packages/db";
 import type { UserRole } from "@/packages/db/helper";
 import { schema } from "@/packages/db/schema";
+import { session } from "@/packages/db/schema/auth";
 import { render } from "@/packages/email/render";
 import { sendEmail } from "@/packages/email/resend";
 import { ResetPasswordEmail } from "@/packages/email/templates/reset-password";
@@ -102,6 +104,20 @@ export const auth = betterAuth({
       create: {
         after: async (user) => {
           console.log("user created", user);
+        },
+      },
+    },
+    session: {
+      create: {
+        after: async (createdSession) => {
+          await db
+            .delete(session)
+            .where(
+              and(
+                eq(session.userId, createdSession.userId),
+                ne(session.id, createdSession.id)
+              )
+            );
         },
       },
     },
