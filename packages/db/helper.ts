@@ -11,15 +11,15 @@ export const updatedAt = timestamp("updated_at")
 export const userRoleEnum = pgEnum("platform_role", [
   "platform_admin",
   "content_creator",
-  "member",
+  "platform_student",
 ]);
 export type UserRole = (typeof userRoleEnum.enumValues)[number];
 export const organizationRoleEnum = pgEnum("organization_role", [
-  "owner",
-  "admin",
-  "auditor" as const,
-  "teacher" as const,
-  "student" as const,
+  "org_owner",
+  "org_admin",
+  "org_auditor",
+  "org_teacher",
+  "org_student",
 ]);
 export type OrganizationRole = (typeof organizationRoleEnum.enumValues)[number];
 

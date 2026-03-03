@@ -38,6 +38,7 @@ export const session = pgTable(
     impersonatedBy: text("impersonated_by"),
     // Organization plugin fields
     activeOrganizationId: text("active_organization_id"),
+    activeTeamId: text("active_team_id"),
   },
   (table) => [index("session_userId_idx").on(table.userId)]
 );
@@ -105,9 +106,6 @@ export const member = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     role: text("role").notNull(),
-    teamId: text("team_id").references(() => cohort.id, {
-      onDelete: "set null",
-    }),
     createdAt,
   },
   (table) => [
@@ -127,14 +125,13 @@ export const invitation = pgTable(
       .references(() => organization.id, { onDelete: "cascade" }),
     email: text("email").notNull(),
     role: text("role"),
+    teamId: text("team_id"),
     status: text("status").notNull(),
     expiresAt: timestamp("expires_at").notNull(),
+    createdAt,
     inviterId: text("inviter_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    teamId: text("team_id").references(() => cohort.id, {
-      onDelete: "set null",
-    }),
   },
   (table) => [
     index("invitation_organizationId_idx").on(table.organizationId),
@@ -158,12 +155,33 @@ export const cohort = pgTable(
   (table) => [index("cohort_organizationId_idx").on(table.organizationId)]
 );
 
+// ── Team Member (Better Auth team membership) ──
+
+export const teamMember = pgTable(
+  "team_member",
+  {
+    id: text("id").primaryKey(),
+    teamId: text("team_id")
+      .notNull()
+      .references(() => cohort.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt,
+  },
+  (table) => [
+    index("teamMember_teamId_idx").on(table.teamId),
+    index("teamMember_userId_idx").on(table.userId),
+  ]
+);
+
 // ── Relations ──
 
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
   members: many(member),
+  teamMembers: many(teamMember),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -195,10 +213,6 @@ export const memberRelations = relations(member, ({ one }) => ({
     fields: [member.userId],
     references: [user.id],
   }),
-  cohort: one(cohort, {
-    fields: [member.teamId],
-    references: [cohort.id],
-  }),
 }));
 
 export const invitationRelations = relations(invitation, ({ one }) => ({
@@ -210,10 +224,6 @@ export const invitationRelations = relations(invitation, ({ one }) => ({
     fields: [invitation.inviterId],
     references: [user.id],
   }),
-  cohort: one(cohort, {
-    fields: [invitation.teamId],
-    references: [cohort.id],
-  }),
 }));
 
 export const cohortRelations = relations(cohort, ({ one, many }) => ({
@@ -221,5 +231,16 @@ export const cohortRelations = relations(cohort, ({ one, many }) => ({
     fields: [cohort.organizationId],
     references: [organization.id],
   }),
-  members: many(member),
+  teamMembers: many(teamMember),
+}));
+
+export const teamMemberRelations = relations(teamMember, ({ one }) => ({
+  cohort: one(cohort, {
+    fields: [teamMember.teamId],
+    references: [cohort.id],
+  }),
+  user: one(user, {
+    fields: [teamMember.userId],
+    references: [user.id],
+  }),
 }));

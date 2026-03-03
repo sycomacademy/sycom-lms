@@ -30,7 +30,7 @@ import {
   orgTeacher,
   platformAc,
   platformAdmin,
-  student,
+  platformStudent,
 } from "./permissions";
 
 const baseURL = getWebsiteUrl();
@@ -97,11 +97,30 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24,
     updateAge: 60 * 60 * 1,
   },
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          console.log("user created", user);
+        },
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
     revokeSessionsOnPasswordReset: true,
     sendResetPassword,
+    customSyntheticUser: ({ coreFields, additionalFields, id }) => ({
+      ...coreFields,
+      // Admin plugin fields (must match schema order for enumeration protection)
+      role: "platform_student",
+      banned: false,
+      banReason: null,
+      banExpires: null,
+      ...additionalFields,
+      id,
+    }),
   },
   emailVerification: {
     autoSignInAfterVerification: true,
@@ -125,9 +144,9 @@ export const auth = betterAuth({
       roles: {
         platform_admin: platformAdmin,
         content_creator: contentCreator,
-        student,
+        platform_student: platformStudent,
       },
-      defaultRole: "student",
+      defaultRole: "platform_student",
     }),
     organization({
       ac: orgAc,

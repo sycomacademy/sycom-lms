@@ -17,7 +17,7 @@ import {
   orgTeacher,
   platformAc,
   platformAdmin,
-  student,
+  platformStudent,
 } from "./permissions";
 
 export const authClient = createAuthClient({
@@ -29,7 +29,7 @@ export const authClient = createAuthClient({
       roles: {
         platform_admin: platformAdmin,
         content_creator: contentCreator,
-        student,
+        platform_student: platformStudent,
       },
     }),
     organizationClient({

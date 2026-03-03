@@ -1,7 +1,7 @@
 import { createAccessControl } from "better-auth/plugins/access";
 import {
-  defaultStatements as adminDefaultStatements,
   adminAc as platformAdminAc,
+  defaultStatements as platformDefaultStatements,
   userAc as platformUserAc,
 } from "better-auth/plugins/admin/access";
 import {
@@ -14,7 +14,7 @@ import {
 // ── Platform-level access control (admin plugin) ──
 
 const platformStatements = {
-  ...adminDefaultStatements,
+  ...platformDefaultStatements,
   course: ["create", "read", "update", "delete", "publish"],
   enrollment: ["create", "delete"],
 } as const;
@@ -33,7 +33,7 @@ export const contentCreator = platformAc.newRole({
   ...platformUserAc.statements,
 });
 
-export const student = platformAc.newRole({
+export const platformStudent = platformAc.newRole({
   course: ["read"],
   enrollment: ["create", "delete"],
   ...platformUserAc.statements,
@@ -42,7 +42,6 @@ export const student = platformAc.newRole({
 // ── Org-level access control (organization plugin) ──
 const orgStatements = {
   ...orgDefaultStatements,
-  cohort: ["create", "read", "update", "delete"],
   course: ["assign", "read"],
   enrollment: ["create", "read", "delete"],
   report: ["read"],
@@ -51,7 +50,6 @@ const orgStatements = {
 export const orgAc = createAccessControl(orgStatements);
 
 export const orgOwner = orgAc.newRole({
-  cohort: ["create", "read", "update", "delete"],
   course: ["assign", "read"],
   enrollment: ["create", "read", "delete"],
   report: ["read"],
@@ -59,7 +57,6 @@ export const orgOwner = orgAc.newRole({
 });
 
 export const orgAdmin = orgAc.newRole({
-  cohort: ["create", "read", "update", "delete"],
   course: ["assign", "read"],
   enrollment: ["create", "read", "delete"],
   report: ["read"],
@@ -67,7 +64,6 @@ export const orgAdmin = orgAc.newRole({
 });
 
 export const orgAuditor = orgAc.newRole({
-  cohort: ["read"],
   course: ["read"],
   enrollment: ["read"],
   report: ["read"],
@@ -75,7 +71,6 @@ export const orgAuditor = orgAc.newRole({
 });
 
 export const orgTeacher = orgAc.newRole({
-  cohort: ["read", "update"],
   course: ["assign", "read"],
   enrollment: ["create", "read", "delete"],
   report: ["read"],
@@ -83,7 +78,6 @@ export const orgTeacher = orgAc.newRole({
 });
 
 export const orgStudent = orgAc.newRole({
-  cohort: ["read"],
   course: ["read"],
   enrollment: ["read"],
   ...orgMemberAc.statements,
