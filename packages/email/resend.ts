@@ -4,7 +4,7 @@ import { createLoggerWithContext } from "../utils/logger";
 
 export const resend = new Resend(env.RESEND_API_KEY);
 
-const DEFAULT_FROM = env.EMAIL_FROM;
+const DEFAULT_FROM = env.RESEND_EMAIL_FROM;
 const emailLogger = createLoggerWithContext("email:send");
 
 /**

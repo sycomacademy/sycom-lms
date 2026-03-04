@@ -5,36 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1771980000148,
-      "tag": "0000_breezy_serpent_society",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1772294696929,
-      "tag": "0001_black_nightmare",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1772377945648,
-      "tag": "0002_wandering_mandrill",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1772542122443,
-      "tag": "0003_goofy_union_jack",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1772551076896,
-      "tag": "0004_solid_taskmaster",
+      "when": 1772631987646,
+      "tag": "0000_fast_lester",
       "breakpoints": true
     }
   ]

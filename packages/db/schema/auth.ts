@@ -1,10 +1,23 @@
 import { relations } from "drizzle-orm";
-import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
-import { createdAt, updatedAt } from "../helper";
+import {
+  boolean,
+  index,
+  integer,
+  pgSchema,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
+import {
+  createdAt,
+  organizationRoleEnum,
+  updatedAt,
+  userRoleEnum,
+} from "../helper";
 
-// ── User ──
+const auth = pgSchema("auth");
 
-export const user = pgTable("user", {
+export const user = auth.table("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
@@ -12,16 +25,14 @@ export const user = pgTable("user", {
   image: text("image"),
   createdAt,
   updatedAt,
-  // Admin plugin fields
-  role: text("role"),
-  banned: boolean("banned"),
+  twoFactorEnabled: boolean("two_factor_enabled").default(false),
+  role: userRoleEnum("role"),
+  banned: boolean("banned").default(false),
   banReason: text("ban_reason"),
   banExpires: timestamp("ban_expires"),
 });
 
-// ── Session ──
-
-export const session = pgTable(
+export const session = auth.table(
   "session",
   {
     id: text("id").primaryKey(),
@@ -34,18 +45,14 @@ export const session = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    // Admin plugin fields
     impersonatedBy: text("impersonated_by"),
-    // Organization plugin fields
     activeOrganizationId: text("active_organization_id"),
     activeTeamId: text("active_team_id"),
   },
   (table) => [index("session_userId_idx").on(table.userId)]
 );
 
-// ── Account ──
-
-export const account = pgTable(
+export const account = auth.table(
   "account",
   {
     id: text("id").primaryKey(),
@@ -67,81 +74,75 @@ export const account = pgTable(
   (table) => [index("account_userId_idx").on(table.userId)]
 );
 
-// ── Verification ──
-
-export const verification = pgTable(
+export const verification = auth.table(
   "verification",
   {
     id: text("id").primaryKey(),
     identifier: text("identifier").notNull(),
     value: text("value").notNull(),
     expiresAt: timestamp("expires_at").notNull(),
-    createdAt,
-    updatedAt,
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
   },
   (table) => [index("verification_identifier_idx").on(table.identifier)]
 );
 
-// ── Organization ──
-
-export const organization = pgTable("organization", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  slug: text("slug").unique(),
-  logo: text("logo"),
-  metadata: text("metadata"),
-  createdAt,
-});
-
-// ── Organization Member ──
-
-export const member = pgTable(
-  "member",
+export const passkey = auth.table(
+  "passkey",
   {
     id: text("id").primaryKey(),
-    organizationId: text("organization_id")
-      .notNull()
-      .references(() => organization.id, { onDelete: "cascade" }),
+    name: text("name"),
+    publicKey: text("public_key").notNull(),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    role: text("role").notNull(),
+    credentialID: text("credential_id").notNull(),
+    counter: integer("counter").notNull(),
+    deviceType: text("device_type").notNull(),
+    backedUp: boolean("backed_up").notNull(),
+    transports: text("transports"),
     createdAt,
+    aaguid: text("aaguid"),
   },
   (table) => [
-    index("member_organizationId_idx").on(table.organizationId),
-    index("member_userId_idx").on(table.userId),
+    index("passkey_userId_idx").on(table.userId),
+    index("passkey_credentialID_idx").on(table.credentialID),
   ]
 );
 
-// ── Organization Invitation ──
-
-export const invitation = pgTable(
-  "invitation",
+export const twoFactor = auth.table(
+  "two_factor",
   {
     id: text("id").primaryKey(),
-    organizationId: text("organization_id")
-      .notNull()
-      .references(() => organization.id, { onDelete: "cascade" }),
-    email: text("email").notNull(),
-    role: text("role"),
-    teamId: text("team_id"),
-    status: text("status").notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
-    createdAt,
-    inviterId: text("inviter_id")
+    secret: text("secret").notNull(),
+    backupCodes: text("backup_codes").notNull(),
+    userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
   },
   (table) => [
-    index("invitation_organizationId_idx").on(table.organizationId),
-    index("invitation_email_idx").on(table.email),
+    index("twoFactor_secret_idx").on(table.secret),
+    index("twoFactor_userId_idx").on(table.userId),
   ]
 );
 
-// ── Cohort (Better Auth team model) ──
+export const organization = auth.table(
+  "organization",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    slug: text("slug").notNull().unique(),
+    logo: text("logo"),
+    createdAt,
+    metadata: text("metadata"),
+  },
+  (table) => [uniqueIndex("organization_slug_uidx").on(table.slug)]
+);
 
-export const cohort = pgTable(
+export const cohort = auth.table(
   "cohort",
   {
     id: text("id").primaryKey(),
@@ -155,10 +156,8 @@ export const cohort = pgTable(
   (table) => [index("cohort_organizationId_idx").on(table.organizationId)]
 );
 
-// ── Team Member (Better Auth team membership) ──
-
-export const teamMember = pgTable(
-  "team_member",
+export const cohort_member = auth.table(
+  "cohort_member",
   {
     id: text("id").primaryKey(),
     teamId: text("team_id")
@@ -170,61 +169,82 @@ export const teamMember = pgTable(
     createdAt,
   },
   (table) => [
-    index("teamMember_teamId_idx").on(table.teamId),
-    index("teamMember_userId_idx").on(table.userId),
+    index("cohort_member_teamId_idx").on(table.teamId),
+    index("cohort_member_userId_idx").on(table.userId),
   ]
 );
 
-// ── SSO Provider (Better Auth SSO plugin) ──
-
-export const ssoProvider = pgTable(
-  "sso_provider",
+export const member = auth.table(
+  "member",
   {
     id: text("id").primaryKey(),
-    issuer: text("issuer").notNull(),
-    domain: text("domain").notNull(),
-    oidcConfig: text("oidc_config"),
-    samlConfig: text("saml_config"),
-    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
-    providerId: text("provider_id").notNull().unique(),
-    organizationId: text("organization_id"),
-    domainVerified: boolean("domain_verified"),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    role: organizationRoleEnum("role").default("org_student").notNull(),
     createdAt,
-    updatedAt,
   },
   (table) => [
-    index("ssoProvider_providerId_idx").on(table.providerId),
-    index("ssoProvider_domain_idx").on(table.domain),
-    index("ssoProvider_organizationId_idx").on(table.organizationId),
+    index("member_organizationId_idx").on(table.organizationId),
+    index("member_userId_idx").on(table.userId),
   ]
 );
 
-// ── SCIM Provider (Better Auth SCIM plugin) ──
-
-export const scimProvider = pgTable(
-  "scim_provider",
+export const invitation = auth.table(
+  "invitation",
   {
     id: text("id").primaryKey(),
-    providerId: text("provider_id").notNull().unique(),
-    scimToken: text("scim_token").notNull().unique(),
-    organizationId: text("organization_id"),
-    userId: text("user_id"),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    role: organizationRoleEnum("role"),
+    teamId: text("team_id"),
+    status: text("status").default("pending").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
     createdAt,
-    updatedAt,
+    inviterId: text("inviter_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
   },
   (table) => [
-    index("scimProvider_providerId_idx").on(table.providerId),
-    index("scimProvider_organizationId_idx").on(table.organizationId),
+    index("invitation_organizationId_idx").on(table.organizationId),
+    index("invitation_email_idx").on(table.email),
   ]
 );
 
-// ── Relations ──
+export const ssoProvider = auth.table("sso_provider", {
+  id: text("id").primaryKey(),
+  issuer: text("issuer").notNull(),
+  oidcConfig: text("oidc_config"),
+  samlConfig: text("saml_config"),
+  userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
+  providerId: text("provider_id").notNull().unique(),
+  organizationId: text("organization_id"),
+  domain: text("domain").notNull(),
+  domainVerified: boolean("domain_verified"),
+});
+
+export const scimProvider = auth.table("scim_provider", {
+  id: text("id").primaryKey(),
+  providerId: text("provider_id").notNull().unique(),
+  scimToken: text("scim_token").notNull().unique(),
+  organizationId: text("organization_id"),
+  userId: text("user_id"),
+});
 
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
+  passkeys: many(passkey),
+  twoFactors: many(twoFactor),
+  cohort_members: many(cohort_member),
   members: many(member),
-  teamMembers: many(teamMember),
+  invitations: many(invitation),
+  ssoProviders: many(ssoProvider),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -241,12 +261,43 @@ export const accountRelations = relations(account, ({ one }) => ({
   }),
 }));
 
+export const passkeyRelations = relations(passkey, ({ one }) => ({
+  user: one(user, {
+    fields: [passkey.userId],
+    references: [user.id],
+  }),
+}));
+
+export const twoFactorRelations = relations(twoFactor, ({ one }) => ({
+  user: one(user, {
+    fields: [twoFactor.userId],
+    references: [user.id],
+  }),
+}));
+
 export const organizationRelations = relations(organization, ({ many }) => ({
+  cohorts: many(cohort),
   members: many(member),
   invitations: many(invitation),
-  cohorts: many(cohort),
-  ssoProviders: many(ssoProvider),
-  scimProviders: many(scimProvider),
+}));
+
+export const cohortRelations = relations(cohort, ({ one, many }) => ({
+  organization: one(organization, {
+    fields: [cohort.organizationId],
+    references: [organization.id],
+  }),
+  cohort_members: many(cohort_member),
+}));
+
+export const cohort_memberRelations = relations(cohort_member, ({ one }) => ({
+  cohort: one(cohort, {
+    fields: [cohort_member.teamId],
+    references: [cohort.id],
+  }),
+  user: one(user, {
+    fields: [cohort_member.userId],
+    references: [user.id],
+  }),
 }));
 
 export const memberRelations = relations(member, ({ one }) => ({
@@ -265,27 +316,8 @@ export const invitationRelations = relations(invitation, ({ one }) => ({
     fields: [invitation.organizationId],
     references: [organization.id],
   }),
-  inviter: one(user, {
-    fields: [invitation.inviterId],
-    references: [user.id],
-  }),
-}));
-
-export const cohortRelations = relations(cohort, ({ one, many }) => ({
-  organization: one(organization, {
-    fields: [cohort.organizationId],
-    references: [organization.id],
-  }),
-  teamMembers: many(teamMember),
-}));
-
-export const teamMemberRelations = relations(teamMember, ({ one }) => ({
-  cohort: one(cohort, {
-    fields: [teamMember.teamId],
-    references: [cohort.id],
-  }),
   user: one(user, {
-    fields: [teamMember.userId],
+    fields: [invitation.inviterId],
     references: [user.id],
   }),
 }));
@@ -295,15 +327,15 @@ export const ssoProviderRelations = relations(ssoProvider, ({ one }) => ({
     fields: [ssoProvider.userId],
     references: [user.id],
   }),
-  organization: one(organization, {
-    fields: [ssoProvider.organizationId],
-    references: [organization.id],
-  }),
 }));
 
 export const scimProviderRelations = relations(scimProvider, ({ one }) => ({
   organization: one(organization, {
     fields: [scimProvider.organizationId],
     references: [organization.id],
+  }),
+  user: one(user, {
+    fields: [scimProvider.userId],
+    references: [user.id],
   }),
 }));
