@@ -8,16 +8,21 @@ loadEnvConfig(projectDir);
 export const env = createEnv({
   server: {
     DATABASE_URL: z.string().min(1),
+
     BETTER_AUTH_SECRET: z.string().min(32),
+
     RESEND_API_KEY: z.string().min(1),
-    EMAIL_FROM: z.string().min(1),
-    BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
-    HEALTH_IP_ALLOWLIST: z.string().min(1).optional(),
+    RESEND_EMAIL_FROM: z.string().min(1),
+
     GOOGLE_CLIENT_ID: z.string().min(1),
     GOOGLE_CLIENT_SECRET: z.string().min(1),
     LINKEDIN_CLIENT_ID: z.string().min(1),
     LINKEDIN_CLIENT_SECRET: z.string().min(1),
+
+    TRIGGER_SECRET_KEY: z.string().min(1),
     TRIGGER_PROJECT_REF: z.string().min(1),
+
+    HEALTH_IP_ALLOWLIST: z.string().min(1).optional(),
     NODE_ENV: z
       .enum(["development", "production", "test"])
       .default("development"),
