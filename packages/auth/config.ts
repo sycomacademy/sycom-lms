@@ -4,7 +4,7 @@ import { sso } from "@better-auth/sso";
 import { APIError, type User } from "better-auth";
 import { admin, organization } from "better-auth/plugins";
 import { twoFactor } from "better-auth/plugins/two-factor";
-import type { UserRole } from "@/packages/db/helper";
+import type { UserRole } from "@/packages/db/schema/auth";
 import { render } from "@/packages/email/render";
 import { sendEmail } from "@/packages/email/resend";
 import { ResetPasswordEmail } from "@/packages/email/templates/reset-password";

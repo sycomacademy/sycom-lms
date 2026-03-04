@@ -11,6 +11,7 @@ import {
   memberRelations,
   organization,
   organizationRelations,
+  organizationRoleEnum,
   scimProvider,
   scimProviderRelations,
   session,
@@ -19,10 +20,18 @@ import {
   ssoProviderRelations,
   user,
   userRelations,
+  userRoleEnum,
   verification,
 } from "./auth";
+import {
+  mediaAsset,
+  storageFolderEnum,
+  storageResourceTypeEnum,
+} from "./storage";
 
 const schema = {
+  userRoleEnum,
+  organizationRoleEnum,
   account,
   accountRelations,
   cohort,
@@ -44,6 +53,11 @@ const schema = {
   user,
   userRelations,
   verification,
+
+  // storage
+  mediaAsset,
+  storageFolderEnum,
+  storageResourceTypeEnum,
 };
 
 export { schema };

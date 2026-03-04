@@ -134,7 +134,10 @@ export function FileUploader(props: FileUploaderProps) {
           {
             loading: `Uploading ${target}...`,
             success: `${target} uploaded`,
-            error: `Failed to upload ${target}`,
+            error: (error) =>
+              error instanceof Error
+                ? `Failed to upload ${target}: ${error.message}`
+                : `Failed to upload ${target}`,
           }
         );
       }
@@ -206,6 +209,7 @@ export function FileUploader(props: FileUploaderProps) {
               <div className="flex flex-col items-center justify-center gap-3 sm:px-5">
                 <div className="rounded-full border border-dashed p-2.5">
                   <UploadIcon
+                    animateOnHover
                     aria-hidden="true"
                     className="size-5 text-muted-foreground"
                   />
@@ -231,7 +235,7 @@ export function FileUploader(props: FileUploaderProps) {
             {files?.map((file, index) => (
               <FileCard
                 file={file}
-                key={`${file.name}-${file.lastModified}`}
+                key={`${file.name}-${Date.now()}`}
                 onRemove={() => onRemove(index)}
                 progress={progresses?.[file.name]}
               />
@@ -274,7 +278,7 @@ function FileCard({ file, progress, onRemove }: FileCardProps) {
           type="button"
           variant="outline"
         >
-          <XIcon aria-hidden="true" className="size-4" />
+          <XIcon animateOnTap aria-hidden="true" className="size-4" />
           <span className="sr-only">Remove file</span>
         </Button>
       </div>
