@@ -21,6 +21,7 @@ import { CommandDemo } from "./demo/command-demo";
 import { ContextMenuDemo } from "./demo/context-menu-demo";
 import { DialogDemo } from "./demo/dialog-demo";
 import { DrawerDemo } from "./demo/drawer-demo";
+import { FileUploaderDemo } from "./demo/file-uploader-demo";
 import { FormDemo } from "./demo/form-demo";
 import { HoverCardDemo } from "./demo/hover-card-demo";
 import { InputDemo } from "./demo/input-demo";
@@ -183,6 +184,12 @@ export const componentRegistry: Record<string, ComponentConfig> = {
     component: DrawerDemo,
     type: "registry:ui",
     href: "/style-guide/drawer",
+  },
+  "file-uploader": {
+    name: "File Uploader",
+    component: FileUploaderDemo,
+    type: "registry:block",
+    href: "/style-guide/file-uploader",
   },
   form: {
     name: "Form",
