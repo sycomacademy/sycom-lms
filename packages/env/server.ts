@@ -15,6 +15,8 @@ export const env = createEnv({
     HEALTH_IP_ALLOWLIST: z.string().min(1).optional(),
     GOOGLE_CLIENT_ID: z.string().min(1),
     GOOGLE_CLIENT_SECRET: z.string().min(1),
+    LINKEDIN_CLIENT_ID: z.string().min(1),
+    LINKEDIN_CLIENT_SECRET: z.string().min(1),
     TRIGGER_PROJECT_REF: z.string().min(1),
     NODE_ENV: z
       .enum(["development", "production", "test"])

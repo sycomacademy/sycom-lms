@@ -15,6 +15,7 @@ export const analyticsEvents = {
   oauthSignInStarted: "auth:oauth_sign_in_started",
   oauthSignInFailed: "auth:oauth_sign_in_failed",
   oauthSignInSuccess: "auth:oauth_sign_in_success",
+  ssoSignInSuccess: "auth:sso_sign_in_success",
 
   // Course
   lessonStarted: "course:lesson_started",

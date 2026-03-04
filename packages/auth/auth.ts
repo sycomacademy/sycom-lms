@@ -1,99 +1,52 @@
-/** biome-ignore-all lint/complexity/noVoid: we don't want to await these functions. see https://www.better-auth.com/docs/concepts/email#1-during-sign-up */
-
 import { dash } from "@better-auth/infra";
-import { APIError, betterAuth, type User } from "better-auth";
+import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
-import {
-  admin as adminPlugin,
-  lastLoginMethod,
-  organization,
-} from "better-auth/plugins";
-import { and, eq, ne } from "drizzle-orm";
+import { lastLoginMethod } from "better-auth/plugins";
 import { db } from "@/packages/db";
-import type { UserRole } from "@/packages/db/helper";
 import { schema } from "@/packages/db/schema";
-import { session } from "@/packages/db/schema/auth";
-import { render } from "@/packages/email/render";
-import { sendEmail } from "@/packages/email/resend";
-import { ResetPasswordEmail } from "@/packages/email/templates/reset-password";
-import { VerifyEmail } from "@/packages/email/templates/verify-email";
 import { env } from "@/packages/env/server";
-import { getWebsiteUrl } from "@/packages/env/utils";
-import { welcomeEmailTask } from "@/packages/trigger/tasks/welcome-email";
-import { triggerJob } from "@/packages/trigger/trigger-job";
 import {
-  contentCreator,
-  orgAc,
-  orgAdmin,
-  orgAuditor,
-  orgOwner,
-  orgStudent,
-  orgTeacher,
-  platformAc,
-  platformAdmin,
-  platformStudent,
-} from "./permissions";
-
-const baseURL = getWebsiteUrl();
-
-const sendVerificationEmail = async ({
-  user,
-  url,
-}: {
-  user: User;
-  url: string;
-}) => {
-  const { error } = await sendEmail({
-    to: user.email,
-    subject: "Verify your email",
-    html: await render(VerifyEmail({ name: user.name, verifyUrl: url })),
-  });
-  if (error) {
-    throw new APIError("BAD_REQUEST", {
-      message: `Error sending verification email: ${error.message}`,
-    });
-  }
-};
-
-const sendResetPassword = async ({
-  user,
-  url,
-}: {
-  user: User;
-  url: string;
-}) => {
-  const { error } = await sendEmail({
-    to: user.email,
-    subject: "Reset your password",
-    html: await render(ResetPasswordEmail({ name: user.name, resetUrl: url })),
-  });
-  if (error) {
-    throw new APIError("BAD_REQUEST", {
-      message: `Error sending reset password email: ${error.message}`,
-    });
-  }
-};
-
-const afterEmailVerification = async (user: User) => {
-  triggerJob({
-    task: welcomeEmailTask,
-    payload: {
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-    },
-  });
-};
+  adminPlugin,
+  afterEmailVerification,
+  baseURL,
+  organizationPlugin,
+  passkeyPlugin,
+  scimPlugin,
+  sendResetPassword,
+  sendVerificationEmail,
+  ssoPlugin,
+  twoFactorPlugin,
+} from "./config";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
     schema,
   }),
+  appName: "Sycom Solutions LMS",
   baseURL,
+  trustedOrigins: [baseURL], // TODO: Add trusted origins
   advanced: {
-    useSecureCookies: process.env.NODE_ENV === "production",
+    useSecureCookies: env.NODE_ENV === "production",
+    ipAddress: {
+      // Use Vercel's forwarded-for header in production, Cloudflare's in development (for tunneling)
+      ipAddressHeaders: [
+        process.env.NODE_ENV === "production"
+          ? "x-vercel-forwarded-for"
+          : "cf-connecting-ip",
+        // "x-forwarded-for",
+      ],
+    },
+  },
+  experimental: {
+    joins: true,
+  },
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google", "linkedin"],
+    },
   },
   session: {
     expiresIn: 60 * 60 * 24,
@@ -102,22 +55,18 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        after: async (user) => {
-          console.log("user created", user);
+        after: async (_user) => {
+          //add user to public org
+          //add user to public cohort
+          //create profile field
         },
       },
     },
     session: {
       create: {
-        after: async (createdSession) => {
-          await db
-            .delete(session)
-            .where(
-              and(
-                eq(session.userId, createdSession.userId),
-                ne(session.id, createdSession.id)
-              )
-            );
+        after: async (_createdSession) => {
+          //delete other sessions
+          // if no active organization, set active organization and cohort to public org and cohorts
         },
       },
     },
@@ -129,7 +78,6 @@ export const auth = betterAuth({
     sendResetPassword,
     customSyntheticUser: ({ coreFields, additionalFields, id }) => ({
       ...coreFields,
-      // Admin plugin fields (must match schema order for enumeration protection)
       role: "platform_student",
       banned: false,
       banReason: null,
@@ -150,50 +98,20 @@ export const auth = betterAuth({
       clientSecret: env.GOOGLE_CLIENT_SECRET,
       prompt: "select_account",
     },
+    linkedin: {
+      clientId: env.LINKEDIN_CLIENT_ID,
+      clientSecret: env.LINKEDIN_CLIENT_SECRET,
+    },
   },
   plugins: [
     dash(),
     nextCookies(),
     lastLoginMethod(),
-    adminPlugin({
-      ac: platformAc,
-      roles: {
-        platform_admin: platformAdmin,
-        content_creator: contentCreator,
-        platform_student: platformStudent,
-      },
-      defaultRole: "platform_student",
-    }),
-    organization({
-      ac: orgAc,
-      roles: {
-        owner: orgOwner,
-        admin: orgAdmin,
-        auditor: orgAuditor,
-        teacher: orgTeacher,
-        student: orgStudent,
-      },
-      teams: {
-        enabled: true,
-      },
-      schema: {
-        team: {
-          modelName: "cohort",
-        },
-      },
-      allowUserToCreateOrganization: async (user) => {
-        // Only platform admins can create organizations
-        const role = user.role as UserRole;
-        return role === "platform_admin";
-      },
-      sendInvitationEmail: async (data) => {
-        const inviteLink = `${baseURL}/invite/${data.id}`;
-        await sendEmail({
-          to: data.email,
-          subject: `You've been invited to join ${data.organization.name}`,
-          html: `<p>You've been invited to join <strong>${data.organization.name}</strong> by ${data.inviter.user.name}.</p><p><a href="${inviteLink}">Accept invitation</a></p>`,
-        });
-      },
-    }),
+    passkeyPlugin,
+    twoFactorPlugin,
+    adminPlugin,
+    organizationPlugin,
+    ssoPlugin,
+    scimPlugin,
   ],
 });

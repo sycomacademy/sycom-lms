@@ -34,7 +34,37 @@ export function SignInForm() {
     defaultValues: { email: "", password: "", rememberMe: false },
   });
 
+  const attemptSsoSignIn = async (email: string): Promise<boolean> => {
+    try {
+      const { error } = await authClient.signIn.sso({
+        email,
+        callbackURL: "/dashboard",
+      });
+      if (error) {
+        return false;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const onSubmit = async (data: SignInInput) => {
+    const ssoRedirected = await attemptSsoSignIn(data.email);
+    if (ssoRedirected) {
+      track({
+        event: analyticsEvents.ssoSignInSuccess,
+        email: data.email,
+      });
+      toastManager.add({
+        description: "Signed in successfully",
+        title: "Signed in",
+        type: "success",
+      });
+      router.push("/dashboard");
+      return;
+    }
+
     const { error } = await authClient.signIn.email({
       email: data.email,
       password: data.password,
@@ -63,7 +93,7 @@ export function SignInForm() {
       title: "Signed in",
       type: "success",
     });
-    router.push("/");
+    router.push("/dashboard");
   };
 
   return (

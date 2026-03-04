@@ -175,6 +175,49 @@ export const teamMember = pgTable(
   ]
 );
 
+// ── SSO Provider (Better Auth SSO plugin) ──
+
+export const ssoProvider = pgTable(
+  "sso_provider",
+  {
+    id: text("id").primaryKey(),
+    issuer: text("issuer").notNull(),
+    domain: text("domain").notNull(),
+    oidcConfig: text("oidc_config"),
+    samlConfig: text("saml_config"),
+    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    providerId: text("provider_id").notNull().unique(),
+    organizationId: text("organization_id"),
+    domainVerified: boolean("domain_verified"),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    index("ssoProvider_providerId_idx").on(table.providerId),
+    index("ssoProvider_domain_idx").on(table.domain),
+    index("ssoProvider_organizationId_idx").on(table.organizationId),
+  ]
+);
+
+// ── SCIM Provider (Better Auth SCIM plugin) ──
+
+export const scimProvider = pgTable(
+  "scim_provider",
+  {
+    id: text("id").primaryKey(),
+    providerId: text("provider_id").notNull().unique(),
+    scimToken: text("scim_token").notNull().unique(),
+    organizationId: text("organization_id"),
+    userId: text("user_id"),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    index("scimProvider_providerId_idx").on(table.providerId),
+    index("scimProvider_organizationId_idx").on(table.organizationId),
+  ]
+);
+
 // ── Relations ──
 
 export const userRelations = relations(user, ({ many }) => ({
@@ -202,6 +245,8 @@ export const organizationRelations = relations(organization, ({ many }) => ({
   members: many(member),
   invitations: many(invitation),
   cohorts: many(cohort),
+  ssoProviders: many(ssoProvider),
+  scimProviders: many(scimProvider),
 }));
 
 export const memberRelations = relations(member, ({ one }) => ({
@@ -242,5 +287,23 @@ export const teamMemberRelations = relations(teamMember, ({ one }) => ({
   user: one(user, {
     fields: [teamMember.userId],
     references: [user.id],
+  }),
+}));
+
+export const ssoProviderRelations = relations(ssoProvider, ({ one }) => ({
+  user: one(user, {
+    fields: [ssoProvider.userId],
+    references: [user.id],
+  }),
+  organization: one(organization, {
+    fields: [ssoProvider.organizationId],
+    references: [organization.id],
+  }),
+}));
+
+export const scimProviderRelations = relations(scimProvider, ({ one }) => ({
+  organization: one(organization, {
+    fields: [scimProvider.organizationId],
+    references: [organization.id],
   }),
 }));
