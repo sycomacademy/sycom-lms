@@ -87,7 +87,7 @@ export const passkeyPlugin = passkey({
 });
 
 export const twoFactorPlugin = twoFactor({
-  issuer: "Sycom LMS",
+  issuer: "Sycom Academy LMS",
 });
 
 export const adminPlugin = admin({
@@ -125,32 +125,33 @@ export const organizationPlugin = organization({
     return role === "platform_admin";
   },
   sendInvitationEmail: async (data) => {
-    const inviteLink = `${baseURL}/invite/${data.id}`;
-    await sendEmail({
-      to: data.email,
-      subject: `You've been invited to join ${data.organization.name}`,
-      html: `<p>You've been invited to join <strong>${data.organization.name}</strong> by ${data.inviter.user.name}.</p><p><a href="${inviteLink}">Accept invitation</a></p>`,
-    });
+    console.log("sendInvitationEmail", data);
+    // const inviteLink = `${baseURL}/invite/${data.id}`;
+    // await sendEmail({
+    //   to: data.email,
+    //   subject: `You've been invited to join ${data.organization.name}`,
+    //   html: `<p>You've been invited to join <strong>${data.organization.name}</strong> by ${data.inviter.user.name}.</p><p><a href="${inviteLink}">Accept invitation</a></p>`,
+    // });
   },
 });
 
 export const ssoPlugin = sso({
-  organizationProvisioning: {
-    disabled: false,
-    defaultRole: "member" as const,
-    getRole: async ({ userInfo }) => {
-      const idpRole = userInfo?.attributes?.role as string | undefined;
-      if (idpRole === "admin") {
-        return "admin";
-      }
-      const customRoleMap: Record<string, string> = {
-        teacher: "teacher",
-        auditor: "auditor",
-        student: "student",
-      };
-      return (customRoleMap[idpRole ?? ""] ?? "student") as "member";
-    },
-  },
+  // organizationProvisioning: {
+  //   disabled: false,
+  //   defaultRole: "member" as const,
+  //   getRole: async ({ userInfo }) => {
+  //     const idpRole = userInfo?.attributes?.role as string | undefined;
+  //     if (idpRole === "admin") {
+  //       return "admin";
+  //     }
+  //     const customRoleMap: Record<string, string> = {
+  //       teacher: "teacher",
+  //       auditor: "auditor",
+  //       student: "student",
+  //     };
+  //     return (customRoleMap[idpRole ?? ""] ?? "student") as "member";
+  //   },
+  // },
   domainVerification: {
     enabled: true,
   },
@@ -162,15 +163,15 @@ export const ssoPlugin = sso({
 export const scimPlugin = scim({
   providerOwnership: { enabled: true },
   storeSCIMToken: "hashed",
-  beforeSCIMTokenGenerated: async ({ user, member: orgMember }) => {
-    const userWithRole = user as typeof user & { role?: string };
-    const isPlatformAdmin = userWithRole.role === "platform_admin";
-    const isOrgAdmin =
-      orgMember?.role === "owner" || orgMember?.role === "admin";
-    if (!(isPlatformAdmin || isOrgAdmin)) {
-      throw new APIError("FORBIDDEN", {
-        message: "Only platform admins or org admins can generate SCIM tokens",
-      });
-    }
-  },
+  // beforeSCIMTokenGenerated: async ({ user, member: orgMember }) => {
+  //   const userWithRole = user as typeof user & { role?: string };
+  //   const isPlatformAdmin = userWithRole.role === "platform_admin";
+  //   const isOrgAdmin =
+  //     orgMember?.role === "owner" || orgMember?.role === "admin";
+  //   if (!(isPlatformAdmin || isOrgAdmin)) {
+  //     throw new APIError("FORBIDDEN", {
+  //       message: "Only platform admins or org admins can generate SCIM tokens",
+  //     });
+  //   }
+  // },
 });
