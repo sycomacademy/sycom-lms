@@ -15,6 +15,7 @@ concurrency:
 env:
   NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
   NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+  DATABASE_URL: ${{ env.DATABASE_URL }}
 
 jobs:
   # ── On PR open/sync: temp branches + generate/migrate + compatibility check ──
@@ -47,14 +48,6 @@ jobs:
 
       - name: Generate and run migrations on head branch
         run: bun run db:generate && bun run db:migrate
-        env:
-          DATABASE_URL: ${{ steps.head_branch.outputs.db_url_pooled }}
-          BETTER_AUTH_SECRET: "ci-placeholder-secret-that-is-at-least-32-characters-long"
-          NEXT_PUBLIC_APP_URL: "https://placeholder.vercel.app"
-          RESEND_API_KEY: "placeholder"
-          EMAIL_FROM: "noreply@placeholder.local"
-          SENDGRID_API_KEY: "placeholder"
-          SENDGRID_FROM: "noreply@placeholder.local"
 
       - name: Create temp Neon branch (compat test)
         id: compat_branch
@@ -72,14 +65,6 @@ jobs:
 
       - name: Apply target schema to compat branch
         run: bun run db:generate && bun run db:migrate
-        env:
-          DATABASE_URL: ${{ steps.compat_branch.outputs.db_url_pooled }}
-          BETTER_AUTH_SECRET: "ci-placeholder-secret-that-is-at-least-32-characters-long"
-          NEXT_PUBLIC_APP_URL: "https://placeholder.vercel.app"
-          RESEND_API_KEY: "placeholder"
-          EMAIL_FROM: "noreply@placeholder.local"
-          SENDGRID_API_KEY: "placeholder"
-          SENDGRID_FROM: "noreply@placeholder.local"
 
       - name: Checkout head ref again
         uses: actions/checkout@v4
@@ -91,14 +76,6 @@ jobs:
 
       - name: Apply head migrations to compat branch (mergeability check)
         run: bun run db:migrate
-        env:
-          DATABASE_URL: ${{ steps.compat_branch.outputs.db_url_pooled }}
-          BETTER_AUTH_SECRET: "ci-placeholder-secret-that-is-at-least-32-characters-long"
-          NEXT_PUBLIC_APP_URL: "https://placeholder.vercel.app"
-          RESEND_API_KEY: "placeholder"
-          EMAIL_FROM: "noreply@placeholder.local"
-          SENDGRID_API_KEY: "placeholder"
-          SENDGRID_FROM: "noreply@placeholder.local"
 
       - name: Delete temp Neon branch (head)
         if: always()
@@ -176,11 +153,3 @@ jobs:
       - name: Generate and run migrations on target Neon
         if: steps.diff.outputs.changed == 'true'
         run: bun run db:generate && bun run db:migrate
-        env:
-          DATABASE_URL: ${{ github.event.pull_request.base.ref == 'main' && secrets.DATABASE_URL_MAIN || secrets.DATABASE_URL_STAGING }}
-          BETTER_AUTH_SECRET: "ci-placeholder-secret-that-is-at-least-32-characters-long"
-          NEXT_PUBLIC_APP_URL: "https://placeholder.vercel.app"
-          RESEND_API_KEY: "placeholder"
-          EMAIL_FROM: "noreply@placeholder.local"
-          SENDGRID_API_KEY: "placeholder"
-          SENDGRID_FROM: "noreply@placeholder.local"
