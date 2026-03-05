@@ -2,10 +2,10 @@
 
 import type { LucideIcon } from "lucide-react";
 import {
+  BarChart2Icon,
   BookOpenIcon,
   GraduationCapIcon,
   HeadphonesIcon,
-  HelpCircleIcon,
   LayoutDashboardIcon,
   LibraryIcon,
   SettingsIcon,
@@ -14,12 +14,6 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentProps } from "react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Sidebar,
   SidebarContent,
@@ -33,11 +27,13 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { authClient } from "@/packages/auth/auth-client";
 import { useDelayedValue } from "@/packages/hooks/use-delayed-value";
 import { useIsMobile } from "@/packages/hooks/use-mobile";
 import { useUserQuery } from "@/packages/hooks/use-user";
 import { cn } from "@/packages/utils/cn";
 import { capitalize } from "@/packages/utils/string";
+import { OrgSwitcher } from "./org-switcher";
 
 interface NavItem {
   href: string;
@@ -45,68 +41,175 @@ interface NavItem {
   icon: LucideIcon;
 }
 
-/** Role-keyed sidebar config: each role has groups (label → array of links). No shared main group. */
-const SIDEBAR_NAV_CONFIG: Record<
-  "student" | "instructor" | "admin",
-  Record<string, NavItem[]>
-> = {
-  student: {
-    main: [
+// ── Shared item groups ─────────────────────────────────────────────────────
+
+const GENERAL: NavItem[] = [
+  { href: "/dashboard/support", label: "Support", icon: HeadphonesIcon },
+  { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
+];
+
+// ── Nav config keyed by effective role ────────────────────────────────────
+
+type NavRole =
+  | "platform_admin"
+  | "content_creator"
+  | "platform_student"
+  | "org_owner"
+  | "org_admin"
+  | "org_teacher"
+  | "org_auditor"
+  | "org_student";
+
+/**
+ * Groups displayed in the sidebar per effective role.
+ * Keys become the section labels (capitalized with spaces).
+ */
+const NAV: Record<NavRole, Record<string, NavItem[]>> = {
+  // ── Platform roles ──────────────────────────────────────────────────────
+  platform_admin: {
+    platform: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
-      { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
-      { href: "/dashboard/journey", label: "My courses", icon: BookOpenIcon },
-      { href: "/dashboard/support", label: "Support", icon: HeadphonesIcon },
-      { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
+      { href: "/dashboard/admin", label: "Admin", icon: ShieldIcon },
+      {
+        href: "/dashboard/admin/reports",
+        label: "Reports",
+        icon: BarChart2Icon,
+      },
     ],
+    courses: [
+      {
+        href: "/dashboard/courses",
+        label: "All Courses",
+        icon: GraduationCapIcon,
+      },
+    ],
+    general: GENERAL,
   },
-  instructor: {
-    main: [
+
+  content_creator: {
+    workspace: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
       {
         href: "/dashboard/courses",
         label: "My Courses",
         icon: GraduationCapIcon,
       },
-      // { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
-      { href: "/dashboard/support", label: "Support", icon: HeadphonesIcon },
-      { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
     ],
+    general: GENERAL,
   },
-  admin: {
-    admin: [
+
+  platform_student: {
+    learning: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
-      { href: "/dashboard/admin", label: "Admin", icon: ShieldIcon },
-      { href: "/dashboard/courses", label: "Courses", icon: GraduationCapIcon },
+      { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
+      {
+        href: "/dashboard/journey",
+        label: "My Courses",
+        icon: BookOpenIcon,
+      },
     ],
-    other: [
-      { href: "/dashboard/support", label: "Support", icon: HeadphonesIcon },
-      { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
+    general: GENERAL,
+  },
+
+  // ── Org roles ────────────────────────────────────────────────────────────
+  org_owner: {
+    overview: [
+      { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
     ],
+    courses: [
+      {
+        href: "/dashboard/courses",
+        label: "Courses",
+        icon: GraduationCapIcon,
+      },
+    ],
+    general: GENERAL,
+  },
+
+  org_admin: {
+    overview: [
+      { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
+    ],
+    courses: [
+      {
+        href: "/dashboard/courses",
+        label: "Courses",
+        icon: GraduationCapIcon,
+      },
+    ],
+    general: GENERAL,
+  },
+
+  org_teacher: {
+    teaching: [
+      { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
+      {
+        href: "/dashboard/courses",
+        label: "My Courses",
+        icon: GraduationCapIcon,
+      },
+    ],
+    general: GENERAL,
+  },
+
+  org_auditor: {
+    overview: [
+      { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
+      {
+        href: "/dashboard/admin/reports",
+        label: "Reports",
+        icon: BarChart2Icon,
+      },
+    ],
+    general: GENERAL,
+  },
+
+  org_student: {
+    learning: [
+      { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
+      { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
+      {
+        href: "/dashboard/journey",
+        label: "My Courses",
+        icon: BookOpenIcon,
+      },
+    ],
+    general: GENERAL,
   },
 };
 
-/** Icon size one step up from default (size-4 → size-5) in both states. */
+// ── Styles ────────────────────────────────────────────────────────────────
+
 const menuButtonIconClass = "[&_svg]:size-5";
 
-/** Keep menu button height/padding when collapsed, center icon, hide label to avoid letter peek. */
 const menuButtonCollapseClass =
   "group-data-[collapsible=icon]:size-auto! group-data-[collapsible=icon]:h-12! group-data-[collapsible=icon]:min-h-12! group-data-[collapsible=icon]:w-full! group-data-[collapsible=icon]:p-2!  group-data-[collapsible=icon]:[&>span:last-child]:hidden";
 
-/** Keep group label visible and centered when sidebar is collapsed (no layout shift). */
 const groupLabelCollapseClass =
-  "group-data-[collapsible=icon]:mt-0 group-data-[collapsible=icon]:opacity-100 ";
+  "group-data-[collapsible=icon]:mt-0 group-data-[collapsible=icon]:opacity-100";
 
-const DEFAULT_ROLE: keyof typeof SIDEBAR_NAV_CONFIG = "student";
+// ── Component ─────────────────────────────────────────────────────────────
+
+const PUBLIC_ORG_SLUG = "platform";
 
 export function AppSidebar() {
-  const { role } = useUserQuery();
+  const { user } = useUserQuery();
   const { open } = useSidebar();
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const isOpen = useDelayedValue(open, 195);
-  const roleKey =
-    role === "instructor" || role === "admin" ? role : DEFAULT_ROLE;
-  const navGroups = SIDEBAR_NAV_CONFIG[roleKey];
+
+  const { data: orgs } = authClient.useListOrganizations();
+  const { data: activeMember } = authClient.useActiveMember();
+
+  const activeOrg = orgs?.find((o) => o.id === activeMember?.organizationId);
+  const isPublicOrg = !activeOrg || activeOrg.slug === PUBLIC_ORG_SLUG;
+
+  const effectiveRole: NavRole = isPublicOrg
+    ? ((user?.role as NavRole | undefined) ?? "platform_student")
+    : ((activeMember?.role as NavRole | undefined) ?? "org_student");
+
+  const navGroups = NAV[effectiveRole];
 
   return (
     <Sidebar
@@ -124,6 +227,7 @@ export function AppSidebar() {
           </span>
         </Link>
       </SidebarHeader>
+
       <SidebarContent>
         {Object.entries(navGroups).map(([groupLabel, items]) => (
           <SidebarGroup key={groupLabel}>
@@ -165,37 +269,9 @@ export function AppSidebar() {
           </SidebarGroup>
         ))}
       </SidebarContent>
+
       <SidebarFooter>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <SidebarMenuButton
-                className={cn(
-                  "text-sm",
-                  menuButtonIconClass,
-                  menuButtonCollapseClass,
-                  !isOpen && "justify-center"
-                )}
-                size="lg"
-                tooltip="Help & support"
-              >
-                <HelpCircleIcon />
-                <span>Help</span>
-              </SidebarMenuButton>
-            }
-          />
-          <DropdownMenuContent align="start" side="right" sideOffset={4}>
-            <DropdownMenuItem render={<Link href="/dashboard/support" />}>
-              Help
-            </DropdownMenuItem>
-            <DropdownMenuItem render={<Link href="/dashboard/support" />}>
-              Contact us
-            </DropdownMenuItem>
-            <DropdownMenuItem render={<Link href="/dashboard/support" />}>
-              FAQ
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <OrgSwitcher />
       </SidebarFooter>
     </Sidebar>
   );

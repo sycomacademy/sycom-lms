@@ -24,7 +24,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/packages/auth/auth-client";
 import { useUserQuery } from "@/packages/hooks/use-user";
-import { capitalize } from "@/packages/utils/string";
 import { useKeyboardShortcutLabels } from "../layout/keyboard-shortcuts";
 import { toastManager } from "../ui/toast";
 
@@ -37,10 +36,26 @@ const {
   ThemeToggleIcon,
 } = Icon;
 
+const PLATFORM_PREFIX_RE = /^platform_/;
+const ORG_PREFIX_RE = /^org_/;
+const UNDERSCORE_RE = /_/g;
+const WORD_START_RE = /\b\w/g;
+
+function formatRole(role: string, stripPrefix: "platform" | "org"): string {
+  const prefix =
+    stripPrefix === "platform" ? PLATFORM_PREFIX_RE : ORG_PREFIX_RE;
+  return role
+    .replace(prefix, "")
+    .replace(UNDERSCORE_RE, " ")
+    .replace(WORD_START_RE, (c) => c.toUpperCase());
+}
+
 export function DashboardUserMenu() {
   const router = useRouter();
   const { profile, user, isPending } = useUserQuery();
   const { setTheme, resolvedTheme } = useTheme();
+  const { data: orgs } = authClient.useListOrganizations();
+  const { data: activeMember } = authClient.useActiveMember();
   const shortcuts = useKeyboardShortcutLabels();
   const [signOutPending, setSignOutPending] = useState(false);
   const [userIconRef, userHover] = useAnimatedIcon();
@@ -86,6 +101,15 @@ export function DashboardUserMenu() {
   const logoutDisabled = isPending || signOutPending;
   const logoutLabel = signOutPending ? "Signing out…" : "Log out";
 
+  const activeOrg = orgs?.find((o) => o.id === activeMember?.organizationId);
+  const isPublicOrg = !activeOrg || activeOrg.slug === "platform";
+  let roleBadge: string;
+  if (isPublicOrg || !activeMember) {
+    roleBadge = formatRole(user.role ?? "platform_student", "platform");
+  } else {
+    roleBadge = `${formatRole(activeMember.role, "org")} @ ${activeOrg?.name}`;
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -125,7 +149,7 @@ export function DashboardUserMenu() {
               ) : null}
             </div>
             <Badge className="mt-2 text-[10px]" variant="outline">
-              {capitalize(user.role ?? "student")}
+              {roleBadge}
             </Badge>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
