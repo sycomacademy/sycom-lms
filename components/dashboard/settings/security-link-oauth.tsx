@@ -1,9 +1,12 @@
 "use client";
 
-import { Loader2Icon } from "lucide-react";
-import { useState } from "react";
+import { Loader2Icon, Trash2Icon } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toastManager } from "@/components/ui/toast";
+import { authClient } from "@/packages/auth/auth-client";
 
 function GoogleLogo() {
   return (
@@ -62,31 +65,90 @@ const providerConfig: Record<
   linkedin: { label: "LinkedIn", logo: <LinkedInLogo /> },
 };
 
+interface LinkedAccount {
+  id: string;
+  providerId: string;
+}
+
 export function SecurityLinkOAuth() {
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(
     null
   );
+  const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
+  const [loadingAccounts, setLoadingAccounts] = useState(true);
+  const [unlinkingProviderId, setUnlinkingProviderId] = useState<string | null>(
+    null
+  );
+
+  const fetchAccounts = useCallback(async () => {
+    const { data, error } = await authClient.listAccounts();
+    if (error) {
+      toastManager.add({
+        title: "Could not load linked accounts",
+        description: error.message,
+        type: "error",
+      });
+      setLoadingAccounts(false);
+      return;
+    }
+    setLinkedAccounts(
+      (data ?? []).map((a: { id: string; providerId: string }) => ({
+        id: a.id,
+        providerId: a.providerId,
+      }))
+    );
+    setLoadingAccounts(false);
+  }, []);
+
+  useEffect(() => {
+    fetchAccounts();
+  }, [fetchAccounts]);
 
   async function handleLink(provider: OAuthProvider) {
     setLoadingProvider(provider);
-    // const { error } = await authClient.linkSocialAccount({
-    //   provider,
-    //   callbackURL: "/dashboard/settings/security",
-    // });
-    // setLoadingProvider(null);
-    // if (error) {
-    //   toastManager.add({
-    //     title: "Could not link account",
-    //     description: error.message,
-    //     type: "error",
-    //   });
-    //   return;
-    // }
-    // toastManager.add({
-    //   title: `${providerConfig[provider].label} linked`,
-    //   type: "success",
-    // });
+    const { error } = await authClient.linkSocial({
+      provider,
+      callbackURL: "/dashboard/settings/security",
+    });
+    setLoadingProvider(null);
+    if (error) {
+      toastManager.add({
+        title: "Could not link account",
+        description: error.message,
+        type: "error",
+      });
+      return;
+    }
+    toastManager.add({
+      title: `${providerConfig[provider].label} linked`,
+      type: "success",
+    });
+    fetchAccounts();
   }
+
+  async function handleUnlink(providerId: string) {
+    setUnlinkingProviderId(providerId);
+    const { error } = await authClient.unlinkAccount({ providerId });
+    setUnlinkingProviderId(null);
+    if (error) {
+      toastManager.add({
+        title: "Could not unlink account",
+        description: error.message,
+        type: "error",
+      });
+      return;
+    }
+    toastManager.add({
+      title: "Account unlinked",
+      type: "success",
+    });
+    fetchAccounts();
+  }
+
+  const isLinked = (provider: OAuthProvider) =>
+    linkedAccounts.some(
+      (a) => a.providerId === provider || a.providerId.startsWith(`${provider}`)
+    );
 
   return (
     <Card>
@@ -97,31 +159,65 @@ export function SecurityLinkOAuth() {
           </h3>
           <p className="text-muted-foreground text-xs">
             Sign in with Google or LinkedIn by linking them to this account.
-            OAuth functionality is not yet available.
           </p>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           {(["google", "linkedin"] as const).map((provider) => {
             const config = providerConfig[provider];
             const isLoading = loadingProvider === provider;
+            const linked = isLinked(provider);
+            const providerIdForUnlink = linkedAccounts.find(
+              (a) =>
+                a.providerId === provider ||
+                a.providerId.startsWith(`${provider}`)
+            )?.providerId;
+            const isUnlinking =
+              providerIdForUnlink &&
+              unlinkingProviderId === providerIdForUnlink;
+
             return (
-              <Button
-                disabled
-                key={provider}
-                onClick={() => handleLink(provider)}
-                type="button"
-                variant={"secondary"}
-              >
-                {isLoading ? (
-                  <Loader2Icon className="size-4 animate-spin" />
-                ) : (
-                  config.logo
-                )}
-                Link {config.label}
-              </Button>
+              <div className="flex items-center gap-2" key={provider}>
+                <Button
+                  disabled={isLoading}
+                  key={provider}
+                  onClick={() => handleLink(provider)}
+                  type="button"
+                  variant={linked ? "outline" : "secondary"}
+                >
+                  {isLoading ? (
+                    <Loader2Icon className="size-4 animate-spin" />
+                  ) : (
+                    config.logo
+                  )}
+                  {linked ? "Linked" : "Link"} {config.label}
+                </Button>
+                {linked && providerIdForUnlink ? (
+                  <Button
+                    disabled={!!isUnlinking}
+                    onClick={() => handleUnlink(providerIdForUnlink)}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    {isUnlinking ? (
+                      <Loader2Icon className="size-4 animate-spin" />
+                    ) : (
+                      <Trash2Icon className="size-4" />
+                    )}
+                    <span className="sr-only">Unlink {config.label}</span>
+                  </Button>
+                ) : null}
+              </div>
             );
           })}
         </div>
+        {loadingAccounts && <Skeleton className="mt-4 h-10 w-48" />}
+        {!loadingAccounts && linkedAccounts.length > 0 && (
+          <p className="mt-2 text-muted-foreground text-xs">
+            {linkedAccounts.length} account
+            {linkedAccounts.length !== 1 ? "s" : ""} linked
+          </p>
+        )}
       </CardContent>
     </Card>
   );

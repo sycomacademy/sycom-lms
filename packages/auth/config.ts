@@ -1,15 +1,12 @@
-import { passkey } from "@better-auth/passkey";
 import { scim } from "@better-auth/scim";
 import { sso } from "@better-auth/sso";
 import { APIError, type User } from "better-auth";
 import { admin, organization } from "better-auth/plugins";
-import { twoFactor } from "better-auth/plugins/two-factor";
 import type { UserRole } from "@/packages/db/schema/auth";
 import { render } from "@/packages/email/render";
 import { sendEmail } from "@/packages/email/resend";
 import { ResetPasswordEmail } from "@/packages/email/templates/reset-password";
 import { VerifyEmail } from "@/packages/email/templates/verify-email";
-import { env } from "@/packages/env/server";
 import { getWebsiteUrl } from "@/packages/env/utils";
 import { welcomeEmailTask } from "@/packages/trigger/tasks/welcome-email";
 import { triggerJob } from "@/packages/trigger/trigger-job";
@@ -76,19 +73,6 @@ export const afterEmailVerification = async (user: User) => {
     },
   });
 };
-
-export const passkeyPlugin = passkey({
-  rpID:
-    env.NODE_ENV === "production"
-      ? new URL(getWebsiteUrl()).hostname
-      : "localhost",
-  rpName: "Sycom LMS",
-  origin: getWebsiteUrl(),
-});
-
-export const twoFactorPlugin = twoFactor({
-  issuer: "Sycom Academy LMS",
-});
 
 export const adminPlugin = admin({
   ac: platformAc,

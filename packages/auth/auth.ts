@@ -1,8 +1,9 @@
 import { dash } from "@better-auth/infra";
+import { passkey } from "@better-auth/passkey";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
-import { lastLoginMethod } from "better-auth/plugins";
+import { lastLoginMethod, twoFactor } from "better-auth/plugins";
 import { db } from "@/packages/db";
 import {
   deleteOtherSessionsForUser,
@@ -17,12 +18,10 @@ import {
   afterEmailVerification,
   baseURL,
   organizationPlugin,
-  passkeyPlugin,
   scimPlugin,
   sendResetPassword,
   sendVerificationEmail,
   ssoPlugin,
-  twoFactorPlugin,
 } from "./config";
 
 const authHookLogger = createLoggerWithContext("auth:hook");
@@ -134,8 +133,15 @@ export const auth = betterAuth({
     dash(),
     nextCookies(),
     lastLoginMethod(),
-    passkeyPlugin,
-    twoFactorPlugin,
+    passkey({
+      rpID:
+        env.NODE_ENV === "production" ? new URL(baseURL).hostname : "localhost",
+      rpName: "Sycom LMS",
+      origin: baseURL,
+    }),
+    twoFactor({
+      issuer: "Sycom Academy LMS",
+    }),
     adminPlugin,
     organizationPlugin,
     ssoPlugin,

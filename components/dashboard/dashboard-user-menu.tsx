@@ -1,6 +1,7 @@
 "use client";
 
 import { Facehash } from "facehash";
+import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -134,7 +135,7 @@ export function DashboardUserMenu() {
           </DropdownMenuItem>
           <DropdownMenuItem
             {...settingsHover}
-            render={<Link href="/dashboard/settings" />}
+            render={<Link href={"/dashboard/settings" as Route} />}
           >
             <SettingsIcon ref={settingsIconRef} />
             <span className="flex-1">Settings</span>
@@ -160,7 +161,7 @@ export function DashboardUserMenu() {
           </DropdownMenuItem>
           <DropdownMenuItem
             {...helpHover}
-            render={<Link href="/dashboard/support" />}
+            render={<Link href={"/dashboard/support" as Route} />}
           >
             <CircleHelpIcon ref={helpIconRef} />
             <span>Help</span>

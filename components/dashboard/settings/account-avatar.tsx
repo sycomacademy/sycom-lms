@@ -1,16 +1,22 @@
 "use client";
 
 import { CameraIcon } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
-import { FILE_CATEGORIES } from "@/packages/db/schema/files";
-import { useFileUploadSimple } from "@/packages/hooks/use-file-upload";
 import { useUserMutation, useUserQuery } from "@/packages/hooks/use-user";
+import { uploadFile } from "@/packages/storage/upload";
+import {
+  getAvatarUploadParams,
+  persistAvatarAsset,
+} from "./account-avatar-actions";
 
 const NAME_WORDS = /\s+/;
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_SIZE = 1024 * 1024 * 4;
+
 function getInitials(name: string) {
   return name
     .split(NAME_WORDS)
@@ -21,10 +27,10 @@ function getInitials(name: string) {
 }
 
 export function AccountAvatar() {
-  const { user, profile } = useUserQuery();
+  const { user } = useUserQuery();
   const userMutation = useUserMutation();
-  const { upload, isPending } = useFileUploadSimple();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [uploadPending, setUploadPending] = useState(false);
 
   const handleAvatarClick = () => {
     inputRef.current?.click();
@@ -36,13 +42,7 @@ export function AccountAvatar() {
       return;
     }
 
-    // Validate file type
-    const constraints = FILE_CATEGORIES.avatar;
-    if (
-      !constraints.allowedTypes.includes(
-        file.type as (typeof constraints.allowedTypes)[number]
-      )
-    ) {
+    if (!ALLOWED_TYPES.includes(file.type)) {
       toastManager.add({
         title: "Invalid file type",
         description: "Please upload a JPEG, PNG, or WebP image",
@@ -51,27 +51,45 @@ export function AccountAvatar() {
       return;
     }
 
-    // Validate file size
-    if (file.size > constraints.maxSize) {
+    if (file.size > MAX_SIZE) {
       toastManager.add({
         title: "File too large",
-        description: `Maximum file size is ${Math.round(constraints.maxSize / 1024 / 1024)}MB`,
+        description: "Maximum file size is 4MB",
         type: "error",
       });
       return;
     }
 
+    setUploadPending(true);
+
     try {
-      const fileRecord = await upload(file, {
-        entityType: "profile",
-        entityId: profile?.id ?? user?.id ?? "",
-        category: "avatar",
-        visibility: "public",
+      const signedParams = await getAvatarUploadParams();
+      if (!signedParams) {
+        toastManager.add({
+          title: "Upload failed",
+          description: "You must be signed in to update your avatar",
+          type: "error",
+        });
+        return;
+      }
+
+      const result = await uploadFile({
+        file,
+        signedParams,
       });
 
-      // Update the user's image URL
+      const persistResult = await persistAvatarAsset(result);
+      if (!persistResult.success) {
+        toastManager.add({
+          title: "Upload failed",
+          description: persistResult.error,
+          type: "error",
+        });
+        return;
+      }
+
       userMutation.mutate(
-        { image: fileRecord.url },
+        { image: result.secureUrl },
         {
           onSuccess: () => {
             toastManager.add({
@@ -79,19 +97,31 @@ export function AccountAvatar() {
               type: "success",
             });
           },
+          onError: () => {
+            toastManager.add({
+              title: "Update failed",
+              description: "Could not update your profile image",
+              type: "error",
+            });
+          },
         }
       );
-    } catch {
-      // Error is already handled by the upload function
-    }
-
-    // Reset input
-    if (inputRef.current) {
-      inputRef.current.value = "";
+    } catch (err) {
+      toastManager.add({
+        title: "Upload failed",
+        description:
+          err instanceof Error ? err.message : "Something went wrong",
+        type: "error",
+      });
+    } finally {
+      setUploadPending(false);
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
     }
   };
 
-  const isLoading = isPending || userMutation.isPending;
+  const isLoading = uploadPending || userMutation.isPending;
 
   return (
     <Card>

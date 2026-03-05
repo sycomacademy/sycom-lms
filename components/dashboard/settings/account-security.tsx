@@ -3,6 +3,7 @@
 import { SecurityChangePassword } from "./security-change-password";
 import { SecurityLinkOAuth } from "./security-link-oauth";
 import { SecuritySessionsPasskey } from "./security-sessions-passkey";
+import { SecurityTwoFactor } from "./security-two-factor";
 
 export function AccountSecurity() {
   return (
@@ -10,6 +11,7 @@ export function AccountSecurity() {
       <SecurityChangePassword />
       <SecuritySessionsPasskey />
       <SecurityLinkOAuth />
+      <SecurityTwoFactor />
     </div>
   );
 }

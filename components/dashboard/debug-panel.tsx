@@ -26,12 +26,6 @@ export function DebugInfo() {
           <DialogTitle>Debug Info</DialogTitle>
           <DialogDescription>Debug information</DialogDescription>
           <pre className="text-xs">
-            {JSON.stringify(data.userAgent, null, 2)}
-          </pre>
-          <pre className="text-xs">
-            {JSON.stringify(data.ipAddress, null, 2)}
-          </pre>
-          <pre className="text-xs">
             {JSON.stringify(data.isSignedIn, null, 2)}
           </pre>
           <pre className="text-xs">

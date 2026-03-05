@@ -12,7 +12,7 @@ export interface SecondaryMenuItem {
 function getActivePath(pathname: string, items: SecondaryMenuItem[]): string {
   const base = "/dashboard/settings";
   const active = items.find(({ path }) => {
-    const isBase = path === base;
+    const isBase = path === (base as Route);
     return isBase
       ? pathname === path
       : pathname === path || pathname.startsWith(`${path}/`);
@@ -36,7 +36,7 @@ export function SecondaryMenu({ items }: { items: SecondaryMenuItem[] }) {
       >
         {items.map(({ path, label }) => (
           <TabsTab
-            className="shrink-0 py-2"
+            className="shrink-0 py-2 data-active:hover:text-accent-foreground"
             key={path}
             nativeButton={false}
             render={<Link href={path} />}

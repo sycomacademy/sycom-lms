@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Icon } from "@/components/icons";
+import { Icon } from "@/components/icons/old";
+import { useAnimatedIcon } from "@/components/icons/old/use-animated-icon";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useAnimatedIcon } from "@/packages/hooks/use-animated-icon";
 import { Button } from "../ui/button";
 import { FeedbackForm } from "./feedback-form";
 
