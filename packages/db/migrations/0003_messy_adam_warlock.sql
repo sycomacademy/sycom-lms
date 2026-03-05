@@ -1,0 +1,1 @@
+ALTER TYPE "public"."storage_folder" ADD VALUE 'reports';

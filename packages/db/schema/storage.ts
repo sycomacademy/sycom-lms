@@ -7,6 +7,7 @@ export const storageFolderEnum = pgEnum("storage_folder", [
   "thumbnails",
   "course-content",
   "demo",
+  "reports",
 ]);
 export type StorageFolder = (typeof storageFolderEnum.enumValues)[number];
 

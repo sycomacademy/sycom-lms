@@ -1,10 +1,10 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { FileUploader } from "@/components/layout/file-uploader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { FileUploader } from "@/components/ui/file-uploader";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -16,9 +16,12 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { toastManager } from "@/components/ui/toast";
-import { useFileUploadSimple } from "@/packages/hooks/use-file-upload";
-import { useUserQuery } from "@/packages/hooks/use-user";
+import { uploadFile } from "@/packages/storage/upload";
 import { submitReport } from "./actions";
+import {
+  getReportUploadParams,
+  persistReportAsset,
+} from "./report-upload-actions";
 
 const REPORT_TYPES = [
   { value: "bug", label: "Bug Report" },
@@ -27,56 +30,88 @@ const REPORT_TYPES = [
   { value: "other", label: "Other" },
 ];
 
+async function uploadScreenshot(
+  file: File
+): Promise<{ url: string } | { error: string }> {
+  const signedParams = await getReportUploadParams();
+  if (!signedParams) {
+    return { error: "You must be signed in to attach a screenshot." };
+  }
+  const uploadResult = await uploadFile({ file, signedParams });
+  const persistResult = await persistReportAsset(uploadResult);
+  if (!persistResult.success) {
+    return { error: persistResult.error ?? "Failed to save screenshot." };
+  }
+  return { url: uploadResult.secureUrl };
+}
+
+async function handleReportSubmit(
+  formData: FormData,
+  fileToUpload: File | null,
+  formRef: React.RefObject<HTMLFormElement | null>,
+  setFiles: (files: File[]) => void
+) {
+  let imageUrl: string | null = null;
+
+  if (fileToUpload) {
+    try {
+      const uploadResult = await uploadScreenshot(fileToUpload);
+      if ("error" in uploadResult) {
+        toastManager.add({
+          title: "Failed to submit report",
+          description: uploadResult.error,
+          type: "error",
+        });
+        return;
+      }
+      imageUrl = uploadResult.url;
+    } catch (err) {
+      toastManager.add({
+        title: "Screenshot upload failed",
+        description: err instanceof Error ? err.message : "Please try again.",
+        type: "error",
+      });
+      return;
+    }
+  }
+
+  if (imageUrl) {
+    formData.set("imageUrl", imageUrl);
+  }
+
+  const result = await submitReport(formData);
+
+  if (result.success) {
+    toastManager.add({
+      title: "Report submitted",
+      description: "Thank you for your feedback. We'll review it shortly.",
+      type: "success",
+    });
+    formRef.current?.reset();
+    setFiles([]);
+  } else {
+    toastManager.add({
+      title: "Failed to submit report",
+      description: result.error ?? "Please try again later.",
+      type: "error",
+    });
+  }
+}
+
 export function ReportForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [isPending, startTransition] = useTransition();
-  const { user } = useUserQuery();
-  const { upload, isPending: isUploading } = useFileUploadSimple();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const formData = new FormData(e.currentTarget);
+    const fileToUpload = files.length > 0 ? files[0] : null;
 
-    startTransition(async () => {
-      let imageUrl: string | null = null;
-
-      // Upload file if present
-      if (files.length > 0 && user?.id) {
-        const file = files[0];
-        const result = await upload(file, {
-          entityType: "report",
-          entityId: user.id,
-          category: "image",
-        });
-        imageUrl = result?.url ?? null;
-      }
-
-      // Add image URL to form data
-      if (imageUrl) {
-        formData.set("imageUrl", imageUrl);
-      }
-
-      // Submit the report
-      const result = await submitReport(formData);
-
-      if (result.success) {
-        toastManager.add({
-          title: "Report submitted",
-          description: "Thank you for your feedback. We'll review it shortly.",
-          type: "success",
-        });
-        formRef.current?.reset();
-        setFiles([]);
-      } else {
-        toastManager.add({
-          title: "Failed to submit report",
-          description: result.error ?? "Please try again later.",
-          type: "error",
-        });
-      }
-    });
+    startTransition(() =>
+      handleReportSubmit(formData, fileToUpload, formRef, setFiles)
+    );
   };
 
   return (
@@ -146,11 +181,7 @@ export function ReportForm() {
             </Field>
 
             <div className="flex justify-end">
-              <Button
-                disabled={isPending || isUploading}
-                size="sm"
-                type="submit"
-              >
+              <Button disabled={isPending} size="sm" type="submit">
                 <span className="relative inline-flex items-center justify-center">
                   <span className={isPending ? "invisible" : undefined}>
                     Submit Report
