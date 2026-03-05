@@ -1,8 +1,9 @@
-import { ensurePublicOrg } from "./queries";
+import { ensurePublicOrg, seedCategories } from "./queries";
 
 async function main() {
   console.log("Seeding database...");
   await ensurePublicOrg();
+  await seedCategories();
   console.log("Seed complete.");
 }
 

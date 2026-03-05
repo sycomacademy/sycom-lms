@@ -27,6 +27,30 @@ import {
   userRoleEnum,
   verification,
 } from "./auth";
+import {
+  category,
+  categoryRelations,
+  cohortCourse,
+  cohortCourseRelations,
+  cohortLessonDueDate,
+  cohortLessonDueDateRelations,
+  cohortSectionDueDate,
+  cohortSectionDueDateRelations,
+  course,
+  courseCategory,
+  courseCategoryRelations,
+  courseInstructor,
+  courseInstructorRelations,
+  courseRelations,
+  enrollment,
+  enrollmentRelations,
+  lesson,
+  lessonCompletion,
+  lessonCompletionRelations,
+  lessonRelations,
+  section,
+  sectionRelations,
+} from "./course";
 import { feedback, feedbackRelations } from "./feedback";
 import { profile, profileRelations } from "./profile";
 import { report, reportRelations } from "./report";
@@ -81,6 +105,30 @@ const schema = {
   mediaAsset,
   storageFolderEnum,
   storageResourceTypeEnum,
+
+  // course
+  category,
+  categoryRelations,
+  course,
+  courseRelations,
+  courseCategory,
+  courseCategoryRelations,
+  courseInstructor,
+  courseInstructorRelations,
+  section,
+  sectionRelations,
+  lesson,
+  lessonRelations,
+  enrollment,
+  enrollmentRelations,
+  lessonCompletion,
+  lessonCompletionRelations,
+  cohortCourse,
+  cohortCourseRelations,
+  cohortSectionDueDate,
+  cohortSectionDueDateRelations,
+  cohortLessonDueDate,
+  cohortLessonDueDateRelations,
 };
 
 export { schema };

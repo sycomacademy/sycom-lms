@@ -3,10 +3,30 @@ import type { Database } from "@/packages/db";
 import { db } from "@/packages/db";
 import { createLoggerWithContext } from "@/packages/utils/logger";
 import { schema } from "./schema";
+import { category } from "./schema/course";
 import { feedback } from "./schema/feedback";
 import { profile, profileSettingsDefault } from "./schema/profile";
 
 const logger = createLoggerWithContext("db:queries");
+
+const CATEGORIES = [
+  { name: "Cybersecurity", slug: "cybersecurity", order: 1 },
+  { name: "Network Security", slug: "network-security", order: 2 },
+  { name: "Cloud Computing", slug: "cloud-computing", order: 3 },
+  { name: "Programming", slug: "programming", order: 4 },
+  { name: "Data Science", slug: "data-science", order: 5 },
+  { name: "DevOps", slug: "devops", order: 6 },
+  { name: "IT Fundamentals", slug: "it-fundamentals", order: 7 },
+  {
+    name: "Compliance & Governance",
+    slug: "compliance-governance",
+    order: 8,
+  },
+  { name: "Web Development", slug: "web-development", order: 9 },
+  { name: "Ethical Hacking", slug: "ethical-hacking", order: 10 },
+  { name: "Incident Response", slug: "incident-response", order: 11 },
+  { name: "Cryptography", slug: "cryptography", order: 12 },
+] as const;
 const {
   cohort,
   cohort_member,
@@ -66,6 +86,16 @@ export async function ensurePublicOrg(database: Database = db) {
       `Created public cohort "${PUBLIC_COHORT_NAME}" (id: ${cohortId})`
     );
   }
+}
+
+export async function seedCategories(database: Database = db) {
+  const rows = CATEGORIES.map((c) => ({
+    name: c.name,
+    slug: c.slug,
+    order: c.order,
+  }));
+  await database.insert(category).values(rows).onConflictDoNothing();
+  logger.info(`Seeded ${rows.length} categories`);
 }
 
 // ── Auth provisioning (used by auth hooks) ──

@@ -29,6 +29,20 @@
       "when": 1772683931214,
       "tag": "0003_messy_adam_warlock",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1772708646406,
+      "tag": "0004_steep_vivisector",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1772712762445,
+      "tag": "0005_wild_thena",
+      "breakpoints": true
     }
   ]
 }

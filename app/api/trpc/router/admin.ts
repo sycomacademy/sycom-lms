@@ -206,6 +206,18 @@ export const adminRouter = router({
       return { success: true };
     }),
 
+  stopImpersonation: protectedProcedure.mutation(async ({ ctx }) => {
+    const sessionData = ctx.session.session;
+    if (!sessionData?.impersonatedBy) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Not currently impersonating",
+      });
+    }
+    await auth.api.stopImpersonating({ headers: ctx.headers });
+    return { success: true };
+  }),
+
   sendVerificationEmail: adminProcedure
     .input(z.object({ email: z.string().email() }))
     .mutation(async ({ ctx, input }) => {

@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
@@ -55,3 +56,19 @@ export const instructorGuard = async () => {
   }
   return session;
 };
+
+/**
+ * Wraps an async fn that may throw TRPC UNAUTHORIZED.
+ * If UNAUTHORIZED is thrown, redirects to sign-in instead of letting the error
+ * cause Next.js to switch to client rendering.
+ */
+export async function withAuthRedirect<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: unknown) {
+    if (error instanceof TRPCError && error.code === "UNAUTHORIZED") {
+      redirect("/sign-in");
+    }
+    throw error;
+  }
+}
