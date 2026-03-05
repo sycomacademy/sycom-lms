@@ -1,7 +1,8 @@
-import { getCaller } from "@/packages/trpc/server";
+"use client";
+import { useUserQuery } from "@/packages/hooks/use-user";
 
-export default async function Page() {
-  const data = await (await getCaller()).user.me();
+export default function Page() {
+  const data = useUserQuery();
   return (
     <div>
       Home

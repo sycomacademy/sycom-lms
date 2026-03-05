@@ -16,6 +16,8 @@ import { usePathname } from "next/navigation";
 import type { ComponentProps } from "react";
 import {
   DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -33,6 +35,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useDelayedValue } from "@/packages/hooks/use-delayed-value";
 import { useIsMobile } from "@/packages/hooks/use-mobile";
+import { useUserQuery } from "@/packages/hooks/use-user";
 import { cn } from "@/packages/utils/cn";
 import { capitalize } from "@/packages/utils/string";
 
@@ -96,13 +99,13 @@ const groupLabelCollapseClass =
 const DEFAULT_ROLE: keyof typeof SIDEBAR_NAV_CONFIG = "student";
 
 export function AppSidebar() {
-  // const { role } = useUserQuery();
+  const { role } = useUserQuery();
   const { open } = useSidebar();
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const isOpen = useDelayedValue(open, 195);
-  const roleKey = DEFAULT_ROLE;
-  //   role === "instructor" || role === "admin" ? role : DEFAULT_ROLE;
+  const roleKey =
+    role === "instructor" || role === "admin" ? role : DEFAULT_ROLE;
   const navGroups = SIDEBAR_NAV_CONFIG[roleKey];
 
   return (
@@ -181,7 +184,7 @@ export function AppSidebar() {
               </SidebarMenuButton>
             }
           />
-          {/* <DropdownMenuContent align="start" side="right" sideOffset={4}>
+          <DropdownMenuContent align="start" side="right" sideOffset={4}>
             <DropdownMenuItem render={<Link href="/dashboard/support" />}>
               Help
             </DropdownMenuItem>
@@ -191,7 +194,7 @@ export function AppSidebar() {
             <DropdownMenuItem render={<Link href="/dashboard/support" />}>
               FAQ
             </DropdownMenuItem>
-          </DropdownMenuContent> */}
+          </DropdownMenuContent>
         </DropdownMenu>
       </SidebarFooter>
     </Sidebar>

@@ -2,7 +2,8 @@
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/packages/utils/cn";
-
+import { DashboardUserMenu } from "./dashboard-user-menu";
+import { FeedbackPopover } from "./feedback-popover";
 export function DashboardHeader() {
   return (
     <header
@@ -12,8 +13,8 @@ export function DashboardHeader() {
     >
       <SidebarTrigger />
       <div className="flex items-center gap-2 md:px-2">
-        {/* <FeedbackPopover />
-        <DashboardUserMenu /> */}
+        <FeedbackPopover />
+        <DashboardUserMenu />
       </div>
     </header>
   );
