@@ -8,6 +8,7 @@ import type {
 } from "@tanstack/react-table";
 import { BanIcon, Loader2Icon, SearchIcon } from "lucide-react";
 import { useDeferredValue, useState, useTransition } from "react";
+import type { RouterOutputs } from "@/app/api/trpc/router";
 import { CreateUserDialog } from "@/components/dashboard/admin/users/create-user-dialog";
 import { UserActions } from "@/components/dashboard/admin/users/user-actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,23 +23,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTRPC } from "@/packages/trpc/client";
-import type { RouterOutputs } from "@/packages/trpc/server/router";
 import { getInitials } from "@/packages/utils/string";
 
 type User = RouterOutputs["admin"]["listUsers"]["users"][number];
 
 const ROLE_BADGE_VARIANT: Record<string, "default" | "secondary" | "outline"> =
   {
-    admin: "default",
-    instructor: "secondary",
-    student: "outline",
+    platform_admin: "default",
+    content_creator: "secondary",
+    platform_student: "outline",
   };
+
+const ROLE_LABELS: Record<string, string> = {
+  platform_admin: "Admin",
+  content_creator: "Creator",
+  platform_student: "Student",
+};
 
 const ROLE_FILTER_LABELS: Record<string, string> = {
   all: "All roles",
-  admin: "Admin",
-  instructor: "Instructor",
-  student: "Student",
+  platform_admin: "Admin",
+  content_creator: "Content Creator",
+  platform_student: "Student",
 };
 
 const STATUS_FILTER_LABELS: Record<string, string> = {
@@ -54,15 +60,15 @@ const columns: ColumnDef<User, unknown>[] = [
     header: "Name",
     size: 200,
     cell: ({ row }) => {
-      const user = row.original;
+      const u = row.original;
       return (
         <div className="flex items-center gap-2">
           <Avatar>
-            <AvatarImage alt={user.name} src={user.image ?? undefined} />
-            <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+            <AvatarImage alt={u.name} src={u.image ?? undefined} />
+            <AvatarFallback>{getInitials(u.name)}</AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <div className="truncate font-medium text-sm">{user.name}</div>
+            <div className="truncate font-medium text-sm">{u.name}</div>
           </div>
         </div>
       );
@@ -79,7 +85,7 @@ const columns: ColumnDef<User, unknown>[] = [
   {
     accessorKey: "role",
     header: "Role",
-    size: 120,
+    size: 130,
     enableSorting: false,
     cell: ({ row }) => {
       const role = row.getValue("role") as string;
@@ -88,7 +94,7 @@ const columns: ColumnDef<User, unknown>[] = [
           className="capitalize"
           variant={ROLE_BADGE_VARIANT[role] ?? "outline"}
         >
-          {role}
+          {ROLE_LABELS[role] ?? role}
         </Badge>
       );
     },
@@ -117,7 +123,6 @@ const columns: ColumnDef<User, unknown>[] = [
           </Badge>
         );
       }
-
       return (
         <Badge variant="outline">
           <span className="size-1.5 rounded-full bg-success" />
@@ -148,15 +153,15 @@ const columns: ColumnDef<User, unknown>[] = [
     size: 50,
     enableSorting: false,
     cell: ({ row }) => {
-      const user = row.original;
+      const u = row.original;
       return (
         <UserActions
-          isBanned={user.banned ?? false}
-          isEmailVerified={user.emailVerified}
-          userEmail={user.email}
-          userId={user.id}
-          userName={user.name}
-          userRole={user.role ?? "student"}
+          isBanned={u.banned ?? false}
+          isEmailVerified={u.emailVerified}
+          userEmail={u.email}
+          userId={u.id}
+          userName={u.name}
+          userRole={u.role ?? "platform_student"}
         />
       );
     },
@@ -171,7 +176,6 @@ export function UsersTable() {
     pageIndex: 0,
     pageSize: 10,
   });
-
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const [filterRole, setFilterRole] = useState<string>("all");
@@ -190,7 +194,10 @@ export function UsersTable() {
     search: deferredSearch || undefined,
     filterRole:
       filterRole !== "all"
-        ? (filterRole as "admin" | "instructor" | "student")
+        ? (filterRole as
+            | "platform_admin"
+            | "content_creator"
+            | "platform_student")
         : undefined,
     filterStatus:
       filterStatus !== "all"
@@ -268,9 +275,9 @@ export function UsersTable() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All roles</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="instructor">Instructor</SelectItem>
-              <SelectItem value="student">Student</SelectItem>
+              <SelectItem value="platform_admin">Admin</SelectItem>
+              <SelectItem value="content_creator">Content Creator</SelectItem>
+              <SelectItem value="platform_student">Student</SelectItem>
             </SelectContent>
           </Select>
           <Select

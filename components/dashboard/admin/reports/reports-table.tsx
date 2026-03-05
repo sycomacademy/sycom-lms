@@ -9,6 +9,7 @@ import {
   MessageSquareIcon,
 } from "lucide-react";
 import { useState, useTransition } from "react";
+import type { RouterOutputs } from "@/app/api/trpc/router";
 import { ReportDetailDialog } from "@/components/dashboard/admin/reports/report-detail-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTRPC } from "@/packages/trpc/client";
-import type { RouterOutputs } from "@/packages/trpc/server/router";
 
 type ReportItem = RouterOutputs["admin"]["listReports"]["items"][number];
 
@@ -101,7 +101,7 @@ function makeColumns(
       enableSorting: false,
       cell: ({ row }) => {
         const item = row.original;
-        const text = item.subject ?? item.message;
+        const text = item.subject ?? item.message ?? "";
         return (
           <span className="line-clamp-1 text-sm">
             {text.length > 60 ? `${text.slice(0, 60)}...` : text}

@@ -5,7 +5,7 @@ import { instructorGuard } from "@/packages/auth/helper";
 
 export default async function CoursesPage() {
   const session = await instructorGuard();
-  const isAdmin = session.user.role === "admin";
+  const isAdmin = session.user.role === "platform_admin";
   return (
     <div className="flex flex-col gap-6">
       <div>

@@ -25,9 +25,33 @@ export const dashboardGuard = async () => {
   }
 };
 
+export const adminGuard = async () => {
+  const session = await getSession();
+  if (!session) {
+    redirect("/sign-in");
+  }
+  if (session.user.role !== "platform_admin") {
+    redirect("/dashboard");
+  }
+};
+
 export const signInGuard = async () => {
   const session = await getSession();
   if (session) {
     redirect("/");
   }
+};
+
+export const instructorGuard = async () => {
+  const session = await getSession();
+  if (!session) {
+    redirect("/sign-in");
+  }
+  if (
+    session.user.role !== "content_creator" &&
+    session.user.role !== "platform_admin"
+  ) {
+    redirect("/dashboard");
+  }
+  return session;
 };

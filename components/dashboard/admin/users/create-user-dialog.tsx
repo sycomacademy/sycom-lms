@@ -44,7 +44,7 @@ const createUserSchema = z
     name: z.string().min(1, "Name is required").max(100),
     email: z.string().email("Invalid email address"),
     password: z.string().optional(),
-    role: z.enum(["admin", "instructor", "student"]),
+    role: z.enum(["platform_admin", "content_creator", "platform_student"]),
     sendInvite: z.boolean(),
   })
   .refine(
@@ -58,9 +58,9 @@ const createUserSchema = z
 type CreateUserInput = z.infer<typeof createUserSchema>;
 
 const ROLE_LABELS: Record<string, string> = {
-  admin: "Admin",
-  instructor: "Instructor",
-  student: "Student",
+  platform_admin: "Platform Admin",
+  content_creator: "Content Creator",
+  platform_student: "Student",
 };
 
 export function CreateUserDialog() {
@@ -74,7 +74,7 @@ export function CreateUserDialog() {
       name: "",
       email: "",
       password: "",
-      role: "student",
+      role: "platform_student",
       sendInvite: true,
     },
   });
@@ -87,7 +87,7 @@ export function CreateUserDialog() {
         toastManager.add({
           title: "User created",
           description: variables.sendInvite
-            ? "An invite email has been sent to set their password."
+            ? "A password-reset email has been sent so they can set their password."
             : "The user has been created. A verification email has been sent.",
           type: "success",
         });
@@ -234,11 +234,15 @@ export function CreateUserDialog() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="student">Student</SelectItem>
-                            <SelectItem value="instructor">
-                              Instructor
+                            <SelectItem value="platform_student">
+                              Student
                             </SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="content_creator">
+                              Content Creator
+                            </SelectItem>
+                            <SelectItem value="platform_admin">
+                              Platform Admin
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

@@ -1,0 +1,499 @@
+import { TRPCError } from "@trpc/server";
+import { and, asc, count, desc, eq, ilike, ne, or, sql } from "drizzle-orm";
+import { z } from "zod";
+import { auth } from "@/packages/auth/auth";
+import { baseURL } from "@/packages/auth/config";
+import { schema } from "@/packages/db/schema";
+import { protectedProcedure, router } from "../init";
+
+const { user, organization, member, cohort, feedback, report } = schema;
+
+const PUBLIC_ORG_SLUG = "platform";
+
+const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (ctx.session.user.role !== "platform_admin") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Platform admin access required",
+    });
+  }
+  return next({ ctx });
+});
+
+export const adminRouter = router({
+  // ── Users ────────────────────────────────────────────────────────────────
+
+  listUsers: adminProcedure
+    .input(
+      z.object({
+        limit: z.number().int().min(1).max(100).default(10),
+        offset: z.number().int().min(0).default(0),
+        search: z.string().optional(),
+        filterRole: z
+          .enum(["platform_admin", "content_creator", "platform_student"])
+          .optional(),
+        filterStatus: z.enum(["active", "banned", "unverified"]).optional(),
+        sortBy: z.enum(["name", "email", "createdAt"]).default("createdAt"),
+        sortDirection: z.enum(["asc", "desc"]).default("desc"),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const {
+        limit,
+        offset,
+        search,
+        filterRole,
+        filterStatus,
+        sortBy,
+        sortDirection,
+      } = input;
+
+      const where = and(
+        search
+          ? or(
+              ilike(user.name, `%${search}%`),
+              ilike(user.email, `%${search}%`)
+            )
+          : undefined,
+        filterRole ? eq(user.role, filterRole) : undefined,
+        filterStatus === "banned" ? sql`${user.banned} IS TRUE` : undefined,
+        filterStatus === "unverified"
+          ? and(eq(user.emailVerified, false), sql`${user.banned} IS NOT TRUE`)
+          : undefined,
+        filterStatus === "active"
+          ? and(eq(user.emailVerified, true), sql`${user.banned} IS NOT TRUE`)
+          : undefined
+      );
+
+      const orderCol =
+        sortBy === "name"
+          ? user.name
+          : // biome-ignore lint/style/noNestedTernary: fix later
+            sortBy === "email"
+            ? user.email
+            : user.createdAt;
+      const order = sortDirection === "asc" ? asc(orderCol) : desc(orderCol);
+
+      const [users, [totRow]] = await Promise.all([
+        ctx.db
+          .select({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            image: user.image,
+            emailVerified: user.emailVerified,
+            role: user.role,
+            banned: user.banned,
+            banReason: user.banReason,
+            createdAt: user.createdAt,
+          })
+          .from(user)
+          .where(where)
+          .orderBy(order)
+          .limit(limit)
+          .offset(offset),
+        ctx.db.select({ total: count() }).from(user).where(where),
+      ]);
+
+      return { users, total: totRow?.total ?? 0 };
+    }),
+
+  createUser: adminProcedure
+    .input(
+      z.object({
+        name: z.string().min(1),
+        email: z.string().email(),
+        role: z.enum(["platform_admin", "content_creator", "platform_student"]),
+        sendInvite: z.boolean(),
+        password: z.string().min(8).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const password =
+        !input.sendInvite && input.password
+          ? input.password
+          : `${crypto.randomUUID()}${crypto.randomUUID()}`;
+
+      await auth.api.createUser({
+        body: {
+          name: input.name,
+          email: input.email,
+          password,
+          role: input.role,
+          data: {},
+        },
+        headers: ctx.headers,
+      });
+
+      if (input.sendInvite) {
+        try {
+          await auth.api.requestPasswordReset({
+            body: {
+              email: input.email,
+              redirectTo: `${baseURL}/reset-password?invite=true`,
+            },
+            headers: ctx.headers,
+          });
+        } catch {
+          // best-effort — user is created even if email fails
+        }
+      } else {
+        try {
+          await auth.api.sendVerificationEmail({
+            body: { email: input.email, callbackURL: "/dashboard" },
+            headers: ctx.headers,
+          });
+        } catch {
+          // best-effort
+        }
+      }
+
+      return { success: true };
+    }),
+
+  deleteUser: adminProcedure
+    .input(z.object({ userId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await auth.api.removeUser({
+        body: { userId: input.userId },
+        headers: ctx.headers,
+      });
+      return { success: true };
+    }),
+
+  banUser: adminProcedure
+    .input(z.object({ userId: z.string(), banReason: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await auth.api.banUser({
+        body: { userId: input.userId, banReason: input.banReason },
+        headers: ctx.headers,
+      });
+      return { success: true };
+    }),
+
+  unbanUser: adminProcedure
+    .input(z.object({ userId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await auth.api.unbanUser({
+        body: { userId: input.userId },
+        headers: ctx.headers,
+      });
+      return { success: true };
+    }),
+
+  setRole: adminProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        role: z.enum(["platform_admin", "content_creator", "platform_student"]),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      await auth.api.setRole({
+        body: { userId: input.userId, role: input.role },
+        headers: ctx.headers,
+      });
+      return { success: true };
+    }),
+
+  impersonateUser: adminProcedure
+    .input(z.object({ userId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await auth.api.impersonateUser({
+        body: { userId: input.userId },
+        headers: ctx.headers,
+      });
+      return { success: true };
+    }),
+
+  sendVerificationEmail: adminProcedure
+    .input(z.object({ email: z.string().email() }))
+    .mutation(async ({ ctx, input }) => {
+      await auth.api.sendVerificationEmail({
+        body: { email: input.email, callbackURL: "/dashboard" },
+        headers: ctx.headers,
+      });
+      return { success: true };
+    }),
+
+  // ── Reports & Feedback ───────────────────────────────────────────────────
+
+  listReports: adminProcedure
+    .input(
+      z.object({
+        limit: z.number().int().min(1).max(100).default(10),
+        offset: z.number().int().min(0).default(0),
+        type: z.enum(["all", "report", "feedback"]).default("all"),
+        status: z
+          .enum(["all", "pending", "in_progress", "resolved", "closed"])
+          .default("all"),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { limit, offset, type, status } = input;
+
+      const reportWhere =
+        status !== "all"
+          ? eq(
+              report.status,
+              status as "pending" | "in_progress" | "resolved" | "closed"
+            )
+          : undefined;
+
+      if (type === "report") {
+        const [items, [totRow]] = await Promise.all([
+          ctx.db
+            .select({
+              id: report.id,
+              type: sql<"report">`'report'`,
+              email: report.email,
+              subject: report.subject,
+              message: sql<string | null>`null`,
+              category: report.type,
+              status: report.status,
+              createdAt: report.createdAt,
+            })
+            .from(report)
+            .where(reportWhere)
+            .orderBy(desc(report.createdAt))
+            .limit(limit)
+            .offset(offset),
+          ctx.db.select({ total: count() }).from(report).where(reportWhere),
+        ]);
+        return { items, total: totRow?.total ?? 0 };
+      }
+
+      if (type === "feedback") {
+        const [items, [totRow]] = await Promise.all([
+          ctx.db
+            .select({
+              id: feedback.id,
+              type: sql<"feedback">`'feedback'`,
+              email: feedback.email,
+              subject: sql<string | null>`null`,
+              message: feedback.message,
+              category: sql<string | null>`null`,
+              status: sql<string | null>`null`,
+              createdAt: feedback.createdAt,
+            })
+            .from(feedback)
+            .orderBy(desc(feedback.createdAt))
+            .limit(limit)
+            .offset(offset),
+          ctx.db.select({ total: count() }).from(feedback),
+        ]);
+        return { items, total: totRow?.total ?? 0 };
+      }
+
+      // type === "all": merge both (status filter ignored for all-mode)
+      const [reportItems, feedbackItems, [rTot], [fTot]] = await Promise.all([
+        ctx.db
+          .select({
+            id: report.id,
+            type: sql<"report">`'report'`,
+            email: report.email,
+            subject: report.subject,
+            message: sql<string | null>`null`,
+            category: report.type,
+            status: report.status,
+            createdAt: report.createdAt,
+          })
+          .from(report)
+          .orderBy(desc(report.createdAt))
+          .limit(300),
+        ctx.db
+          .select({
+            id: feedback.id,
+            type: sql<"feedback">`'feedback'`,
+            email: feedback.email,
+            subject: sql<string | null>`null`,
+            message: feedback.message,
+            category: sql<string | null>`null`,
+            status: sql<string | null>`null`,
+            createdAt: feedback.createdAt,
+          })
+          .from(feedback)
+          .orderBy(desc(feedback.createdAt))
+          .limit(300),
+        ctx.db.select({ total: count() }).from(report),
+        ctx.db.select({ total: count() }).from(feedback),
+      ]);
+
+      const merged = [...reportItems, ...feedbackItems].sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      return {
+        items: merged.slice(offset, offset + limit),
+        total: (rTot?.total ?? 0) + (fTot?.total ?? 0),
+      };
+    }),
+
+  getReport: adminProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const [reportItem] = await ctx.db
+        .select()
+        .from(report)
+        .where(eq(report.id, input.id))
+        .limit(1);
+
+      if (reportItem) {
+        return { ...reportItem, type: "report" as const };
+      }
+
+      const [feedbackItem] = await ctx.db
+        .select()
+        .from(feedback)
+        .where(eq(feedback.id, input.id))
+        .limit(1);
+
+      if (feedbackItem) {
+        return { ...feedbackItem, type: "feedback" as const };
+      }
+
+      throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+    }),
+
+  updateReportStatus: adminProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        status: z.enum(["pending", "in_progress", "resolved", "closed"]),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .update(report)
+        .set({ status: input.status })
+        .where(eq(report.id, input.id));
+      return { success: true };
+    }),
+
+  // ── Organizations ────────────────────────────────────────────────────────
+
+  listOrganizations: adminProcedure
+    .input(
+      z.object({
+        limit: z.number().int().min(1).max(100).default(10),
+        offset: z.number().int().min(0).default(0),
+        search: z.string().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { limit, offset, search } = input;
+
+      const where = and(
+        ne(organization.slug, PUBLIC_ORG_SLUG),
+        search
+          ? or(
+              ilike(organization.name, `%${search}%`),
+              ilike(organization.slug, `%${search}%`)
+            )
+          : undefined
+      );
+
+      const [orgs, [totRow]] = await Promise.all([
+        ctx.db
+          .select({
+            id: organization.id,
+            name: organization.name,
+            slug: organization.slug,
+            logo: organization.logo,
+            createdAt: organization.createdAt,
+            memberCount: sql<number>`(
+              SELECT COUNT(*)::int FROM auth.member m
+              WHERE m.organization_id = ${sql.raw('"auth"."organization"."id"')}
+            )`,
+            ownerName: sql<string | null>`(
+              SELECT u.name FROM auth.user u
+              INNER JOIN auth.member m ON m.user_id = u.id
+              WHERE m.organization_id = ${sql.raw('"auth"."organization"."id"')}
+                AND m.role = 'org_owner'
+              LIMIT 1
+            )`,
+            ownerEmail: sql<string | null>`(
+              SELECT u.email FROM auth.user u
+              INNER JOIN auth.member m ON m.user_id = u.id
+              WHERE m.organization_id = ${sql.raw('"auth"."organization"."id"')}
+                AND m.role = 'org_owner'
+              LIMIT 1
+            )`,
+          })
+          .from(organization)
+          .where(where)
+          .orderBy(desc(organization.createdAt))
+          .limit(limit)
+          .offset(offset),
+        ctx.db.select({ total: count() }).from(organization).where(where),
+      ]);
+
+      return { orgs, total: totRow?.total ?? 0 };
+    }),
+
+  createOrganization: adminProcedure
+    .input(
+      z.object({
+        name: z.string().min(1),
+        slug: z
+          .string()
+          .min(1)
+          .regex(
+            /^[a-z0-9-]+$/,
+            "Lowercase letters, numbers, and hyphens only"
+          ),
+        ownerEmail: z.string().email(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [ownerUser] = await ctx.db
+        .select({ id: user.id, name: user.name })
+        .from(user)
+        .where(eq(user.email, input.ownerEmail))
+        .limit(1);
+
+      if (!ownerUser) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No user found with that email address",
+        });
+      }
+
+      const [existing] = await ctx.db
+        .select({ id: organization.id })
+        .from(organization)
+        .where(eq(organization.slug, input.slug))
+        .limit(1);
+
+      if (existing) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "An organization with this slug already exists",
+        });
+      }
+
+      const orgId = crypto.randomUUID();
+
+      await ctx.db.insert(organization).values({
+        id: orgId,
+        name: input.name,
+        slug: input.slug,
+      });
+
+      await ctx.db.insert(member).values({
+        id: crypto.randomUUID(),
+        organizationId: orgId,
+        userId: ownerUser.id,
+        role: "org_owner",
+      });
+
+      await ctx.db.insert(cohort).values({
+        id: crypto.randomUUID(),
+        name: "General",
+        organizationId: orgId,
+      });
+
+      return { id: orgId, name: input.name, slug: input.slug };
+    }),
+});

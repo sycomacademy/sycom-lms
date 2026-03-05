@@ -4,12 +4,13 @@ import type { LucideIcon } from "lucide-react";
 import {
   BarChart2Icon,
   BookOpenIcon,
+  BuildingIcon,
   GraduationCapIcon,
   HeadphonesIcon,
   LayoutDashboardIcon,
   LibraryIcon,
   SettingsIcon,
-  ShieldIcon,
+  UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -69,7 +70,12 @@ const NAV: Record<NavRole, Record<string, NavItem[]>> = {
   platform_admin: {
     platform: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
-      { href: "/dashboard/admin", label: "Admin", icon: ShieldIcon },
+      { href: "/dashboard/admin/users", label: "Users", icon: UsersIcon },
+      {
+        href: "/dashboard/admin/organizations",
+        label: "Organizations",
+        icon: BuildingIcon,
+      },
       {
         href: "/dashboard/admin/reports",
         label: "Reports",

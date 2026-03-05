@@ -45,12 +45,12 @@ import { toastManager } from "@/components/ui/toast";
 import { useUserQuery } from "@/packages/hooks/use-user";
 import { useTRPC } from "@/packages/trpc/client";
 
-type UserRole = "admin" | "instructor" | "student";
+type UserRole = "platform_admin" | "content_creator" | "platform_student";
 
 const ROLE_LABELS: Record<UserRole, string> = {
-  admin: "Admin",
-  instructor: "Instructor",
-  student: "Student",
+  platform_admin: "Platform Admin",
+  content_creator: "Content Creator",
+  platform_student: "Student",
 };
 
 interface UserActionsProps {
@@ -74,8 +74,8 @@ export function UserActions({
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
-  const isTargetAdmin = userRole === "admin";
-  const isSelf = userId === currentUser.id;
+  const isTargetAdmin = userRole === "platform_admin";
+  const isSelf = userId === currentUser?.id;
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [banOpen, setBanOpen] = useState(false);
@@ -345,7 +345,7 @@ export function UserActions({
           <AlertDialogHeader>
             <AlertDialogTitle>Change role</AlertDialogTitle>
             <AlertDialogDescription>
-              Update the role for <strong>{userName}</strong>.
+              Update the platform role for <strong>{userName}</strong>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="px-4">
@@ -360,9 +360,9 @@ export function UserActions({
                 <SelectValue>{ROLE_LABELS[selectedRole]}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="student">Student</SelectItem>
-                <SelectItem value="instructor">Instructor</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="platform_student">Student</SelectItem>
+                <SelectItem value="content_creator">Content Creator</SelectItem>
+                <SelectItem value="platform_admin">Platform Admin</SelectItem>
               </SelectContent>
             </Select>
           </div>

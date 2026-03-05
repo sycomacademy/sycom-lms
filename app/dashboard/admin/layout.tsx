@@ -19,6 +19,12 @@ export default async function AdminLayout({
       })
     ),
     prefetch(
+      trpc.admin.listOrganizations.queryOptions({
+        limit: 10,
+        offset: 0,
+      })
+    ),
+    prefetch(
       trpc.admin.listReports.queryOptions({
         limit: 10,
         offset: 0,
@@ -30,10 +36,11 @@ export default async function AdminLayout({
 
   return (
     <HydrateClient>
-      <div className="mb-10 md:ml-12">
+      <div className="mx-auto max-w-7xl px-4 py-6">
         <AdminMenu
           items={[
-            { path: "/dashboard/admin", label: "Users" },
+            { path: "/dashboard/admin/users", label: "Users" },
+            { path: "/dashboard/admin/organizations", label: "Organizations" },
             { path: "/dashboard/admin/reports", label: "Reports & Feedback" },
           ]}
         />

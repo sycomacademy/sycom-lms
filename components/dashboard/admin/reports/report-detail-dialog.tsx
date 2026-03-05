@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ExternalLinkIcon } from "lucide-react";
+import type { RouterOutputs } from "@/app/api/trpc/router";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -22,7 +23,6 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
 import { useTRPC } from "@/packages/trpc/client";
-import type { RouterOutputs } from "@/packages/trpc/server/router";
 
 const STATUS_BADGE: Record<
   string,
