@@ -2,9 +2,20 @@
 
 import { Loader2Icon, Trash2Icon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
 import { authClient } from "@/packages/auth/auth-client";
 
@@ -79,6 +90,8 @@ export function SecurityLinkOAuth() {
   const [unlinkingProviderId, setUnlinkingProviderId] = useState<string | null>(
     null
   );
+  const [unlinkDialogProvider, setUnlinkDialogProvider] =
+    useState<OAuthProvider | null>(null);
 
   const fetchAccounts = useCallback(async () => {
     const { data, error } = await authClient.listAccounts();
@@ -119,10 +132,7 @@ export function SecurityLinkOAuth() {
       });
       return;
     }
-    toastManager.add({
-      title: `${providerConfig[provider].label} linked`,
-      type: "success",
-    });
+    // Success: user is redirected to OAuth provider. Toast on return via fetchAccounts.
     fetchAccounts();
   }
 
@@ -130,6 +140,7 @@ export function SecurityLinkOAuth() {
     setUnlinkingProviderId(providerId);
     const { error } = await authClient.unlinkAccount({ providerId });
     setUnlinkingProviderId(null);
+    setUnlinkDialogProvider(null);
     if (error) {
       toastManager.add({
         title: "Could not unlink account",
@@ -192,20 +203,47 @@ export function SecurityLinkOAuth() {
                   {linked ? "Linked" : "Link"} {config.label}
                 </Button>
                 {linked && providerIdForUnlink ? (
-                  <Button
-                    disabled={!!isUnlinking}
-                    onClick={() => handleUnlink(providerIdForUnlink)}
-                    size="sm"
-                    type="button"
-                    variant="ghost"
+                  <AlertDialog
+                    onOpenChange={(open) =>
+                      !open && setUnlinkDialogProvider(null)
+                    }
+                    open={unlinkDialogProvider === provider}
                   >
-                    {isUnlinking ? (
-                      <Loader2Icon className="size-4 animate-spin" />
-                    ) : (
+                    <Button
+                      onClick={() => setUnlinkDialogProvider(provider)}
+                      size="default"
+                      type="button"
+                      variant="destructive"
+                    >
                       <Trash2Icon className="size-4" />
-                    )}
-                    <span className="sr-only">Unlink {config.label}</span>
-                  </Button>
+                      Unlink {config.label}
+                    </Button>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Unlink {config.label}?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          You will no longer be able to sign in with{" "}
+                          {config.label}. You can link it again anytime.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          disabled={!!isUnlinking}
+                          onClick={() => handleUnlink(providerIdForUnlink)}
+                          variant="destructive"
+                        >
+                          {isUnlinking ? (
+                            <Spinner className="size-4" />
+                          ) : (
+                            "Unlink"
+                          )}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 ) : null}
               </div>
             );
