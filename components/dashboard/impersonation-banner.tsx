@@ -1,10 +1,18 @@
 "use client";
 
-export function ImpersonationBanner() {
-  // const { session, user } = useUserQuery();
-  // const trpc = useTRPC();
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { useUserQuery } from "@/packages/hooks/use-user";
+import { useTRPC } from "@/packages/trpc/client";
 
-  // const stopMutation = useMutation(
+export function ImpersonationBanner() {
+  const { session, user } = useUserQuery();
+  const trpc = useTRPC();
+
+  const stopMutation = () => {
+    console.log("stopMutation");
+  };
+  //  useMutation(
   //   trpc.admin.stopImpersonating.mutationOptions({
   //     onSuccess: () => {
   //       window.location.href = "/dashboard/admin";
@@ -19,29 +27,28 @@ export function ImpersonationBanner() {
   //   })
   // );
 
-  // if (!session.impersonatedBy) {
-  //   return null;
-  // }
+  if (!session?.impersonatedBy) {
+    return null;
+  }
 
   return (
     <div className="flex items-center justify-between gap-2 bg-warning/15 px-4 py-1.5 text-warning-foreground text-xs">
       <span>
-        You are impersonating
-        {/* <strong>{user.name}</strong> ({user.email}) */}
+        You are impersonating <strong>{user.name}</strong> ({user.email})
       </span>
-      {/* <Button
-        disabled={stopMutation.isPending}
-        onClick={() => stopMutation.mutate()}
+      <Button
+        // disabled={stopMutation.isPending}
+        // onClick={() => stopMutation.mutate()}
         size="xs"
         variant="outline"
       >
-        {stopMutation.isPending ? (
-          <Spinner />
-        ) : (
-          <EyeOffIcon className="size-3" />
-        )}
+        {/* {stopMutation.isPending ? ( */}
+        <Spinner />
+        {/* ) : ( */}
+        {/*   <EyeOffIcon className="size-3" /> */}
+        {/* )} */}
         Stop impersonating
-      </Button> */}
+      </Button>
     </div>
   );
 }

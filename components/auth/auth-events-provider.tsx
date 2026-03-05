@@ -5,6 +5,9 @@ import { useEffect, useRef } from "react";
 import { identify } from "@/packages/analytics/client";
 import { useSession } from "@/packages/auth/auth-client";
 import { listenToAuthEvents } from "@/packages/utils/auth-broadcast";
+import { createLoggerWithContext } from "@/packages/utils/logger";
+
+const logger = createLoggerWithContext("auth:events-provider");
 
 const REDIRECT_ELIGIBLE_PATHS = [
   "/sign-in",
@@ -28,6 +31,7 @@ export function AuthEventsProvider() {
 
   useEffect(() => {
     const unsubscribe = listenToAuthEvents((message) => {
+      logger.debug("listenToAuthEvents", { message });
       if (message.type !== "signed_in") {
         return;
       }

@@ -8,6 +8,27 @@
       "when": 1772631987646,
       "tag": "0000_fast_lester",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772650589317,
+      "tag": "0001_previous_warbound",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772677258629,
+      "tag": "0002_soft_deathbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1772683931214,
+      "tag": "0003_messy_adam_warlock",
+      "breakpoints": true
     }
   ]
 }

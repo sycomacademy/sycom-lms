@@ -1,5 +1,5 @@
 import { type UseInViewOptions, useInView } from "motion/react";
-import { useImperativeHandle, useRef } from "react";
+import { type Ref, useImperativeHandle, useRef } from "react";
 
 interface UseIsInViewOptions {
   inView?: boolean;
@@ -8,7 +8,7 @@ interface UseIsInViewOptions {
 }
 
 function useIsInView<T extends HTMLElement = HTMLElement>(
-  ref: React.Ref<T>,
+  ref: Ref<T>,
   options: UseIsInViewOptions = {}
 ) {
   const { inView, inViewOnce = false, inViewMargin = "0px" } = options;

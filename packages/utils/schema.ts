@@ -55,3 +55,36 @@ export const updateUserSchema = z.object({
   email: emailSchema.optional(),
 });
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+
+/**
+ * Profile settings stored in profile.settings JSONB column.
+ */
+export const profileSettingsSchema = z.object({
+  useDeviceTimezone: z.boolean().optional().default(true),
+  enableFacehash: z.boolean().optional().default(true),
+});
+export type ProfileSettingsInput = z.infer<typeof profileSettingsSchema>;
+
+/**
+ * Combined account update input for user.update tRPC procedure.
+ * Covers both Better Auth user fields and profile fields.
+ */
+export const updateAccountSchema = z.object({
+  name: nameSchema.optional(),
+  email: emailSchema.optional(),
+  image: z.string().url().optional(),
+  bio: z.string().max(500, "Bio must be less than 500 characters").optional(),
+  settings: profileSettingsSchema.partial().optional(),
+});
+export type UpdateAccountInput = z.infer<typeof updateAccountSchema>;
+
+/**
+ * Feedback submission input.
+ */
+export const submitFeedbackSchema = z.object({
+  message: z
+    .string()
+    .min(1, "Feedback is required")
+    .max(2000, "Feedback must be less than 2000 characters"),
+});
+export type SubmitFeedbackInput = z.infer<typeof submitFeedbackSchema>;

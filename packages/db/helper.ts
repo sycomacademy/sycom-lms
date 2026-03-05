@@ -1,4 +1,4 @@
-import { pgEnum, timestamp } from "drizzle-orm/pg-core";
+import { timestamp } from "drizzle-orm/pg-core";
 
 // ── Timestamp helpers ──
 export const createdAt = timestamp("created_at").defaultNow().notNull();
@@ -6,22 +6,6 @@ export const updatedAt = timestamp("updated_at")
   .defaultNow()
   .$onUpdate(() => /* @__PURE__ */ new Date())
   .notNull();
-
-// ── Enum helpers ──
-export const userRoleEnum = pgEnum("platform_role", [
-  "platform_admin",
-  "content_creator",
-  "platform_student",
-]);
-export type UserRole = (typeof userRoleEnum.enumValues)[number];
-export const organizationRoleEnum = pgEnum("organization_role", [
-  "org_owner",
-  "org_admin",
-  "org_auditor",
-  "org_teacher",
-  "org_student",
-]);
-export type OrganizationRole = (typeof organizationRoleEnum.enumValues)[number];
 
 // ── Custom errors ──
 export class DatabaseError extends Error {

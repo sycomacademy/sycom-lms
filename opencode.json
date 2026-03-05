@@ -7,6 +7,11 @@
       "command": ["npx", "trigger.dev@4.4.1", "mcp", "--dev-only"],
       "enabled": true,
       "type": "local"
+    },
+    "neon": {
+      "type": "remote",
+      "url": "https://mcp.neon.tech/mcp",
+      "enabled": true
     }
   }
 }

@@ -2,17 +2,9 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useSession } from "@/packages/auth/auth-client";
 
-export function HeaderAuth() {
-  const { data: session, isPending } = useSession();
-
-  if (isPending) {
-    return <Skeleton className="h-10 w-24" />;
-  }
-
-  if (!session) {
+export function HeaderAuth({ isSignedIn }: { isSignedIn: boolean }) {
+  if (!isSignedIn) {
     return (
       <Button
         nativeButton={false}

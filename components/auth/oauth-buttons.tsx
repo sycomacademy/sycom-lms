@@ -1,6 +1,7 @@
 "use client";
 
-import { Loader2Icon } from "lucide-react";
+import { FingerprintIcon, Loader2Icon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   Accordion,
@@ -128,9 +129,10 @@ interface OAuthButtonsProps {
 }
 
 export function OAuthButtons({ callbackUrl }: OAuthButtonsProps) {
-  const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(
-    null
-  );
+  const router = useRouter();
+  const [loadingProvider, setLoadingProvider] = useState<
+    OAuthProvider | "passkey" | null
+  >(null);
   const [isHydrated, setIsHydrated] = useState(false);
   const [lastMethod, setLastMethod] = useState<string | null>(null);
   const shouldOpenAccordion =
@@ -168,6 +170,47 @@ export function OAuthButtons({ callbackUrl }: OAuthButtonsProps) {
     track({ event: analyticsEvents.oauthSignInSuccess, provider });
   }
 
+  async function handlePasskeySignIn() {
+    setLoadingProvider("passkey");
+    track({ event: analyticsEvents.passkeySignInStarted });
+    const { error } = await authClient.signIn.passkey({
+      autoFill: false,
+      fetchOptions: {
+        onSuccess() {
+          track({ event: analyticsEvents.passkeySignInSuccess });
+          toastManager.add({
+            title: "Signed in",
+            description: "Welcome back.",
+            type: "success",
+          });
+          router.push((callbackUrl ?? "/dashboard") as "/dashboard");
+        },
+        onError(ctx) {
+          track({
+            event: analyticsEvents.passkeySignInFailed,
+            error_message: ctx.error?.message,
+          });
+          toastManager.add({
+            title: "Sign in failed",
+            description:
+              (ctx.error as { message?: string })?.message ??
+              "Passkey authentication failed. Please try again.",
+            type: "error",
+          });
+        },
+      },
+    });
+    setLoadingProvider(null);
+    if (error && !error.message?.includes("User cancelled")) {
+      toastManager.add({
+        title: "Sign in failed",
+        description:
+          error.message ?? "Passkey sign-in failed. Please try again.",
+        type: "error",
+      });
+    }
+  }
+
   return (
     <Accordion
       className="border-none"
@@ -176,10 +219,24 @@ export function OAuthButtons({ callbackUrl }: OAuthButtonsProps) {
     >
       <AccordionItem className="border-none data-open:bg-transparent" value="0">
         <AccordionTrigger className="justify-center gap-2 hover:no-underline">
-          Show other options
+          More ways to sign in
         </AccordionTrigger>
         <AccordionContent>
           <div className="space-y-3 pt-2">
+            <Button
+              className="w-full gap-3"
+              disabled={!!loadingProvider}
+              onClick={handlePasskeySignIn}
+              type="button"
+              variant="outline"
+            >
+              {loadingProvider === "passkey" ? (
+                <Loader2Icon className="h-5 w-5 animate-spin" />
+              ) : (
+                <FingerprintIcon className="h-5 w-5 shrink-0" />
+              )}
+              <span>Continue with passkey</span>
+            </Button>
             {Object.values(providerConfig).map((provider) => (
               <OAuthButton
                 isLastUsed={lastMethod === provider.name}
