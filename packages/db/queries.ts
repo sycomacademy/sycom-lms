@@ -1,11 +1,19 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import type { Database } from "@/packages/db";
 import { db } from "@/packages/db";
 import { createLoggerWithContext } from "@/packages/utils/logger";
 import { schema } from "./schema";
+import { feedback } from "./schema/feedback";
+import { profile, profileSettingsDefault } from "./schema/profile";
 
 const logger = createLoggerWithContext("db:queries");
-const { cohort, organization } = schema;
+const {
+  cohort,
+  cohort_member,
+  member,
+  organization,
+  session: sessionTable,
+} = schema;
 const PUBLIC_ORG_SLUG = "platform";
 const PUBLIC_ORG_NAME = "Platform";
 const PUBLIC_COHORT_NAME = "General";
@@ -58,4 +66,180 @@ export async function ensurePublicOrg(database: Database = db) {
       `Created public cohort "${PUBLIC_COHORT_NAME}" (id: ${cohortId})`
     );
   }
+}
+
+// ── Auth provisioning (used by auth hooks) ──
+
+/**
+ * Provision a newly created user: ensure platform org/cohort exist, create
+ * profile, add user as member of platform org and General cohort.
+ */
+export async function provisionNewUser(
+  database: Database,
+  params: { userId: string }
+) {
+  await ensurePublicOrg(database);
+
+  const [org] = await database
+    .select({ id: organization.id })
+    .from(organization)
+    .where(eq(organization.slug, PUBLIC_ORG_SLUG))
+    .limit(1);
+
+  const [cohortRow] = org
+    ? await database
+        .select({ id: cohort.id })
+        .from(cohort)
+        .where(
+          and(
+            eq(cohort.organizationId, org.id),
+            eq(cohort.name, PUBLIC_COHORT_NAME)
+          )
+        )
+        .limit(1)
+    : [];
+
+  await database
+    .insert(profile)
+    .values({
+      id: crypto.randomUUID(),
+      userId: params.userId,
+      bio: "",
+      settings: { ...profileSettingsDefault },
+    })
+    .onConflictDoNothing({ target: profile.userId });
+
+  if (org) {
+    await database.insert(member).values({
+      id: crypto.randomUUID(),
+      organizationId: org.id,
+      userId: params.userId,
+      role: "org_student",
+    });
+  }
+
+  if (cohortRow) {
+    await database.insert(cohort_member).values({
+      id: crypto.randomUUID(),
+      teamId: cohortRow.id,
+      userId: params.userId,
+    });
+  }
+
+  logger.info("user provisioned", { userId: params.userId });
+}
+
+/**
+ * Remove all sessions for the user except the one with the given sessionId.
+ * Used for single-session behaviour on sign-in.
+ */
+export async function deleteOtherSessionsForUser(
+  database: Database,
+  params: { userId: string; keepSessionId: string }
+) {
+  const result = await database
+    .delete(sessionTable)
+    .where(
+      and(
+        eq(sessionTable.userId, params.userId),
+        ne(sessionTable.id, params.keepSessionId)
+      )
+    );
+  return result;
+}
+
+/**
+ * If the session has no active organization, set it to platform org and
+ * General cohort.
+ */
+export async function setSessionActiveOrgIfNull(
+  database: Database,
+  params: { sessionId: string }
+) {
+  const [org] = await database
+    .select({ id: organization.id })
+    .from(organization)
+    .where(eq(organization.slug, PUBLIC_ORG_SLUG))
+    .limit(1);
+
+  if (!org) {
+    return;
+  }
+
+  const [cohortRow] = await database
+    .select({ id: cohort.id })
+    .from(cohort)
+    .where(
+      and(
+        eq(cohort.organizationId, org.id),
+        eq(cohort.name, PUBLIC_COHORT_NAME)
+      )
+    )
+    .limit(1);
+
+  await database
+    .update(sessionTable)
+    .set({
+      activeOrganizationId: org.id,
+      activeTeamId: cohortRow?.id ?? null,
+    })
+    .where(eq(sessionTable.id, params.sessionId));
+}
+
+// ── Profile queries ──
+
+export type UpdateProfileData = Partial<
+  Pick<typeof profile.$inferInsert, "bio" | "settings">
+>;
+
+export async function getProfileByUserId(
+  database: Database,
+  params: { userId: string }
+) {
+  const [result] = await database
+    .select({
+      id: profile.id,
+      userId: profile.userId,
+      bio: profile.bio,
+      settings: profile.settings,
+      createdAt: profile.createdAt,
+      updatedAt: profile.updatedAt,
+    })
+    .from(profile)
+    .where(eq(profile.userId, params.userId));
+
+  return result ?? null;
+}
+
+export async function updateProfileByUserId(
+  database: Database,
+  params: { userId: string; data: UpdateProfileData }
+) {
+  const updated = await database
+    .update(profile)
+    .set(params.data)
+    .where(eq(profile.userId, params.userId))
+    .returning({
+      id: profile.id,
+      userId: profile.userId,
+      bio: profile.bio,
+      settings: profile.settings,
+      createdAt: profile.createdAt,
+      updatedAt: profile.updatedAt,
+    });
+  return updated[0] ?? null;
+}
+
+// ── Feedback queries ──
+
+export async function submitFeedback(
+  database: Database,
+  params: { userId: string; email: string; message: string }
+) {
+  const result = await database.insert(feedback).values({
+    email: params.email,
+    userId: params.userId,
+    message: params.message,
+  });
+  return result;
 }

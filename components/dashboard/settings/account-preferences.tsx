@@ -15,9 +15,6 @@ import { toastManager } from "@/components/ui/toast";
 import { useUserMutation, useUserQuery } from "@/packages/hooks/use-user";
 import { capitalize } from "@/packages/utils/string";
 
-const DEFAULT_USE_DEVICE_TIMEZONE = true;
-const DEFAULT_ENABLE_FACEHASH = true;
-
 export function AccountPreferences() {
   const { theme, setTheme } = useTheme();
   const { profile } = useUserQuery();
@@ -31,10 +28,8 @@ export function AccountPreferences() {
   const themeValue = theme ?? "system";
   const selectValue = mounted ? capitalize(themeValue) : "System";
 
-  const useDeviceTimezone =
-    profile.settings?.useDeviceTimezone ?? DEFAULT_USE_DEVICE_TIMEZONE;
-  const enableFacehash =
-    profile.settings?.enableFacehash ?? DEFAULT_ENABLE_FACEHASH;
+  const useDeviceTimezone = profile?.settings?.useDeviceTimezone ?? true;
+  const enableFacehash = profile?.settings?.enableFacehash ?? true;
 
   const handleUseDeviceTimezoneChange = (checked: boolean) => {
     mutation.mutate(

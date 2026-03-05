@@ -15,6 +15,13 @@
       "when": 1772650589317,
       "tag": "0001_previous_warbound",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772677258629,
+      "tag": "0002_soft_deathbird",
+      "breakpoints": true
     }
   ]
 }

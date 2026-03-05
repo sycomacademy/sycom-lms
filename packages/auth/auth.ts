@@ -4,8 +4,14 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { lastLoginMethod } from "better-auth/plugins";
 import { db } from "@/packages/db";
+import {
+  deleteOtherSessionsForUser,
+  provisionNewUser,
+  setSessionActiveOrgIfNull,
+} from "@/packages/db/queries";
 import { schema } from "@/packages/db/schema";
 import { env } from "@/packages/env/server";
+import { createLoggerWithContext } from "@/packages/utils/logger";
 import {
   adminPlugin,
   afterEmailVerification,
@@ -18,6 +24,8 @@ import {
   ssoPlugin,
   twoFactorPlugin,
 } from "./config";
+
+const authHookLogger = createLoggerWithContext("auth:hook");
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -55,18 +63,37 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        after: async (_user) => {
-          //add user to public org
-          //add user to public cohort
-          //create profile field
+        after: async (user) => {
+          try {
+            await provisionNewUser(db, { userId: user.id });
+          } catch (error) {
+            authHookLogger.error("user provisioning failed", {
+              userId: user.id,
+              error,
+            });
+          }
         },
       },
     },
     session: {
       create: {
-        after: async (_createdSession) => {
-          //delete other sessions
-          // if no active organization, set active organization and cohort to public org and cohorts
+        after: async (createdSession) => {
+          try {
+            await deleteOtherSessionsForUser(db, {
+              userId: createdSession.userId,
+              keepSessionId: createdSession.id,
+            });
+            if (!createdSession.activeOrganizationId) {
+              await setSessionActiveOrgIfNull(db, {
+                sessionId: createdSession.id,
+              });
+            }
+          } catch (error) {
+            authHookLogger.error("session hook failed", {
+              sessionId: createdSession.id,
+              error,
+            });
+          }
         },
       },
     },

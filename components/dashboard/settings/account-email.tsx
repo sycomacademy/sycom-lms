@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
 import { useUserMutation, useUserQuery } from "@/packages/hooks/use-user";
-import { emailSchema } from "@/packages/types/auth";
+import { emailSchema } from "@/packages/utils/schema";
 
 const accountEmailSchema = z.object({
   email: emailSchema,

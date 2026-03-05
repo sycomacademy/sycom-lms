@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
 import { useUserMutation, useUserQuery } from "@/packages/hooks/use-user";
-import { nameSchema } from "@/packages/types/auth";
+import { nameSchema } from "@/packages/utils/schema";
 
 const NAME_WORDS = /\s+/;
 

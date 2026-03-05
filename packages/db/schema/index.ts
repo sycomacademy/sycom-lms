@@ -23,6 +23,9 @@ import {
   userRoleEnum,
   verification,
 } from "./auth";
+import { feedback, feedbackRelations } from "./feedback";
+import { profile, profileRelations } from "./profile";
+import { report, reportRelations } from "./report";
 import {
   mediaAsset,
   storageFolderEnum,
@@ -53,6 +56,18 @@ const schema = {
   user,
   userRelations,
   verification,
+
+  // profile
+  profile,
+  profileRelations,
+
+  // feedback
+  feedback,
+  feedbackRelations,
+
+  // report
+  report,
+  reportRelations,
 
   // storage
   mediaAsset,
