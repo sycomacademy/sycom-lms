@@ -818,17 +818,15 @@ export const courseRouter = router({
       ]);
 
       const isCompleted = !!isCompletedRow[0];
-      const idx = orderedLessons.findIndex((l) => l.id === lessonRow.id);
+      const unlockedLessons = orderedLessons.filter((l) => !l.isLocked);
+      const idx = unlockedLessons.findIndex((l) => l.id === lessonRow.id);
       const prevLessonId =
-        idx > 0 ? (orderedLessons[idx - 1]?.id ?? null) : null;
+        idx > 0 ? (unlockedLessons[idx - 1]?.id ?? null) : null;
       const nextLessonId =
-        idx >= 0 && idx < orderedLessons.length - 1
-          ? (orderedLessons[idx + 1]?.id ?? null)
+        idx >= 0 && idx < unlockedLessons.length - 1
+          ? (unlockedLessons[idx + 1]?.id ?? null)
           : null;
-      const nextIsLocked =
-        nextLessonId !== null
-          ? (orderedLessons[idx + 1]?.isLocked ?? false)
-          : false;
+      const nextIsLocked = false; // nav only returns unlocked lessons
 
       return {
         course: { id: courseRow.id, title: courseRow.title },

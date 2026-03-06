@@ -25,7 +25,11 @@ function useEditorRerender(editor: Editor) {
   }, [editor]);
 }
 
-export function EditorToolbar({ editor, variant }: ToolbarProps) {
+export function EditorToolbar({
+  editor,
+  variant,
+  mediaUploadOwnerId,
+}: ToolbarProps) {
   useEditorRerender(editor);
 
   if (variant === "bare") {
@@ -54,7 +58,10 @@ export function EditorToolbar({ editor, variant }: ToolbarProps) {
             <ToolbarSeparator />
             <TableGroup editor={editor} />
             <ToolbarSeparator />
-            <MediaGroup editor={editor} />
+            <MediaGroup
+              editor={editor}
+              mediaUploadOwnerId={mediaUploadOwnerId}
+            />
           </>
         )}
       </Toolbar>

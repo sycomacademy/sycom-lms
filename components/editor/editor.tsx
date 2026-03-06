@@ -20,6 +20,7 @@ export function Editor({
   placeholder,
   className,
   autofocus = false,
+  mediaUploadOwnerId,
 }: EditorProps) {
   const editor = useEditorInstance({
     variant,
@@ -42,7 +43,11 @@ export function Editor({
       data-variant={variant}
     >
       {editor && editable && variant !== "bare" && (
-        <EditorToolbar editor={editor} variant={variant} />
+        <EditorToolbar
+          editor={editor}
+          mediaUploadOwnerId={mediaUploadOwnerId}
+          variant={variant}
+        />
       )}
       {editor && editable && variant === "full" && (
         <>

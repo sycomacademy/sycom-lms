@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import type { Route } from "next";
 import { notFound, redirect } from "next/navigation";
+import { dashboardGuard, withAuthRedirect } from "@/packages/auth/helper";
 import { getCaller } from "@/packages/trpc/server";
 
 interface LearnCourseIndexPageProps {
@@ -10,11 +11,12 @@ interface LearnCourseIndexPageProps {
 export default async function LearnCourseIndexPage({
   params,
 }: LearnCourseIndexPageProps) {
+  await dashboardGuard();
   const { courseId } = await params;
 
   try {
-    const data = await (await getCaller()).course.getEnrolledCourse({
-      courseId,
+    const data = await withAuthRedirect(async () => {
+      return (await getCaller()).course.getEnrolledCourse({ courseId });
     });
 
     const firstUnlockedLessonId = data.sections

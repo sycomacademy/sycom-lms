@@ -5,11 +5,16 @@ import {
   CircleHelpIcon,
   FileIcon,
   ImageIcon,
+  Loader2Icon,
   MusicIcon,
   UploadIcon,
   VideoIcon,
 } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
+import {
+  getLessonMediaSignedParams,
+  persistLessonMedia,
+} from "@/app/dashboard/courses/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,15 +23,18 @@ import {
   PopoverPopup,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { toastManager } from "@/components/ui/toast";
 import { ToolbarGroup } from "@/components/ui/toolbar";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { uploadFile } from "@/packages/storage/upload";
 
 interface MediaGroupProps {
   editor: Editor;
+  mediaUploadOwnerId?: string;
 }
 
 function formatFileSize(bytes: number): string {
@@ -55,12 +63,35 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-export function MediaGroup({ editor }: MediaGroupProps) {
+export function MediaGroup({ editor, mediaUploadOwnerId }: MediaGroupProps) {
   const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [uploadingType, setUploadingType] = useState<
+    "image" | "video" | "audio" | "file" | null
+  >(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadToCloudinary = useCallback(
+    async (file: File, lessonId: string): Promise<string> => {
+      const signedParams = await getLessonMediaSignedParams(lessonId);
+      const result = await uploadFile({ file, signedParams });
+      await persistLessonMedia(result, lessonId);
+      return result.secureUrl;
+    },
+    []
+  );
+
+  const getSrc = useCallback(
+    async (file: File): Promise<string> => {
+      if (mediaUploadOwnerId) {
+        return uploadToCloudinary(file, mediaUploadOwnerId);
+      }
+      return fileToDataUrl(file);
+    },
+    [mediaUploadOwnerId, uploadToCloudinary]
+  );
 
   const handleImageUpload = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,12 +99,22 @@ export function MediaGroup({ editor }: MediaGroupProps) {
       if (!file) {
         return;
       }
-
-      const src = await fileToDataUrl(file);
-      editor.chain().focus().setImage({ src }).run();
       event.target.value = "";
+      setUploadingType("image");
+      try {
+        const src = await getSrc(file);
+        editor.chain().focus().setImage({ src }).run();
+      } catch (err) {
+        toastManager.add({
+          title: "Failed to upload image",
+          description: err instanceof Error ? err.message : "Unknown error",
+          type: "error",
+        });
+      } finally {
+        setUploadingType(null);
+      }
     },
-    [editor]
+    [editor, getSrc]
   );
 
   const handleVideoUpload = useCallback(
@@ -82,12 +123,22 @@ export function MediaGroup({ editor }: MediaGroupProps) {
       if (!file) {
         return;
       }
-
-      const src = await fileToDataUrl(file);
-      editor.chain().focus().setVideoPlayer({ src, title: file.name }).run();
       event.target.value = "";
+      setUploadingType("video");
+      try {
+        const src = await getSrc(file);
+        editor.chain().focus().setVideoPlayer({ src, title: file.name }).run();
+      } catch (err) {
+        toastManager.add({
+          title: "Failed to upload video",
+          description: err instanceof Error ? err.message : "Unknown error",
+          type: "error",
+        });
+      } finally {
+        setUploadingType(null);
+      }
     },
-    [editor]
+    [editor, getSrc]
   );
 
   const handleAudioUpload = useCallback(
@@ -96,16 +147,26 @@ export function MediaGroup({ editor }: MediaGroupProps) {
       if (!file) {
         return;
       }
-
-      const src = await fileToDataUrl(file);
-      editor
-        .chain()
-        .focus()
-        .setAudioPlayer({ src, title: file.name, mimeType: file.type })
-        .run();
       event.target.value = "";
+      setUploadingType("audio");
+      try {
+        const src = await getSrc(file);
+        editor
+          .chain()
+          .focus()
+          .setAudioPlayer({ src, title: file.name, mimeType: file.type })
+          .run();
+      } catch (err) {
+        toastManager.add({
+          title: "Failed to upload audio",
+          description: err instanceof Error ? err.message : "Unknown error",
+          type: "error",
+        });
+      } finally {
+        setUploadingType(null);
+      }
     },
-    [editor]
+    [editor, getSrc]
   );
 
   const handleFileUpload = useCallback(
@@ -114,22 +175,34 @@ export function MediaGroup({ editor }: MediaGroupProps) {
       if (!file) {
         return;
       }
-
-      const href = await fileToDataUrl(file);
-      editor
-        .chain()
-        .focus()
-        .setFileAttachment({
-          href,
-          fileName: file.name,
-          fileSize: formatFileSize(file.size),
-          mimeType: file.type || "application/octet-stream",
-        })
-        .run();
       event.target.value = "";
+      setUploadingType("file");
+      try {
+        const href = await getSrc(file);
+        editor
+          .chain()
+          .focus()
+          .setFileAttachment({
+            href,
+            fileName: file.name,
+            fileSize: formatFileSize(file.size),
+            mimeType: file.type || "application/octet-stream",
+          })
+          .run();
+      } catch (err) {
+        toastManager.add({
+          title: "Failed to upload file",
+          description: err instanceof Error ? err.message : "Unknown error",
+          type: "error",
+        });
+      } finally {
+        setUploadingType(null);
+      }
     },
-    [editor]
+    [editor, getSrc]
   );
+
+  const isUploading = uploadingType !== null;
 
   const handleYoutubeSubmit = useCallback(
     (event: React.FormEvent) => {
@@ -180,13 +253,18 @@ export function MediaGroup({ editor }: MediaGroupProps) {
         <TooltipTrigger
           render={
             <Button
+              disabled={isUploading}
               onClick={() => imageInputRef.current?.click()}
               size="icon-xs"
               variant="ghost"
             />
           }
         >
-          <ImageIcon className="size-4" />
+          {uploadingType === "image" ? (
+            <Loader2Icon className="size-4 animate-spin" />
+          ) : (
+            <ImageIcon className="size-4" />
+          )}
         </TooltipTrigger>
         <TooltipContent>Insert Image</TooltipContent>
       </Tooltip>
@@ -195,13 +273,18 @@ export function MediaGroup({ editor }: MediaGroupProps) {
         <TooltipTrigger
           render={
             <Button
+              disabled={isUploading}
               onClick={() => audioInputRef.current?.click()}
               size="icon-xs"
               variant="ghost"
             />
           }
         >
-          <MusicIcon className="size-4" />
+          {uploadingType === "audio" ? (
+            <Loader2Icon className="size-4 animate-spin" />
+          ) : (
+            <MusicIcon className="size-4" />
+          )}
         </TooltipTrigger>
         <TooltipContent>Insert Audio</TooltipContent>
       </Tooltip>
@@ -210,13 +293,18 @@ export function MediaGroup({ editor }: MediaGroupProps) {
         <TooltipTrigger
           render={
             <Button
+              disabled={isUploading}
               onClick={() => fileInputRef.current?.click()}
               size="icon-xs"
               variant="ghost"
             />
           }
         >
-          <FileIcon className="size-4" />
+          {uploadingType === "file" ? (
+            <Loader2Icon className="size-4 animate-spin" />
+          ) : (
+            <FileIcon className="size-4" />
+          )}
         </TooltipTrigger>
         <TooltipContent>Insert File</TooltipContent>
       </Tooltip>
@@ -279,11 +367,16 @@ export function MediaGroup({ editor }: MediaGroupProps) {
             </form>
             <Button
               className="w-full"
+              disabled={isUploading}
               onClick={() => videoInputRef.current?.click()}
               size="sm"
               variant="outline"
             >
-              <UploadIcon className="size-4" />
+              {uploadingType === "video" ? (
+                <Loader2Icon className="size-4 animate-spin" />
+              ) : (
+                <UploadIcon className="size-4" />
+              )}
               Upload Video
             </Button>
           </div>

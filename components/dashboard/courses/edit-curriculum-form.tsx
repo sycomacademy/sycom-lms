@@ -1270,6 +1270,7 @@ function LessonItem({
         <div className="border-t p-3">
           <Editor
             content={content}
+            mediaUploadOwnerId={lesson.id}
             onUpdate={setContent}
             placeholder="Write your lesson content..."
             variant="full"

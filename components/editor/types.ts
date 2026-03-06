@@ -11,9 +11,12 @@ export interface EditorProps {
   placeholder?: string;
   className?: string;
   autofocus?: boolean;
+  /** When set, lesson media uploads go to Cloudinary. Otherwise base64 embed. */
+  mediaUploadOwnerId?: string;
 }
 
 export interface ToolbarProps {
   editor: Editor;
   variant: EditorVariant;
+  mediaUploadOwnerId?: string;
 }
