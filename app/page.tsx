@@ -1,31 +1,31 @@
-import { AnimatedTextHero } from "@/components/landing/animated-text-hero";
-import { TestimonialCards } from "@/components/landing/testimonial-cards";
+import { BlogSection } from "@/components/landing/blog-section";
+import { CoursesSection } from "@/components/landing/courses-section";
+import { CtaSection } from "@/components/landing/cta-section";
+import { FaqSection } from "@/components/landing/faq-section";
+import { FeaturesSection } from "@/components/landing/features-section";
+import { HeroSection } from "@/components/landing/hero-section";
+import { HowItWorksSection } from "@/components/landing/how-it-works-section";
+import { StatsSection } from "@/components/landing/stats-section";
+import { TestimonialsSection } from "@/components/landing/testimonials-section";
+import { TrustedBySection } from "@/components/landing/trusted-by-section";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
-import { SectionLabel } from "@/components/ui/section-label";
 
 export default async function HomePage() {
   return (
     <>
       <Header />
       <main>
-        <AnimatedTextHero />
-
-        <section className="py-16 lg:py-24">
-          <div className="container mx-auto px-4">
-            <SectionLabel label="Testimonials" />
-            <div className="mb-12 text-center">
-              <h2 className="mb-4 font-bold text-3xl text-foreground md:text-4xl">
-                What Our Students Say
-              </h2>
-              <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-                Hear from professionals who have transformed their careers with
-                our cybersecurity training programs.
-              </p>
-            </div>
-            <TestimonialCards />
-          </div>
-        </section>
+        <HeroSection />
+        <TrustedBySection />
+        <FeaturesSection />
+        <CoursesSection />
+        <StatsSection />
+        <HowItWorksSection />
+        <TestimonialsSection />
+        <BlogSection />
+        <FaqSection />
+        <CtaSection />
       </main>
       <Footer />
     </>

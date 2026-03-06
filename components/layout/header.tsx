@@ -6,7 +6,10 @@ import { Skeleton } from "../ui/skeleton";
 import { HeaderAuth } from "./header-auth";
 
 const navLinks: { href: Route; label: string }[] = [
-  { href: "/style-guide", label: "Style Guide" },
+  { href: "/#courses" as Route, label: "Courses" },
+  { href: "/#features" as Route, label: "Features" },
+  { href: "/blog" as Route, label: "Blog" },
+  { href: "/#faq" as Route, label: "FAQ" },
 ];
 
 export async function Header() {

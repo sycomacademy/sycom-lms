@@ -4,15 +4,28 @@ import Link from "next/link";
 import { ModeSwitcher } from "./mode-switcher";
 
 const popularCourses = [
-  { href: "/courses", label: "Browse Courses" },
-  { href: "/courses", label: "Cybersecurity Fundamentals" },
-  { href: "/courses", label: "Certification Prep" },
+  { href: "/#courses", label: "Browse Courses" },
+  { href: "/#courses", label: "Certification Prep" },
+  { href: "/#courses", label: "Ethical Hacking" },
+  { href: "/#courses", label: "Cloud Security" },
 ];
 
 const recentPosts = [
-  { href: "/blog", title: "Latest Articles", date: "2024" },
-  { href: "/blog", title: "Cybersecurity Tips", date: "2024" },
-  { href: "/blog", title: "Industry News", date: "2024" },
+  {
+    href: "/blog/ai-powered-cyber-threats-2026",
+    title: "The Rise of AI-Powered Cyber Threats",
+    date: "28 Feb 2026",
+  },
+  {
+    href: "/blog/zero-trust-architecture-implementation-guide",
+    title: "Zero Trust Architecture Guide",
+    date: "20 Feb 2026",
+  },
+  {
+    href: "/blog/top-cybersecurity-certifications-2026",
+    title: "Top Certifications for 2026",
+    date: "14 Feb 2026",
+  },
 ];
 
 export function Footer() {
