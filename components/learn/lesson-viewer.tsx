@@ -71,14 +71,14 @@ export function LessonViewer({
           onAllCorrectChange={handleAllQuizCorrectChange}
           requiredCount={requiredQuizCount}
         >
-          <div className="prose prose-neutral dark:prose-invert max-w-none [&_.editor-content]:min-h-0 [&_.editor-content]:p-0">
+          <div className="prose prose-neutral dark:prose-invert max-w-none p-4 [&_.editor-content]:min-h-0 [&_.editor-content]:p-0">
             <Editor content={content} editable={false} variant="full" />
           </div>
         </QuizCompletionProvider>
       );
     } else {
       editorContent = (
-        <div className="prose prose-neutral dark:prose-invert max-w-none [&_.editor-content]:min-h-0 [&_.editor-content]:p-0">
+        <div className="prose prose-neutral dark:prose-invert max-w-none p-4 [&_.editor-content]:min-h-0 [&_.editor-content]:p-0">
           <Editor content={content} editable={false} variant="full" />
         </div>
       );
