@@ -1,10 +1,10 @@
-import { orgGuard } from "@/packages/auth/helper";
+import { dashboardGuard } from "@/packages/auth/helper";
 
 export default async function LearnLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  await orgGuard();
+  await dashboardGuard();
   return <>{children}</>;
 }

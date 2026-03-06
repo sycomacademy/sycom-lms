@@ -19,6 +19,11 @@ export const getSession = cache(async () => {
   return session;
 });
 
+/**
+ * Ensures the user is authenticated.
+ * If there is no active session, the user is redirected to the sign-in page.
+ * Use in layouts or page components to protect routes that require authentication.
+ */
 export const dashboardGuard = async () => {
   const session = await getSession();
   if (!session) {
@@ -26,6 +31,12 @@ export const dashboardGuard = async () => {
   }
 };
 
+/**
+ * Ensures the user is authenticated and is a platform admin.
+ * - If there is no active session, the user is redirected to the sign-in page.
+ * - If authenticated but not a "platform_admin", user is redirected to the dashboard.
+ * Use to protect admin-only dashboard pages.
+ */
 export const adminGuard = async () => {
   const session = await getSession();
   if (!session) {
