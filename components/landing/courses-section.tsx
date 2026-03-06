@@ -6,7 +6,7 @@ import FadeContent from "@/components/reactbits/fade-content";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SectionLabel } from "@/components/ui/section-label";
-import { mockCourses } from "@/lib/mock-data";
+import { mockCourses } from "@/packages/utils/mock-data";
 
 const difficultyColors: Record<string, string> = {
   beginner: "bg-success/15 text-success",

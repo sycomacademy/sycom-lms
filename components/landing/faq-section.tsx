@@ -4,8 +4,8 @@ import { Accordion } from "@base-ui/react/accordion";
 import { ChevronDown } from "lucide-react";
 import FadeContent from "@/components/reactbits/fade-content";
 import { SectionLabel } from "@/components/ui/section-label";
-import { mockFaqs } from "@/lib/mock-data";
 import { cn } from "@/packages/utils/cn";
+import { mockFaqs } from "@/packages/utils/mock-data";
 
 export function FaqSection() {
   return (
@@ -44,7 +44,7 @@ export function FaqSection() {
                     {faq.question}
                     <ChevronDown className="h-5 w-5 shrink-0 text-primary-foreground/40 transition-transform duration-200" />
                   </Accordion.Trigger>
-                  <Accordion.Panel className="overflow-hidden text-primary-foreground/60 text-sm leading-relaxed data-[ending-style]:animate-accordion-up data-[starting-style]:animate-accordion-down">
+                  <Accordion.Panel className="overflow-hidden text-primary-foreground/60 text-sm leading-relaxed data-ending-style:animate-accordion-up data-starting-style:animate-accordion-down">
                     <div className="pb-5">{faq.answer}</div>
                   </Accordion.Panel>
                 </Accordion.Item>

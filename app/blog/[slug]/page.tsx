@@ -6,7 +6,7 @@ import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { mockBlogPosts } from "@/lib/mock-data";
+import { mockBlogPosts } from "@/packages/utils/mock-data";
 
 const LIST_ITEM_RE = /^-\s*/;
 const ORDERED_ITEM_RE = /^\d+\.\s*/;

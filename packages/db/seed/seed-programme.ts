@@ -513,7 +513,7 @@ export async function seedProgramme() {
             sectionId: sec.id,
             title: lec.title,
             order: i + 1,
-            type: "text",
+            type: "article",
             estimatedDuration: 5,
             content: lec.content,
           })
@@ -547,16 +547,19 @@ export async function seedProgramme() {
       userId: USER_IDS.alice,
       courseId: COURSE_IDS.introSecurity,
       organizationId: ORG_IDS.acme,
+      cohortId: COHORT_IDS.acmeGeneral,
     },
     {
       userId: USER_IDS.bob,
       courseId: COURSE_IDS.introSecurity,
       organizationId: ORG_IDS.acme,
+      cohortId: COHORT_IDS.acmeGeneral,
     },
     {
       userId: USER_IDS.eve,
       courseId: COURSE_IDS.introSecurity,
       organizationId: ORG_IDS.techcorp,
+      cohortId: COHORT_IDS.techcorpGeneral,
     },
   ];
 
@@ -565,17 +568,14 @@ export async function seedProgramme() {
     await db
       .insert(enrollment)
       .values({
-        id: `enr-${e.userId}-${e.courseId}-${e.organizationId}`,
+        id: `enr-${e.userId}-${e.courseId}-${e.cohortId}`,
         userId: e.userId,
         courseId: e.courseId,
         organizationId: e.organizationId,
+        cohortId: e.cohortId,
       })
       .onConflictDoNothing({
-        target: [
-          enrollment.userId,
-          enrollment.courseId,
-          enrollment.organizationId,
-        ],
+        target: [enrollment.userId, enrollment.courseId, enrollment.cohortId],
       });
   }
 
@@ -583,20 +583,17 @@ export async function seedProgramme() {
   const introCourse = COURSES.find((c) => c.id === COURSE_IDS.introSecurity);
   const firstLesson = introCourse?.sections[0]?.lessons[0];
   if (firstLesson) {
+    const aliceIntroEnrollmentId = `enr-${USER_IDS.alice}-${COURSE_IDS.introSecurity}-${COHORT_IDS.acmeGeneral}`;
+
     await db
       .insert(lessonCompletion)
       .values({
         id: `lcp-alice-${firstLesson.id}`,
-        userId: USER_IDS.alice,
+        enrollmentId: aliceIntroEnrollmentId,
         lessonId: firstLesson.id,
-        organizationId: ORG_IDS.acme,
       })
       .onConflictDoNothing({
-        target: [
-          lessonCompletion.userId,
-          lessonCompletion.lessonId,
-          lessonCompletion.organizationId,
-        ],
+        target: [lessonCompletion.enrollmentId, lessonCompletion.lessonId],
       });
   }
 

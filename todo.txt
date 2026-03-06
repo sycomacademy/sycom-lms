@@ -1,0 +1,12 @@
+- move course-schema int schema in utils
+- migrate to new animated icons
+
+- look into ratelimiting the trpc
+- email design
+- keyboard shortcut for app
+- no console log in whole, add cool linear consol log
+- 404 page cool design
+- neon and trigger workflow fix in github
+- plan to clear orphaned images storage
+- fix editor to be more simplified
+- fix oauth error linking

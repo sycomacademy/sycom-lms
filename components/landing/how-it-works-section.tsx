@@ -3,7 +3,7 @@
 import { BookOpen, Compass, Trophy } from "lucide-react";
 import FadeContent from "@/components/reactbits/fade-content";
 import { SectionLabel } from "@/components/ui/section-label";
-import { mockSteps } from "@/lib/mock-data";
+import { mockSteps } from "@/packages/utils/mock-data";
 
 const ICON_MAP: Record<string, typeof Compass> = {
   Compass,

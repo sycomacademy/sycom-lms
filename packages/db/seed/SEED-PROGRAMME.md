@@ -81,11 +81,11 @@ Alternatively, create new users via **Admin > Users** and use those for testing.
 
 **Flow:** Sign in as `alice@seed.example.com`, switch to Platform (or Acme).
 
-1. Alice is enrolled in Intro Security and has completed the first lesson.
+1. Alice is enrolled in Intro Security for the Acme General cohort and has completed the first lesson for that enrollment.
 2. Go to the course/journey area and confirm progress is reflected.
 3. Complete more lessons to test progress updates.
 
-**Edge case:** Bob and Eve are enrolled but have no completions. Enrollments exist without cohort assignment; cohort assignment controls which org members see the course in their org context.
+**Edge case:** Bob and Eve are enrolled but have no completions yet. Lesson progress is tied to the exact enrollment, so the same learner can keep separate progress across cohorts.
 
 ### 5. Platform admin overview
 

@@ -165,7 +165,10 @@ export const cohort = auth.table(
     createdAt,
     updatedAt,
   },
-  (table) => [index("cohort_organizationId_idx").on(table.organizationId)]
+  (table) => [
+    index("cohort_organizationId_idx").on(table.organizationId),
+    uniqueIndex("cohort_org_name_uidx").on(table.organizationId, table.name),
+  ]
 );
 
 export const cohort_member = auth.table(
@@ -183,6 +186,7 @@ export const cohort_member = auth.table(
   (table) => [
     index("cohort_member_teamId_idx").on(table.teamId),
     index("cohort_member_userId_idx").on(table.userId),
+    uniqueIndex("cohort_member_team_user_uidx").on(table.teamId, table.userId),
   ]
 );
 
@@ -202,6 +206,7 @@ export const member = auth.table(
   (table) => [
     index("member_organizationId_idx").on(table.organizationId),
     index("member_userId_idx").on(table.userId),
+    uniqueIndex("member_org_user_uidx").on(table.organizationId, table.userId),
   ]
 );
 

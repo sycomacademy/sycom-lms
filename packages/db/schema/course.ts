@@ -1,6 +1,5 @@
 import { relations } from "drizzle-orm";
 import {
-  boolean,
   index,
   integer,
   jsonb,
@@ -31,7 +30,7 @@ export type DifficultyLevel = (typeof DIFFICULTY_LEVELS)[number];
 export const INSTRUCTOR_ROLES = ["main", "secondary"] as const;
 export type InstructorRole = (typeof INSTRUCTOR_ROLES)[number];
 
-export const LESSON_TYPES = ["text", "video", "quiz"] as const;
+export const LESSON_TYPES = ["article", "test"] as const;
 export type LessonType = (typeof LESSON_TYPES)[number];
 
 // ---------------------------------------------------------------------------
@@ -162,9 +161,8 @@ export const lesson = pgTable(
       .references(() => section.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     content: jsonb("content"),
-    type: text("type", { enum: LESSON_TYPES }).default("text").notNull(),
+    type: text("type", { enum: LESSON_TYPES }).default("article").notNull(),
     order: integer("order").notNull().default(0),
-    isLocked: boolean("is_locked").notNull().default(false),
     estimatedDuration: integer("estimated_duration"),
     createdAt,
     updatedAt,
@@ -191,19 +189,28 @@ export const enrollment = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
+    cohortId: text("cohort_id")
+      .notNull()
+      .references(() => cohort.id, { onDelete: "cascade" }),
     enrolledAt: timestamp("enrolled_at").defaultNow().notNull(),
     completedAt: timestamp("completed_at"),
   },
   (table) => [
-    unique("enrollment_user_course_org_uniq").on(
+    unique("enrollment_user_course_cohort_uniq").on(
       table.userId,
       table.courseId,
-      table.organizationId
+      table.cohortId
     ),
     index("enrollment_user_id_idx").on(table.userId),
     index("enrollment_course_id_idx").on(table.courseId),
     index("enrollment_org_id_idx").on(table.organizationId),
+    index("enrollment_cohort_id_idx").on(table.cohortId),
     index("enrollment_user_org_idx").on(table.userId, table.organizationId),
+    index("enrollment_user_course_cohort_idx").on(
+      table.userId,
+      table.courseId,
+      table.cohortId
+    ),
   ]
 );
 
@@ -217,29 +224,24 @@ export const lessonCompletion = pgTable(
     id: text("id")
       .primaryKey()
       .$defaultFn(() => `lcp_${crypto.randomUUID()}`),
-    userId: text("user_id")
+    enrollmentId: text("enrollment_id")
       .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+      .references(() => enrollment.id, { onDelete: "cascade" }),
     lessonId: text("lesson_id")
       .notNull()
       .references(() => lesson.id, { onDelete: "cascade" }),
-    organizationId: text("organization_id")
-      .notNull()
-      .references(() => organization.id, { onDelete: "cascade" }),
     completedAt: timestamp("completed_at").defaultNow().notNull(),
   },
   (table) => [
-    unique("lesson_completion_user_lesson_org_uniq").on(
-      table.userId,
-      table.lessonId,
-      table.organizationId
+    unique("lesson_completion_enrollment_lesson_uniq").on(
+      table.enrollmentId,
+      table.lessonId
     ),
-    index("lesson_completion_user_id_idx").on(table.userId),
+    index("lesson_completion_enrollment_id_idx").on(table.enrollmentId),
     index("lesson_completion_lesson_id_idx").on(table.lessonId),
-    index("lesson_completion_org_id_idx").on(table.organizationId),
-    index("lesson_completion_user_org_idx").on(
-      table.userId,
-      table.organizationId
+    index("lesson_completion_enrollment_lesson_idx").on(
+      table.enrollmentId,
+      table.lessonId
     ),
   ]
 );
@@ -371,7 +373,7 @@ export const lessonRelations = relations(lesson, ({ one, many }) => ({
   cohortLessonDueDates: many(cohortLessonDueDate),
 }));
 
-export const enrollmentRelations = relations(enrollment, ({ one }) => ({
+export const enrollmentRelations = relations(enrollment, ({ one, many }) => ({
   user: one(user, {
     fields: [enrollment.userId],
     references: [user.id],
@@ -380,14 +382,23 @@ export const enrollmentRelations = relations(enrollment, ({ one }) => ({
     fields: [enrollment.courseId],
     references: [course.id],
   }),
+  organization: one(organization, {
+    fields: [enrollment.organizationId],
+    references: [organization.id],
+  }),
+  cohort: one(cohort, {
+    fields: [enrollment.cohortId],
+    references: [cohort.id],
+  }),
+  lessonCompletions: many(lessonCompletion),
 }));
 
 export const lessonCompletionRelations = relations(
   lessonCompletion,
   ({ one }) => ({
-    user: one(user, {
-      fields: [lessonCompletion.userId],
-      references: [user.id],
+    enrollment: one(enrollment, {
+      fields: [lessonCompletion.enrollmentId],
+      references: [enrollment.id],
     }),
     lesson: one(lesson, {
       fields: [lessonCompletion.lessonId],

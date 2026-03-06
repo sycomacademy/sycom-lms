@@ -6,7 +6,7 @@ import { Header } from "@/components/layout/header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { SectionLabel } from "@/components/ui/section-label";
-import { mockBlogPosts } from "@/lib/mock-data";
+import { mockBlogPosts } from "@/packages/utils/mock-data";
 
 export const metadata: Metadata = {
   title: "Blog | Sycom LMS",

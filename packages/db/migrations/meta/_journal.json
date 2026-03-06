@@ -64,6 +64,13 @@
       "when": 1772792649473,
       "tag": "0008_lush_thanos",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1772835462953,
+      "tag": "0009_enrollment_scoped_lesson_completion",
+      "breakpoints": true
     }
   ]
 }

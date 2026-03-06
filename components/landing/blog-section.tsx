@@ -7,7 +7,7 @@ import FadeContent from "@/components/reactbits/fade-content";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SectionLabel } from "@/components/ui/section-label";
-import { mockBlogPosts } from "@/lib/mock-data";
+import { mockBlogPosts } from "@/packages/utils/mock-data";
 
 export function BlogSection() {
   const latestPosts = mockBlogPosts.slice(0, 3);

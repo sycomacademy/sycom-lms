@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, asc, eq, ne, sql } from "drizzle-orm";
 import type { Database } from "@/packages/db";
 import { db } from "@/packages/db";
 import { createLoggerWithContext } from "@/packages/utils/logger";
@@ -9,7 +9,6 @@ import {
   PUBLIC_ORG_SLUG,
 } from "./helper";
 import { schema } from "./schema";
-import type { OrganizationRole } from "./schema/auth";
 import {
   category,
   cohortCourse,
@@ -17,7 +16,7 @@ import {
   enrollment,
   type InstructorRole,
 } from "./schema/course";
-import { feedback } from "./schema/feedback";
+import { feedback, report } from "./schema/feedback";
 import { profile, profileSettingsDefault } from "./schema/profile";
 
 const logger = createLoggerWithContext("db:queries");
@@ -28,7 +27,6 @@ const {
   member,
   organization,
   session: sessionTable,
-  user,
 } = schema;
 
 /** Selected profile columns for reads/returning. */
@@ -129,18 +127,24 @@ export async function provisionNewUser(
     })
     .onConflictDoNothing({ target: profile.userId });
 
-  await database.insert(member).values({
-    id: crypto.randomUUID(),
-    organizationId: orgId,
-    userId: params.userId,
-    role: "org_student",
-  });
+  await database
+    .insert(member)
+    .values({
+      id: crypto.randomUUID(),
+      organizationId: orgId,
+      userId: params.userId,
+      role: "org_student",
+    })
+    .onConflictDoNothing();
 
-  await database.insert(cohort_member).values({
-    id: crypto.randomUUID(),
-    teamId: cohortId,
-    userId: params.userId,
-  });
+  await database
+    .insert(cohort_member)
+    .values({
+      id: crypto.randomUUID(),
+      teamId: cohortId,
+      userId: params.userId,
+    })
+    .onConflictDoNothing();
 
   logger.info("user provisioned", { userId: params.userId });
 }
@@ -200,16 +204,20 @@ export async function setSessionActiveOrgIfNull(
   const [publicIds, preferredRow] = await Promise.all([
     getPublicOrgAndCohortIds(database),
     database
-      .select({ organizationId: member.organizationId })
+      .select({
+        organizationId: member.organizationId,
+        cohortId: cohort.id,
+      })
       .from(member)
       .innerJoin(organization, eq(organization.id, member.organizationId))
+      .leftJoin(cohort, eq(cohort.organizationId, member.organizationId))
       .where(
         and(
           eq(member.userId, sessionRow.userId),
           ne(organization.slug, PUBLIC_ORG_SLUG)
         )
       )
-      .orderBy(asc(member.createdAt))
+      .orderBy(asc(member.createdAt), asc(cohort.createdAt))
       .limit(1)
       .then((rows) => rows[0] ?? null),
   ]);
@@ -220,16 +228,7 @@ export async function setSessionActiveOrgIfNull(
     return;
   }
 
-  const activeCohortId = preferredRow
-    ? ((
-        await database
-          .select({ id: cohort.id })
-          .from(cohort)
-          .where(eq(cohort.organizationId, preferredRow.organizationId))
-          .orderBy(asc(cohort.createdAt))
-          .limit(1)
-      )[0]?.id ?? null)
-    : (publicIds?.cohortId ?? null);
+  const activeCohortId = preferredRow?.cohortId ?? publicIds?.cohortId ?? null;
 
   await database
     .update(sessionTable)
@@ -239,10 +238,6 @@ export async function setSessionActiveOrgIfNull(
     })
     .where(eq(sessionTable.id, params.sessionId));
 }
-
-export type UpdateProfileData = Partial<
-  Pick<typeof profile.$inferInsert, "bio" | "settings">
->;
 
 export async function getProfileByUserId(
   database: Database,
@@ -257,7 +252,7 @@ export async function getProfileByUserId(
 
 export async function updateProfileByUserId(
   database: Database,
-  params: { userId: string; data: UpdateProfileData }
+  params: { userId: string; data: Partial<typeof profile.$inferInsert> }
 ) {
   const updated = await database
     .update(profile)
@@ -277,6 +272,28 @@ export async function submitFeedback(
     message: params.message,
   });
   return result;
+}
+
+export async function submitReport(
+  database: Database,
+  params: {
+    userId: string;
+    email: string;
+    type: "bug" | "feature" | "complaint" | "other";
+    subject: string;
+    description: string;
+    imageUrl?: string | null;
+  }
+) {
+  await database.insert(report).values({
+    userId: params.userId,
+    email: params.email,
+    type: params.type,
+    subject: params.subject,
+    description: params.description,
+    imageUrl: params.imageUrl ?? null,
+  });
+  return { success: true };
 }
 
 export async function hasCourseAccessForEditing(
@@ -314,226 +331,180 @@ export async function hasCourseAccessForLearning(
     cohortId?: string | null;
   }
 ): Promise<boolean> {
-  const [enrolled] = await database
-    .select({ id: enrollment.id })
-    .from(enrollment)
-    .where(
+  const context = await getCourseLearningAccessContext(database, params);
+  return context.hasAccess;
+}
+
+export async function getCourseLearningAccessContext(
+  database: Database,
+  params: {
+    courseId: string;
+    userId: string;
+    organizationId: string;
+    cohortId?: string | null;
+  }
+) {
+  if (!params.cohortId) {
+    const [enrolled] = await database
+      .select({
+        enrollmentId: enrollment.id,
+        cohortId: enrollment.cohortId,
+      })
+      .from(enrollment)
+      .where(
+        and(
+          eq(enrollment.userId, params.userId),
+          eq(enrollment.courseId, params.courseId),
+          eq(enrollment.organizationId, params.organizationId)
+        )
+      )
+      .orderBy(asc(enrollment.enrolledAt))
+      .limit(1);
+
+    return {
+      hasAccess: !!enrolled,
+      accessType: enrolled ? ("enrollment" as const) : null,
+      enrollmentId: enrolled?.enrollmentId ?? null,
+      cohortId: enrolled?.cohortId ?? null,
+      cohortExists: null,
+      isCohortMember: null,
+      isAssignedToCohort: null,
+    };
+  }
+
+  const [row] = await database
+    .select({
+      cohortId: cohort.id,
+      enrollmentId: enrollment.id,
+      cohortMemberId: cohort_member.id,
+      assignedCourseId: cohortCourse.courseId,
+    })
+    .from(cohort)
+    .leftJoin(
+      enrollment,
       and(
+        eq(enrollment.cohortId, cohort.id),
         eq(enrollment.userId, params.userId),
         eq(enrollment.courseId, params.courseId),
         eq(enrollment.organizationId, params.organizationId)
       )
     )
-    .limit(1);
-
-  if (enrolled) {
-    return true;
-  }
-
-  if (params.cohortId) {
-    const [cohortRow] = await database
-      .select({ id: cohort.id })
-      .from(cohort)
-      .where(
-        and(
-          eq(cohort.id, params.cohortId),
-          eq(cohort.organizationId, params.organizationId)
-        )
+    .leftJoin(
+      cohort_member,
+      and(
+        eq(cohort_member.teamId, cohort.id),
+        eq(cohort_member.userId, params.userId)
       )
-      .limit(1);
-
-    if (!cohortRow) {
-      return false;
-    }
-
-    const [assigned] = await database
-      .select({ courseId: cohortCourse.courseId })
-      .from(cohortCourse)
-      .where(
-        and(
-          eq(cohortCourse.cohortId, params.cohortId),
-          eq(cohortCourse.courseId, params.courseId)
-        )
+    )
+    .leftJoin(
+      cohortCourse,
+      and(
+        eq(cohortCourse.cohortId, cohort.id),
+        eq(cohortCourse.courseId, params.courseId)
       )
-      .limit(1);
-
-    if (assigned) {
-      const [memberOf] = await database
-        .select({ id: cohort_member.id })
-        .from(cohort_member)
-        .where(
-          and(
-            eq(cohort_member.teamId, params.cohortId),
-            eq(cohort_member.userId, params.userId)
-          )
-        )
-        .limit(1);
-      return !!memberOf;
-    }
-  }
-
-  return false;
-}
-
-// Stopped here
-export async function listOrgMembers(
-  database: Database,
-  params: { organizationId: string }
-) {
-  const rows = await database
-    .select({
-      id: member.id,
-      userId: user.id,
-      name: user.name,
-      email: user.email,
-      image: user.image,
-      role: member.role,
-      createdAt: member.createdAt,
-    })
-    .from(member)
-    .innerJoin(user, eq(user.id, member.userId))
-    .where(eq(member.organizationId, params.organizationId))
-    .orderBy(asc(member.createdAt));
-
-  if (rows.length === 0) {
-    return [];
-  }
-
-  const userIds = rows.map((row) => row.userId);
-  const cohortRows = await database
-    .select({
-      userId: cohort_member.userId,
-      cohortId: cohort.id,
-      cohortName: cohort.name,
-    })
-    .from(cohort_member)
-    .innerJoin(cohort, eq(cohort.id, cohort_member.teamId))
+    )
     .where(
       and(
-        inArray(cohort_member.userId, userIds),
+        eq(cohort.id, params.cohortId),
         eq(cohort.organizationId, params.organizationId)
       )
     )
-    .orderBy(asc(cohort.name));
+    .limit(1);
 
-  const cohortsByUser = new Map<string, { id: string; name: string }[]>();
-  for (const cohortRow of cohortRows) {
-    const existing = cohortsByUser.get(cohortRow.userId) ?? [];
-    existing.push({ id: cohortRow.cohortId, name: cohortRow.cohortName });
-    cohortsByUser.set(cohortRow.userId, existing);
+  const hasEnrollment = !!row?.enrollmentId;
+  const hasDerivedCohortAccess =
+    !!row?.cohortMemberId && !!row?.assignedCourseId;
+  let accessType: "enrollment" | "cohort_assignment" | null = null;
+
+  if (hasEnrollment) {
+    accessType = "enrollment";
+  } else if (hasDerivedCohortAccess) {
+    accessType = "cohort_assignment";
   }
 
-  return rows.map((row) => ({
-    ...row,
-    cohorts: cohortsByUser.get(row.userId) ?? [],
-  }));
+  return {
+    hasAccess: hasEnrollment || hasDerivedCohortAccess,
+    accessType,
+    enrollmentId: row?.enrollmentId ?? null,
+    cohortId: row?.cohortId ?? null,
+    cohortExists: !!row,
+    isCohortMember: !!row?.cohortMemberId,
+    isAssignedToCohort: !!row?.assignedCourseId,
+  };
 }
 
-export async function listOrgCohorts(
+export async function requireCourseEnrollmentForLearning(
   database: Database,
   params: {
+    courseId: string;
+    userId: string;
     organizationId: string;
-    userId?: string;
-    memberRole?: OrganizationRole | null;
+    cohortId?: string | null;
   }
 ) {
-  const { organizationId, userId, memberRole } = params;
+  const context = await getCourseLearningAccessContext(database, params);
 
-  const canSeeAllCohorts =
-    memberRole === "org_owner" ||
-    memberRole === "org_admin" ||
-    memberRole === "org_auditor";
-
-  if (canSeeAllCohorts || !userId) {
-    return database
-      .select({
-        id: cohort.id,
-        name: cohort.name,
-        image: cohort.image,
-        organizationId: cohort.organizationId,
-        createdAt: cohort.createdAt,
-        memberCount:
-          sql<number>`(SELECT count(*)::int FROM "auth"."cohort_member" cm WHERE cm."team_id" = ${cohort.id})`.as(
-            "member_count"
-          ),
-        courseCount:
-          sql<number>`(SELECT count(*)::int FROM "cohort_course" cc WHERE cc."cohort_id" = ${cohort.id})`.as(
-            "course_count"
-          ),
-      })
-      .from(cohort)
-      .where(eq(cohort.organizationId, organizationId))
-      .orderBy(asc(cohort.name));
+  if (!context.hasAccess) {
+    return null;
   }
 
-  return database
-    .select({
-      id: cohort.id,
-      name: cohort.name,
-      image: cohort.image,
-      organizationId: cohort.organizationId,
-      createdAt: cohort.createdAt,
-      memberCount:
-        sql<number>`(SELECT count(*)::int FROM "auth"."cohort_member" cm WHERE cm."team_id" = ${cohort.id})`.as(
-          "member_count"
-        ),
-      courseCount:
-        sql<number>`(SELECT count(*)::int FROM "cohort_course" cc WHERE cc."cohort_id" = ${cohort.id})`.as(
-          "course_count"
-        ),
-    })
-    .from(cohort)
-    .innerJoin(
-      cohort_member,
-      and(eq(cohort_member.teamId, cohort.id), eq(cohort_member.userId, userId))
-    )
-    .where(eq(cohort.organizationId, organizationId))
-    .orderBy(asc(cohort.name));
+  if (!context.enrollmentId) {
+    throw new Error(
+      context.cohortId
+        ? "You have access to this cohort course, but you are not enrolled in it yet."
+        : "You have course access, but no enrollment could be resolved for progress tracking."
+    );
+  }
+
+  return context;
 }
 
-export async function listCohortMembers(
+export async function canEnrollInCohortCourse(
   database: Database,
-  params: { cohortId: string }
+  params: {
+    courseId: string;
+    userId: string;
+    organizationId: string;
+    cohortId: string;
+  }
 ) {
-  return database
-    .select({
-      id: cohort_member.id,
-      memberId: member.id,
-      userId: user.id,
-      name: user.name,
-      email: user.email,
-      image: user.image,
-      createdAt: cohort_member.createdAt,
-    })
-    .from(cohort_member)
-    .innerJoin(user, eq(user.id, cohort_member.userId))
-    .innerJoin(cohort, eq(cohort.id, cohort_member.teamId))
-    .innerJoin(
-      member,
-      and(
-        eq(member.userId, cohort_member.userId),
-        eq(member.organizationId, cohort.organizationId)
-      )
-    )
-    .where(eq(cohort_member.teamId, params.cohortId))
-    .orderBy(asc(cohort_member.createdAt));
-}
+  const context = await getCourseLearningAccessContext(database, params);
 
-export async function getOrganization(
-  database: Database,
-  params: { organizationId: string }
-) {
-  const [row] = await database
-    .select({
-      id: organization.id,
-      name: organization.name,
-      slug: organization.slug,
-      logo: organization.logo,
-      createdAt: organization.createdAt,
-      metadata: organization.metadata,
-    })
-    .from(organization)
-    .where(eq(organization.id, params.organizationId))
-    .limit(1);
-  return row ?? null;
+  if (!context.cohortExists) {
+    return {
+      canEnroll: false,
+      reason: "cohort_not_found" as const,
+      context,
+    };
+  }
+
+  if (!context.isAssignedToCohort) {
+    return {
+      canEnroll: false,
+      reason: "course_not_assigned_to_cohort" as const,
+      context,
+    };
+  }
+
+  if (!context.isCohortMember) {
+    return {
+      canEnroll: false,
+      reason: "user_not_in_cohort" as const,
+      context,
+    };
+  }
+
+  if (context.enrollmentId) {
+    return {
+      canEnroll: false,
+      reason: "already_enrolled_in_cohort_course" as const,
+      context,
+    };
+  }
+
+  return {
+    canEnroll: true,
+    reason: "ok" as const,
+    context,
+  };
 }

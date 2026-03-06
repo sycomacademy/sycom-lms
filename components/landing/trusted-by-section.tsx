@@ -1,4 +1,4 @@
-import { partnerLogos } from "@/lib/mock-data";
+import { partnerLogos } from "@/packages/utils/mock-data";
 
 export function TrustedBySection() {
   return (

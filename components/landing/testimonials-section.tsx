@@ -3,7 +3,7 @@
 import { Quote, Star } from "lucide-react";
 import FadeContent from "@/components/reactbits/fade-content";
 import { SectionLabel } from "@/components/ui/section-label";
-import { mockTestimonials } from "@/lib/mock-data";
+import { mockTestimonials } from "@/packages/utils/mock-data";
 
 export function TestimonialsSection() {
   return (

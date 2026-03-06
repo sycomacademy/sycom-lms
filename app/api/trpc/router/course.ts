@@ -14,8 +14,9 @@ import {
 } from "drizzle-orm";
 import { z } from "zod";
 import {
+  canEnrollInCohortCourse,
   hasCourseAccessForEditing,
-  hasCourseAccessForLearning,
+  requireCourseEnrollmentForLearning,
 } from "@/packages/db/queries";
 import { cohort, cohort_member, user } from "@/packages/db/schema/auth";
 import {
@@ -109,12 +110,17 @@ async function assertCourseAccess(
 }
 
 async function assertEnrolledCourseAccess(
-  db: Parameters<typeof hasCourseAccessForLearning>[0],
+  db: Parameters<typeof requireCourseEnrollmentForLearning>[0],
   courseId: string,
   userId: string,
   organizationId: string,
   cohortId?: string | null
-) {
+): Promise<{
+  courseRow: { id: string; title: string; status: "draft" | "published" };
+  learningContext: NonNullable<
+    Awaited<ReturnType<typeof requireCourseEnrollmentForLearning>>
+  >;
+}> {
   const [courseRow] = await db
     .select({ id: course.id, title: course.title, status: course.status })
     .from(course)
@@ -135,21 +141,33 @@ async function assertEnrolledCourseAccess(
     });
   }
 
-  const hasAccess = await hasCourseAccessForLearning(db, {
-    courseId,
-    userId,
-    organizationId,
-    cohortId,
-  });
+  let learningContext: NonNullable<
+    Awaited<ReturnType<typeof requireCourseEnrollmentForLearning>>
+  > | null = null;
 
-  if (!hasAccess) {
+  try {
+    learningContext = await requireCourseEnrollmentForLearning(db, {
+      courseId,
+      userId,
+      organizationId,
+      cohortId,
+    });
+  } catch (error) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message:
+        error instanceof Error ? error.message : "Enrollment is required",
+    });
+  }
+
+  if (!learningContext) {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "You are not enrolled in this course",
     });
   }
 
-  return { courseRow };
+  return { courseRow, learningContext };
 }
 
 // ---------------------------------------------------------------------------
@@ -290,6 +308,7 @@ export const courseRouter = router({
     .input(z.object({ courseId: z.string() }))
     .query(async ({ ctx, input }) => {
       const { db, session, orgId } = ctx;
+      const cohortId = extractCohortId(session);
       const [row] = await db
         .select({ id: enrollment.id })
         .from(enrollment)
@@ -297,7 +316,8 @@ export const courseRouter = router({
           and(
             eq(enrollment.userId, session.user.id),
             eq(enrollment.courseId, input.courseId),
-            eq(enrollment.organizationId, orgId)
+            eq(enrollment.organizationId, orgId),
+            cohortId ? eq(enrollment.cohortId, cohortId) : undefined
           )
         )
         .limit(1);
@@ -461,6 +481,7 @@ export const courseRouter = router({
       } = input;
       const { db, session, orgId } = ctx;
       const userId = session.user.id;
+      const cohortId = extractCohortId(session);
 
       const conditions: Parameters<typeof and>[0][] = [
         eq(course.status, "published"),
@@ -532,46 +553,83 @@ export const courseRouter = router({
         };
       }
 
-      const [enrolledRows, completedByCourse] = await Promise.all([
+      const [enrollmentRows, completedByEnrollment] = await Promise.all([
         db
-          .select({ courseId: enrollment.courseId })
+          .select({
+            enrollmentId: enrollment.id,
+            courseId: enrollment.courseId,
+            enrolledAt: enrollment.enrolledAt,
+          })
           .from(enrollment)
           .where(
             and(
               eq(enrollment.userId, userId),
               inArray(enrollment.courseId, courseIds),
-              eq(enrollment.organizationId, orgId)
+              eq(enrollment.organizationId, orgId),
+              cohortId ? eq(enrollment.cohortId, cohortId) : undefined
             )
-          ),
+          )
+          .orderBy(asc(enrollment.enrolledAt)),
         db
           .select({
-            courseId: section.courseId,
+            enrollmentId: lessonCompletion.enrollmentId,
             completed: count(lessonCompletion.id),
           })
           .from(lessonCompletion)
-          .innerJoin(lesson, eq(lesson.id, lessonCompletion.lessonId))
-          .innerJoin(section, eq(section.id, lesson.sectionId))
           .where(
-            and(
-              eq(lessonCompletion.userId, userId),
-              eq(lessonCompletion.organizationId, orgId),
-              inArray(section.courseId, courseIds)
+            inArray(
+              lessonCompletion.enrollmentId,
+              db
+                .select({ id: enrollment.id })
+                .from(enrollment)
+                .where(
+                  and(
+                    eq(enrollment.userId, userId),
+                    inArray(enrollment.courseId, courseIds),
+                    eq(enrollment.organizationId, orgId),
+                    cohortId ? eq(enrollment.cohortId, cohortId) : undefined
+                  )
+                )
             )
           )
-          .groupBy(section.courseId),
+          .groupBy(lessonCompletion.enrollmentId),
       ]);
 
-      const enrolledSet = new Set(enrolledRows.map((r) => r.courseId));
-      const completedMap = new Map(
-        completedByCourse.map((r) => [r.courseId, Number(r.completed)])
+      const selectedEnrollmentByCourse = new Map<
+        string,
+        { enrollmentId: string; courseId: string }
+      >();
+
+      for (const row of enrollmentRows) {
+        if (!selectedEnrollmentByCourse.has(row.courseId)) {
+          selectedEnrollmentByCourse.set(row.courseId, {
+            enrollmentId: row.enrollmentId,
+            courseId: row.courseId,
+          });
+        }
+      }
+
+      const completedByEnrollmentMap = new Map(
+        completedByEnrollment.map((row) => [
+          row.enrollmentId,
+          Number(row.completed),
+        ])
       );
 
       return {
-        courses: courses.map((c) => ({
-          ...c,
-          isEnrolled: enrolledSet.has(c.id),
-          completedLessonCount: completedMap.get(c.id) ?? 0,
-        })),
+        courses: courses.map((c) => {
+          const selectedEnrollment = selectedEnrollmentByCourse.get(c.id);
+
+          return {
+            ...c,
+            isEnrolled: !!selectedEnrollment,
+            completedLessonCount: selectedEnrollment
+              ? (completedByEnrollmentMap.get(
+                  selectedEnrollment.enrollmentId
+                ) ?? 0)
+              : 0,
+          };
+        }),
         total: totalResult[0]?.count ?? 0,
         limit,
         offset,
@@ -584,13 +642,21 @@ export const courseRouter = router({
       const { db, session, orgId } = ctx;
       const userId = session.user.id;
       const cohortId = extractCohortId(session);
-      const { courseRow } = await assertEnrolledCourseAccess(
+      const { courseRow, learningContext } = await assertEnrolledCourseAccess(
         db,
         input.courseId,
         userId,
         orgId,
         cohortId
       );
+      const enrollmentId = learningContext.enrollmentId;
+
+      if (!enrollmentId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Enrollment is required to read lesson progress",
+        });
+      }
 
       const [sections, completedRows] = await Promise.all([
         db
@@ -606,15 +672,7 @@ export const courseRouter = router({
         db
           .select({ lessonId: lessonCompletion.lessonId })
           .from(lessonCompletion)
-          .innerJoin(lesson, eq(lesson.id, lessonCompletion.lessonId))
-          .innerJoin(section, eq(section.id, lesson.sectionId))
-          .where(
-            and(
-              eq(lessonCompletion.userId, userId),
-              eq(lessonCompletion.organizationId, orgId),
-              eq(section.courseId, input.courseId)
-            )
-          ),
+          .where(eq(lessonCompletion.enrollmentId, enrollmentId)),
       ]);
 
       const completedSet = new Set(completedRows.map((r) => r.lessonId));
@@ -674,13 +732,21 @@ export const courseRouter = router({
       const { db, session, orgId } = ctx;
       const userId = session.user.id;
       const cohortId = extractCohortId(session);
-      const { courseRow } = await assertEnrolledCourseAccess(
+      const { courseRow, learningContext } = await assertEnrolledCourseAccess(
         db,
         input.courseId,
         userId,
         orgId,
         cohortId
       );
+      const enrollmentId = learningContext.enrollmentId;
+
+      if (!enrollmentId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Enrollment is required to read lesson progress",
+        });
+      }
 
       const [lessonRow] = await db
         .select({
@@ -718,9 +784,8 @@ export const courseRouter = router({
           .from(lessonCompletion)
           .where(
             and(
-              eq(lessonCompletion.userId, userId),
-              eq(lessonCompletion.lessonId, lessonRow.id),
-              eq(lessonCompletion.organizationId, orgId)
+              eq(lessonCompletion.enrollmentId, enrollmentId),
+              eq(lessonCompletion.lessonId, lessonRow.id)
             )
           )
           .limit(1),
@@ -763,13 +828,21 @@ export const courseRouter = router({
       const { db, session, orgId } = ctx;
       const userId = session.user.id;
       const cohortId = extractCohortId(session);
-      await assertEnrolledCourseAccess(
+      const { learningContext } = await assertEnrolledCourseAccess(
         db,
         input.courseId,
         userId,
         orgId,
         cohortId
       );
+      const enrollmentId = learningContext.enrollmentId;
+
+      if (!enrollmentId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Enrollment is required to record lesson progress",
+        });
+      }
 
       const [lessonRow] = await db
         .select({ id: lesson.id, isLocked: lesson.isLocked })
@@ -795,7 +868,10 @@ export const courseRouter = router({
 
       await db
         .insert(lessonCompletion)
-        .values({ userId, lessonId: lessonRow.id, organizationId: orgId })
+        .values({
+          enrollmentId,
+          lessonId: lessonRow.id,
+        })
         .onConflictDoNothing();
 
       const [totalLessonsRows, completedLessonsRows] = await Promise.all([
@@ -811,8 +887,7 @@ export const courseRouter = router({
           .innerJoin(section, eq(section.id, lesson.sectionId))
           .where(
             and(
-              eq(lessonCompletion.userId, userId),
-              eq(lessonCompletion.organizationId, orgId),
+              eq(lessonCompletion.enrollmentId, enrollmentId),
               eq(section.courseId, input.courseId)
             )
           ),
@@ -826,13 +901,7 @@ export const courseRouter = router({
         await db
           .update(enrollment)
           .set({ completedAt: new Date() })
-          .where(
-            and(
-              eq(enrollment.userId, userId),
-              eq(enrollment.courseId, input.courseId),
-              eq(enrollment.organizationId, orgId)
-            )
-          );
+          .where(eq(enrollment.id, enrollmentId));
       }
 
       return { completed: true, courseCompleted };
@@ -842,6 +911,7 @@ export const courseRouter = router({
     .input(z.object({ courseId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const { db, session, orgId } = ctx;
+      const cohortId = extractCohortId(session);
       const [courseRow] = await db
         .select({ id: course.id, status: course.status })
         .from(course)
@@ -861,12 +931,47 @@ export const courseRouter = router({
         });
       }
 
+      if (!cohortId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No active cohort selected",
+        });
+      }
+
+      const enrollmentCheck = await canEnrollInCohortCourse(db, {
+        courseId: input.courseId,
+        userId: session.user.id,
+        organizationId: orgId,
+        cohortId,
+      });
+
+      if (!enrollmentCheck.canEnroll) {
+        const messageByReason = {
+          cohort_not_found: "Active cohort was not found in this organization",
+          course_not_assigned_to_cohort:
+            "This course is not assigned to the active cohort",
+          user_not_in_cohort: "You are not a member of the active cohort",
+          already_enrolled_in_cohort_course:
+            "You are already enrolled in this course for the active cohort",
+          ok: "Enrollment is allowed",
+        } as const;
+
+        throw new TRPCError({
+          code:
+            enrollmentCheck.reason === "already_enrolled_in_cohort_course"
+              ? "CONFLICT"
+              : "FORBIDDEN",
+          message: messageByReason[enrollmentCheck.reason],
+        });
+      }
+
       await db
         .insert(enrollment)
         .values({
           userId: session.user.id,
           courseId: input.courseId,
           organizationId: orgId,
+          cohortId,
         })
         .onConflictDoNothing();
 
@@ -1895,6 +2000,7 @@ export const courseRouter = router({
   listOrgCourses: orgProcedure.query(async ({ ctx }) => {
     const { db, orgId, memberRole, session } = ctx;
     const userId = session.user.id;
+    const cohortId = extractCohortId(session);
     const isManager = memberRole === "org_owner" || memberRole === "org_admin";
 
     const visibleCohorts = isManager
@@ -1947,34 +2053,47 @@ export const courseRouter = router({
       new Set(assignedRows.map((row) => row.courseId))
     );
 
-    const [enrolledRows, completedByCourse, lessonCountByCourse] =
+    const [enrollmentRows, completedByEnrollment, lessonCountByCourse] =
       await Promise.all([
         db
-          .select({ courseId: enrollment.courseId })
+          .select({
+            enrollmentId: enrollment.id,
+            courseId: enrollment.courseId,
+            enrolledAt: enrollment.enrolledAt,
+          })
           .from(enrollment)
           .where(
             and(
               eq(enrollment.userId, userId),
               eq(enrollment.organizationId, orgId),
-              inArray(enrollment.courseId, courseIds)
+              inArray(enrollment.courseId, courseIds),
+              cohortId ? eq(enrollment.cohortId, cohortId) : undefined
             )
-          ),
+          )
+          .orderBy(asc(enrollment.enrolledAt)),
         db
           .select({
-            courseId: section.courseId,
+            enrollmentId: lessonCompletion.enrollmentId,
             completed: count(lessonCompletion.id),
           })
           .from(lessonCompletion)
-          .innerJoin(lesson, eq(lesson.id, lessonCompletion.lessonId))
-          .innerJoin(section, eq(section.id, lesson.sectionId))
           .where(
-            and(
-              eq(lessonCompletion.userId, userId),
-              eq(lessonCompletion.organizationId, orgId),
-              inArray(section.courseId, courseIds)
+            inArray(
+              lessonCompletion.enrollmentId,
+              db
+                .select({ id: enrollment.id })
+                .from(enrollment)
+                .where(
+                  and(
+                    eq(enrollment.userId, userId),
+                    eq(enrollment.organizationId, orgId),
+                    inArray(enrollment.courseId, courseIds),
+                    cohortId ? eq(enrollment.cohortId, cohortId) : undefined
+                  )
+                )
             )
           )
-          .groupBy(section.courseId),
+          .groupBy(lessonCompletion.enrollmentId),
         db
           .select({
             courseId: section.courseId,
@@ -2015,9 +2134,24 @@ export const courseRouter = router({
       });
     }
 
-    const enrolledSet = new Set(enrolledRows.map((row) => row.courseId));
+    const selectedEnrollmentByCourse = new Map<
+      string,
+      { enrollmentId: string; courseId: string }
+    >();
+    for (const row of enrollmentRows) {
+      if (!selectedEnrollmentByCourse.has(row.courseId)) {
+        selectedEnrollmentByCourse.set(row.courseId, {
+          enrollmentId: row.enrollmentId,
+          courseId: row.courseId,
+        });
+      }
+    }
+
     const completedMap = new Map(
-      completedByCourse.map((row) => [row.courseId, Number(row.completed)])
+      completedByEnrollment.map((row) => [
+        row.enrollmentId,
+        Number(row.completed),
+      ])
     );
     const lessonCountMap = new Map(
       lessonCountByCourse.map((row) => [row.courseId, Number(row.lessonCount)])
@@ -2026,11 +2160,14 @@ export const courseRouter = router({
     return {
       courses: Array.from(byCourse.values()).map((row) => {
         const lessonCount = lessonCountMap.get(row.id) ?? 0;
-        const completedLessonCount = completedMap.get(row.id) ?? 0;
+        const selectedEnrollment = selectedEnrollmentByCourse.get(row.id);
+        const completedLessonCount = selectedEnrollment
+          ? (completedMap.get(selectedEnrollment.enrollmentId) ?? 0)
+          : 0;
 
         return {
           ...row,
-          isEnrolled: enrolledSet.has(row.id),
+          isEnrolled: !!selectedEnrollment,
           lessonCount,
           completedLessonCount,
         };

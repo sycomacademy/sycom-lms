@@ -11,7 +11,7 @@ import {
 import FadeContent from "@/components/reactbits/fade-content";
 import SpotlightCard from "@/components/reactbits/spotlight-card";
 import { SectionLabel } from "@/components/ui/section-label";
-import { mockFeatures } from "@/lib/mock-data";
+import { mockFeatures } from "@/packages/utils/mock-data";
 
 const ICON_MAP: Record<string, typeof Award> = {
   Award,
