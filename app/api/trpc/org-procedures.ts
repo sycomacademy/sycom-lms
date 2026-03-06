@@ -1,7 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
-import type { OrgMemberRole } from "@/packages/db/queries";
-import { member } from "@/packages/db/schema/auth";
+import { member, type OrganizationRole } from "@/packages/db/schema/auth";
 import { protectedProcedure, t } from "./init";
 
 // Better Auth stores org/cohort ids on the session record,
@@ -55,7 +54,7 @@ const orgMiddleware = t.middleware(async ({ next, ctx }) => {
       ...ctx,
       session: ctx.session,
       orgId,
-      memberRole: memberRow.role as OrgMemberRole,
+      memberRole: memberRow.role as OrganizationRole,
     },
   });
 });

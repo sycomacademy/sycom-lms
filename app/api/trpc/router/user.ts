@@ -1,9 +1,9 @@
 import { auth } from "@/packages/auth/auth";
-import type { UpdateProfileData } from "@/packages/db/queries";
 import {
   getProfileByUserId,
   updateProfileByUserId,
 } from "@/packages/db/queries";
+import type { profile } from "@/packages/db/schema/profile";
 import { updateAccountSchema } from "@/packages/utils/schema";
 import { protectedProcedure, router } from "../init";
 
@@ -53,7 +53,7 @@ export const userRouter = router({
       }
 
       if (input.bio !== undefined || input.settings !== undefined) {
-        const data: UpdateProfileData = {};
+        const data: Partial<typeof profile.$inferInsert> = {};
         if (input.bio !== undefined) {
           data.bio = input.bio;
         }

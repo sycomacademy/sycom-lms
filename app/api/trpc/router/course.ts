@@ -278,7 +278,6 @@ export const courseRouter = router({
                 title: lesson.title,
                 type: lesson.type,
                 order: lesson.order,
-                isLocked: lesson.isLocked,
                 estimatedDuration: lesson.estimatedDuration,
               })
               .from(lesson)
@@ -686,7 +685,6 @@ export const courseRouter = router({
                 title: lesson.title,
                 type: lesson.type,
                 order: lesson.order,
-                isLocked: lesson.isLocked,
                 estimatedDuration: lesson.estimatedDuration,
               })
               .from(lesson)

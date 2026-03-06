@@ -2,7 +2,7 @@
 
 import { getSession } from "@/packages/auth/helper";
 import { db } from "@/packages/db";
-import { report } from "@/packages/db/schema/report";
+import { report } from "@/packages/db/schema/feedback";
 
 export interface ReportFormState {
   success: boolean;

@@ -1171,7 +1171,7 @@ export async function seedCybersecurityProgramme() {
           sectionId: sec.id,
           title: lec.title,
           order: i + 1,
-          type: "text",
+          type: "article",
           estimatedDuration: 10,
           content: lec.content,
         })

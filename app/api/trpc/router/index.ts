@@ -6,6 +6,7 @@ import { categoryRouter } from "./category";
 import { courseRouter } from "./course";
 import { feedbackRouter } from "./feedback";
 import { orgRouter } from "./org";
+import { storageRouter } from "./storage";
 import { userRouter } from "./user";
 
 export const appRouter = router({
@@ -19,6 +20,7 @@ export const appRouter = router({
   category: categoryRouter,
   course: courseRouter,
   org: orgRouter,
+  storage: storageRouter,
 });
 
 export type AppRouter = typeof appRouter;

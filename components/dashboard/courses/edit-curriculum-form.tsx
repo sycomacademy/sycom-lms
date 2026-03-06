@@ -81,9 +81,8 @@ interface Lesson {
   sectionId: string;
   title: string;
   content: JSONContent | null;
-  type: "text" | "video" | "quiz";
+  type: "article" | "test";
   order: number;
-  isLocked: boolean;
   estimatedDuration: number | null;
 }
 

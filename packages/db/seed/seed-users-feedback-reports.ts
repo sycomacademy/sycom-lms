@@ -11,8 +11,7 @@
 import "dotenv/config";
 import { db } from "../../db";
 import { user } from "../../db/schema/auth";
-import { feedback } from "../../db/schema/feedback";
-import { report } from "../../db/schema/report";
+import { feedback, report } from "../../db/schema/feedback";
 
 const TOTAL_USERS = 55;
 const VERIFIED_COUNT = 30;

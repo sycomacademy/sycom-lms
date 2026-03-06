@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  storageFolderEnum,
+  storageResourceTypeEnum,
+} from "../db/schema/storage";
 
 export const passwordSchema = z
   .string()
@@ -72,7 +76,7 @@ export type ProfileSettingsInput = z.infer<typeof profileSettingsSchema>;
 export const updateAccountSchema = z.object({
   name: nameSchema.optional(),
   email: emailSchema.optional(),
-  image: z.string().url().optional(),
+  image: z.url().optional(),
   bio: z.string().max(500, "Bio must be less than 500 characters").optional(),
   settings: profileSettingsSchema.partial().optional(),
 });
@@ -88,3 +92,40 @@ export const submitFeedbackSchema = z.object({
     .max(2000, "Feedback must be less than 2000 characters"),
 });
 export type SubmitFeedbackInput = z.infer<typeof submitFeedbackSchema>;
+
+/**
+ * Storage schema.
+ */
+export const storageFolderSchema = z.enum(storageFolderEnum.enumValues);
+export const storageResourceTypeSchema = z.enum(
+  storageResourceTypeEnum.enumValues
+);
+
+export const signUploadSchema = z.object({
+  folder: storageFolderSchema,
+  ownerId: z.string().min(1),
+});
+
+export const saveAssetSchema = z.object({
+  publicId: z.string().min(1),
+  secureUrl: z.url(),
+  folder: storageFolderSchema,
+  resourceType: storageResourceTypeSchema,
+  format: z.string().min(1).optional(),
+  bytes: z.number().int().nonnegative().optional(),
+  width: z.number().int().nonnegative().optional(),
+  height: z.number().int().nonnegative().optional(),
+  ownerId: z.string().min(1),
+  ownerType: z.string().min(1),
+});
+
+export const signedUrlSchema = z.object({
+  assetId: z.string().min(1),
+  expireIn: z
+    .number()
+    .int()
+    .min(60)
+    .max(60 * 60)
+    .default(300),
+  download: z.boolean().default(false),
+});
