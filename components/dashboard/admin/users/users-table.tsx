@@ -14,6 +14,11 @@ import { UserActions } from "@/components/dashboard/admin/users/user-actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/ui/data-table";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -26,6 +31,46 @@ import { useTRPC } from "@/packages/trpc/client";
 import { getInitials } from "@/packages/utils/string";
 
 type User = RouterOutputs["admin"]["listUsers"]["users"][number];
+
+const ORG_PREVIEW_LIMIT = 2;
+
+function UserOrganizationsCell({ user }: { user: User }) {
+  if (!user.orgCount || user.orgs.length === 0) {
+    return (
+      <span className="text-muted-foreground text-xs">No organizations</span>
+    );
+  }
+
+  const preview = user.orgs.slice(0, ORG_PREVIEW_LIMIT).map((org) => org.name);
+  const remaining = user.orgCount - preview.length;
+  const previewLabel =
+    remaining > 0 ? `${preview.join(", ")} +${remaining}` : preview.join(", ");
+
+  return (
+    <HoverCard>
+      <HoverCardTrigger
+        render={
+          <button className="cursor-help text-left text-xs" type="button" />
+        }
+      >
+        <span className="line-clamp-2 text-foreground">{previewLabel}</span>
+      </HoverCardTrigger>
+      <HoverCardContent align="start" className="w-72">
+        <div className="mb-2 font-medium text-foreground text-xs">
+          Organizations ({user.orgCount})
+        </div>
+        <div className="max-h-56 space-y-1 overflow-y-auto">
+          {user.orgs.map((org) => (
+            <div className="rounded-md border px-2 py-1.5" key={org.id}>
+              <div className="font-medium text-xs">{org.name}</div>
+              <div className="text-muted-foreground text-xs">{org.slug}</div>
+            </div>
+          ))}
+        </div>
+      </HoverCardContent>
+    </HoverCard>
+  );
+}
 
 const ROLE_BADGE_VARIANT: Record<string, "default" | "secondary" | "outline"> =
   {
@@ -98,6 +143,13 @@ const columns: ColumnDef<User, unknown>[] = [
         </Badge>
       );
     },
+  },
+  {
+    id: "organizations",
+    header: "Organizations",
+    size: 220,
+    enableSorting: false,
+    cell: ({ row }) => <UserOrganizationsCell user={row.original} />,
   },
   {
     accessorKey: "banned",

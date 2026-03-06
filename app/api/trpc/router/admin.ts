@@ -1,5 +1,16 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, count, desc, eq, ilike, ne, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  ne,
+  or,
+  sql,
+} from "drizzle-orm";
 import { z } from "zod";
 import { auth } from "@/packages/auth/auth";
 import { baseURL } from "@/packages/auth/config";
@@ -95,7 +106,72 @@ export const adminRouter = router({
         ctx.db.select({ total: count() }).from(user).where(where),
       ]);
 
-      return { users, total: totRow?.total ?? 0 };
+      if (users.length === 0) {
+        return { users: [], total: totRow?.total ?? 0 };
+      }
+
+      const userIds = users.map((u) => u.id);
+      const membershipRows = await ctx.db
+        .select({
+          userId: member.userId,
+          orgId: organization.id,
+          orgName: organization.name,
+          orgSlug: organization.slug,
+          role: member.role,
+        })
+        .from(member)
+        .innerJoin(organization, eq(organization.id, member.organizationId))
+        .where(
+          and(
+            inArray(member.userId, userIds),
+            ne(organization.slug, "platform")
+          )
+        );
+
+      const membershipsByUser = new Map<
+        string,
+        {
+          orgs: {
+            id: string;
+            name: string;
+            slug: string;
+            role:
+              | "org_owner"
+              | "org_admin"
+              | "org_auditor"
+              | "org_teacher"
+              | "org_student";
+          }[];
+          orgCount: number;
+        }
+      >();
+
+      for (const row of membershipRows) {
+        const existing = membershipsByUser.get(row.userId) ?? {
+          orgs: [],
+          orgCount: 0,
+        };
+        existing.orgs.push({
+          id: row.orgId,
+          name: row.orgName,
+          slug: row.orgSlug,
+          role: row.role,
+        });
+        existing.orgCount += 1;
+        membershipsByUser.set(row.userId, existing);
+      }
+
+      return {
+        users: users.map((u) => {
+          const memberships = membershipsByUser.get(u.id);
+          return {
+            ...u,
+            orgs: memberships?.orgs ?? [],
+            orgCount: memberships?.orgCount ?? 0,
+          };
+        }),
+        total: totRow?.total ?? 0,
+      };
     }),
 
   createUser: adminProcedure
@@ -205,6 +281,18 @@ export const adminRouter = router({
       });
       return { success: true };
     }),
+
+  stopImpersonation: protectedProcedure.mutation(async ({ ctx }) => {
+    const sessionData = ctx.session.session;
+    if (!sessionData?.impersonatedBy) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Not currently impersonating",
+      });
+    }
+    await auth.api.stopImpersonating({ headers: ctx.headers });
+    return { success: true };
+  }),
 
   sendVerificationEmail: adminProcedure
     .input(z.object({ email: z.string().email() }))
@@ -429,7 +517,73 @@ export const adminRouter = router({
         ctx.db.select({ total: count() }).from(organization).where(where),
       ]);
 
-      return { orgs, total: totRow?.total ?? 0 };
+      if (orgs.length === 0) {
+        return { orgs: [], total: totRow?.total ?? 0 };
+      }
+
+      const orgIds = orgs.map((org) => org.id);
+      const orgUserRows = await ctx.db
+        .select({
+          organizationId: member.organizationId,
+          userId: user.id,
+          userName: user.name,
+          userEmail: user.email,
+          userImage: user.image,
+          role: member.role,
+          joinedAt: member.createdAt,
+        })
+        .from(member)
+        .innerJoin(user, eq(user.id, member.userId))
+        .where(inArray(member.organizationId, orgIds))
+        .orderBy(asc(member.createdAt));
+
+      const usersByOrg = new Map<
+        string,
+        {
+          users: {
+            id: string;
+            name: string | null;
+            email: string;
+            image: string | null;
+            role:
+              | "org_owner"
+              | "org_admin"
+              | "org_auditor"
+              | "org_teacher"
+              | "org_student";
+          }[];
+          userCount: number;
+        }
+      >();
+
+      for (const row of orgUserRows) {
+        const existing = usersByOrg.get(row.organizationId) ?? {
+          users: [],
+          userCount: 0,
+        };
+
+        existing.users.push({
+          id: row.userId,
+          name: row.userName,
+          email: row.userEmail,
+          image: row.userImage,
+          role: row.role,
+        });
+        existing.userCount += 1;
+        usersByOrg.set(row.organizationId, existing);
+      }
+
+      return {
+        orgs: orgs.map((org) => {
+          const users = usersByOrg.get(org.id);
+          return {
+            ...org,
+            users: users?.users ?? [],
+            userCount: users?.userCount ?? 0,
+          };
+        }),
+        total: totRow?.total ?? 0,
+      };
     }),
 
   createOrganization: adminProcedure

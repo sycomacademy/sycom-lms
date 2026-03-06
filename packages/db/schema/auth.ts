@@ -158,6 +158,7 @@ export const cohort = auth.table(
   {
     id: text("id").primaryKey(),
     name: text("name").notNull(),
+    image: text("image"),
     organizationId: text("organization_id")
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),

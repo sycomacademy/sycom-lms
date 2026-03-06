@@ -20,6 +20,7 @@ export function Editor({
   placeholder,
   className,
   autofocus = false,
+  mediaUploadOwnerId,
 }: EditorProps) {
   const editor = useEditorInstance({
     variant,
@@ -34,7 +35,9 @@ export function Editor({
   return (
     <div
       className={cn(
-        "editor-wrapper rounded-md border border-input bg-background text-foreground transition-colors focus-within:border-ring focus-within:ring-1 focus-within:ring-ring/50",
+        "editor-wrapper rounded-md bg-background text-foreground transition-colors",
+        editable &&
+          "border border-input focus-within:border-ring focus-within:ring-1 focus-within:ring-ring/50",
         !editable && "cursor-default opacity-80",
         className
       )}
@@ -42,7 +45,11 @@ export function Editor({
       data-variant={variant}
     >
       {editor && editable && variant !== "bare" && (
-        <EditorToolbar editor={editor} variant={variant} />
+        <EditorToolbar
+          editor={editor}
+          mediaUploadOwnerId={mediaUploadOwnerId}
+          variant={variant}
+        />
       )}
       {editor && editable && variant === "full" && (
         <>

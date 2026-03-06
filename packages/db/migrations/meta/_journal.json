@@ -29,6 +29,41 @@
       "when": 1772683931214,
       "tag": "0003_messy_adam_warlock",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1772708646406,
+      "tag": "0004_steep_vivisector",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1772712762445,
+      "tag": "0005_wild_thena",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1772759478782,
+      "tag": "0006_rainy_morlocks",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1772767390408,
+      "tag": "0007_nasty_bloodstorm",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1772792649473,
+      "tag": "0008_lush_thanos",
+      "breakpoints": true
     }
   ]
 }

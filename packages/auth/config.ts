@@ -5,6 +5,7 @@ import { admin, organization } from "better-auth/plugins";
 import type { UserRole } from "@/packages/db/schema/auth";
 import { render } from "@/packages/email/render";
 import { sendEmail } from "@/packages/email/resend";
+import { InvitationEmail } from "@/packages/email/templates/invitation-email";
 import { ResetPasswordEmail } from "@/packages/email/templates/reset-password";
 import { VerifyEmail } from "@/packages/email/templates/verify-email";
 import { getWebsiteUrl } from "@/packages/env/utils";
@@ -109,13 +110,27 @@ export const organizationPlugin = organization({
     return role === "platform_admin";
   },
   sendInvitationEmail: async (data) => {
-    console.log("sendInvitationEmail", data);
-    // const inviteLink = `${baseURL}/invite/${data.id}`;
-    // await sendEmail({
-    //   to: data.email,
-    //   subject: `You've been invited to join ${data.organization.name}`,
-    //   html: `<p>You've been invited to join <strong>${data.organization.name}</strong> by ${data.inviter.user.name}.</p><p><a href="${inviteLink}">Accept invitation</a></p>`,
-    // });
+    const inviteUrl = `${baseURL}/invite/${data.id}`;
+    const roleName = data.role ?? "member";
+
+    const { error } = await sendEmail({
+      to: data.email,
+      subject: `You've been invited to join ${data.organization.name}`,
+      html: await render(
+        InvitationEmail({
+          organizationName: data.organization.name,
+          inviterName: data.inviter.user.name,
+          inviteUrl,
+          role: roleName,
+        })
+      ),
+    });
+
+    if (error) {
+      throw new APIError("BAD_REQUEST", {
+        message: `Error sending invitation email: ${error.message}`,
+      });
+    }
   },
 });
 

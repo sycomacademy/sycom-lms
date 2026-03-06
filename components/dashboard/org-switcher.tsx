@@ -15,28 +15,9 @@ import { authClient } from "@/packages/auth/auth-client";
 import { cn } from "@/packages/utils/cn";
 import { getInitials } from "@/packages/utils/string";
 
-const AVATAR_COLORS = [
-  "#e85d04",
-  "#7c3aed",
-  "#059669",
-  "#dc2626",
-  "#0284c7",
-  "#d97706",
-  "#db2777",
-  "#0891b2",
-];
-
 /** Collapse class: fixed dimensions + hide name span + hide chevron when icon-only. */
 const collapseClass =
   "group-data-[collapsible=icon]:size-auto! group-data-[collapsible=icon]:h-12! group-data-[collapsible=icon]:min-h-12! group-data-[collapsible=icon]:w-full! group-data-[collapsible=icon]:p-2!  group-data-[collapsible=icon]:[&>span:last-child]:hidden";
-
-function getOrgColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = (hash * 31 + name.charCodeAt(i)) % 2_147_483_647;
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length] ?? "#0284c7";
-}
 
 interface OrgAvatarProps {
   name: string;
@@ -47,10 +28,9 @@ function OrgAvatar({ name, className }: OrgAvatarProps) {
   return (
     <span
       className={cn(
-        "flex size-5 shrink-0 items-center justify-center rounded font-bold text-[10px] text-white",
+        "flex size-5 shrink-0 items-center justify-center font-bold text-[10px]",
         className
       )}
-      style={{ backgroundColor: getOrgColor(name) }}
     >
       {getInitials(name)}
     </span>
@@ -86,6 +66,7 @@ export function OrgSwitcher() {
     setSwitching(true);
     await authClient.organization.setActive({ organizationId: orgId });
     router.refresh();
+    router.push("/dashboard");
     setSwitching(false);
   }
 
