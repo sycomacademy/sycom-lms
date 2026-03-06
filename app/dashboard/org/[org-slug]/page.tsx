@@ -13,9 +13,11 @@ export default async function OrgOverviewPage() {
     redirect(`/dashboard/org/${slug}/courses`);
   }
 
-  await prefetch(trpc.org.listCohorts.queryOptions());
-  await prefetch(trpc.org.listMembers.queryOptions());
-  await prefetch(trpc.org.getOrganization.queryOptions());
+  await Promise.all([
+    prefetch(trpc.org.listCohorts.queryOptions()),
+    prefetch(trpc.org.listMembers.queryOptions()),
+    prefetch(trpc.org.getOrganization.queryOptions()),
+  ]);
 
   return (
     <HydrateClient>

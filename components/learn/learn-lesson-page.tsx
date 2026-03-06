@@ -18,6 +18,7 @@ import { CourseSidebar } from "./course-sidebar";
 import { learnParsers } from "./learn-parsers";
 import { LearnShell } from "./learn-shell";
 import { LessonBottomBar } from "./lesson-bottom-bar";
+import type { LessonRequirements } from "./lesson-viewer";
 import { LessonViewer } from "./lesson-viewer";
 
 type EnrolledCourse = RouterOutputs["course"]["getEnrolledCourse"];
@@ -69,7 +70,23 @@ function LessonInner({
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const [canMarkComplete, setCanMarkComplete] = useState(false);
+  const [requirements, setRequirements] = useState<LessonRequirements>({
+    hasQuizBlocks: false,
+    quizSatisfied: true,
+    scrollReachedEnd: false,
+  });
+
+  const canMarkComplete =
+    requirements.scrollReachedEnd && requirements.quizSatisfied;
+
+  let completionBlocker: "scroll" | "quiz" | null = null;
+  if (!canMarkComplete) {
+    if (requirements.scrollReachedEnd) {
+      completionBlocker = "quiz";
+    } else {
+      completionBlocker = "scroll";
+    }
+  }
 
   const { data: lessonData } = useSuspenseQuery(
     trpc.course.getEnrolledLesson.queryOptions({ courseId, lessonId })
@@ -126,6 +143,7 @@ function LessonInner({
       bottomBar={
         <LessonBottomBar
           canMarkComplete={canMarkComplete}
+          completionBlocker={completionBlocker}
           courseId={courseId}
           isCompleted={lessonData.lesson.isCompleted}
           isMarkingComplete={markCompleteMutation.isPending}
@@ -140,7 +158,7 @@ function LessonInner({
       content={
         <LessonViewer
           content={lessonData.lesson.content as JSONContent}
-          onReachedEndChange={setCanMarkComplete}
+          onRequirementsChange={setRequirements}
         />
       }
       header={header}

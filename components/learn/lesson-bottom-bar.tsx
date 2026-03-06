@@ -17,6 +17,7 @@ export function LessonBottomBar({
   nextLessonId,
   nextIsLocked,
   canMarkComplete,
+  completionBlocker,
   isCompleted,
   isMarkingComplete,
   onMarkComplete,
@@ -26,6 +27,7 @@ export function LessonBottomBar({
   nextLessonId: string | null;
   nextIsLocked: boolean;
   canMarkComplete: boolean;
+  completionBlocker?: "scroll" | "quiz" | null;
   isCompleted: boolean;
   isMarkingComplete: boolean;
   onMarkComplete: () => void;
@@ -45,7 +47,9 @@ export function LessonBottomBar({
   }
 
   let tooltipContent = "Mark this lesson as complete";
-  if (!canMarkComplete) {
+  if (!canMarkComplete && completionBlocker === "quiz") {
+    tooltipContent = "Answer the quiz correctly to enable completion";
+  } else if (!canMarkComplete) {
     tooltipContent = "Scroll to the end to enable completion";
   } else if (isCompleted) {
     tooltipContent = "Already completed";

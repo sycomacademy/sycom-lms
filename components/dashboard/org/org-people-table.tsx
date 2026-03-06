@@ -23,11 +23,27 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toastManager } from "@/components/ui/toast";
 import { useTRPC } from "@/packages/trpc/client";
 import { getInitials } from "@/packages/utils/string";
 
 const ORG_ROLE_LABELS: Record<string, string> = {
+  org_owner: "Owner",
+  org_admin: "Admin",
+  org_auditor: "Auditor",
+  org_teacher: "Teacher",
+  org_student: "Student",
+};
+
+const ROLE_FILTER_LABELS: Record<string, string> = {
+  all: "All roles",
   org_owner: "Owner",
   org_admin: "Admin",
   org_auditor: "Auditor",
@@ -188,6 +204,7 @@ export function OrgPeopleTable() {
   const queryClient = useQueryClient();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [filterRole, setFilterRole] = useState("all");
 
   const { data: membersData } = useSuspenseQuery(
     trpc.org.listMembers.queryOptions()
@@ -276,11 +293,13 @@ export function OrgPeopleTable() {
 
   const filteredMembers = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) {
-      return membersData.members;
-    }
-
     return membersData.members.filter((member) => {
+      if (filterRole !== "all" && member.role !== filterRole) {
+        return false;
+      }
+      if (!query) {
+        return true;
+      }
       return (
         member.name.toLowerCase().includes(query) ||
         member.email.toLowerCase().includes(query) ||
@@ -292,7 +311,7 @@ export function OrgPeopleTable() {
         )
       );
     });
-  }, [membersData.members, search]);
+  }, [membersData.members, search, filterRole]);
 
   const columns = useMemo<ColumnDef<MemberRow, unknown>[]>(
     () => [
@@ -301,22 +320,17 @@ export function OrgPeopleTable() {
         header: "Name",
         size: 220,
         cell: ({ row }) => {
-          const member = row.original;
+          const m = row.original;
           return (
             <div className="flex items-center gap-2">
               <Avatar>
-                <AvatarImage
-                  alt={member.name}
-                  src={member.image ?? undefined}
-                />
-                <AvatarFallback>{getInitials(member.name)}</AvatarFallback>
+                <AvatarImage alt={m.name} src={m.image ?? undefined} />
+                <AvatarFallback>{getInitials(m.name)}</AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <div className="truncate font-medium text-sm">
-                  {member.name}
-                </div>
+                <div className="truncate font-medium text-sm">{m.name}</div>
                 <div className="truncate text-muted-foreground text-xs">
-                  {member.email}
+                  {m.email}
                 </div>
               </div>
             </div>
@@ -393,14 +407,38 @@ export function OrgPeopleTable() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative max-w-xs flex-1">
-          <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="pl-8"
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search people..."
-            value={search}
-          />
+        <div className="flex flex-1 items-center gap-2">
+          <div className="relative max-w-xs flex-1">
+            <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="pl-8"
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search people..."
+              value={search}
+            />
+          </div>
+          <Select
+            onValueChange={(v) => {
+              if (v) {
+                setFilterRole(v);
+              }
+            }}
+            value={filterRole}
+          >
+            <SelectTrigger className="w-fit data-[size=default]:h-9">
+              <SelectValue>
+                {ROLE_FILTER_LABELS[filterRole] ?? "All roles"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All roles</SelectItem>
+              <SelectItem value="org_owner">Owner</SelectItem>
+              <SelectItem value="org_admin">Admin</SelectItem>
+              <SelectItem value="org_auditor">Auditor</SelectItem>
+              <SelectItem value="org_teacher">Teacher</SelectItem>
+              <SelectItem value="org_student">Student</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <InviteMemberDialog onOpenChange={setInviteOpen} open={inviteOpen}>

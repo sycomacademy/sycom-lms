@@ -10,6 +10,7 @@ import {
   XCircleIcon,
 } from "lucide-react";
 import { useCallback, useState } from "react";
+import { useQuizCompletion } from "@/components/learn/quiz-completion-context";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/packages/utils/cn";
@@ -47,7 +48,9 @@ export function QuizBlockView({
   updateAttributes,
   selected,
   editor,
+  getPos,
 }: NodeViewProps) {
+  const quizCompletion = useQuizCompletion();
   const { question, options, correctIndex } = node.attrs as {
     question: string;
     options: string[];
@@ -191,13 +194,32 @@ export function QuizBlockView({
   const handleSubmitAnswer = useCallback(() => {
     if (selectedAnswers.length > 0) {
       setSubmitted(true);
+      if (quizCompletion && typeof getPos === "function") {
+        const correctSet = new Set(normalizedCorrectIndexes);
+        const selectedSet = new Set(selectedAnswers);
+        const isCorrect =
+          correctSet.size === selectedSet.size &&
+          [...correctSet].every((i) => selectedSet.has(i));
+        if (isCorrect) {
+          const pos = getPos();
+          if (typeof pos === "number") {
+            quizCompletion.onBlockCorrect(pos, true);
+          }
+        }
+      }
     }
-  }, [selectedAnswers]);
+  }, [selectedAnswers, normalizedCorrectIndexes, quizCompletion, getPos]);
 
   const handleReset = useCallback(() => {
+    if (quizCompletion && typeof getPos === "function") {
+      const pos = getPos();
+      if (typeof pos === "number") {
+        quizCompletion.onBlockCorrect(pos, false);
+      }
+    }
     setSelectedAnswers([]);
     setSubmitted(false);
-  }, []);
+  }, [quizCompletion, getPos]);
 
   if (isEditable) {
     return (

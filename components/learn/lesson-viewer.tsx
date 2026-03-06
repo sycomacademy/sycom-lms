@@ -1,22 +1,95 @@
 "use client";
 
 import type { JSONContent } from "@tiptap/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Editor } from "@/components/editor/editor";
 import { cn } from "@/packages/utils/cn";
+import { QuizCompletionProvider } from "./quiz-completion-context";
+
+function countQuizBlocks(content: JSONContent | null | undefined): number {
+  if (!content) {
+    return 0;
+  }
+  let n = content.type === "quizBlock" ? 1 : 0;
+  for (const child of content.content ?? []) {
+    n += countQuizBlocks(child);
+  }
+  return n;
+}
+
+export interface LessonRequirements {
+  scrollReachedEnd: boolean;
+  quizSatisfied: boolean;
+  hasQuizBlocks: boolean;
+}
 
 export function LessonViewer({
   className,
   content,
-  onReachedEndChange,
+  onRequirementsChange,
 }: {
   className?: string;
   content: JSONContent | null | undefined;
-  onReachedEndChange?: (atEnd: boolean) => void;
+  onRequirementsChange?: (req: LessonRequirements) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
-  const [atEnd, setAtEnd] = useState(false);
+  const [scrollReachedEnd, setScrollReachedEnd] = useState(false);
+  const requiredQuizCount = countQuizBlocks(content);
+  const hasQuizBlocks = requiredQuizCount > 0;
+  const [quizSatisfied, setQuizSatisfied] = useState(!hasQuizBlocks);
+
+  useEffect(() => {
+    if (hasQuizBlocks) {
+      setQuizSatisfied(false);
+    } else {
+      setQuizSatisfied(true);
+    }
+  }, [hasQuizBlocks]);
+
+  useEffect(() => {
+    onRequirementsChange?.({
+      hasQuizBlocks,
+      quizSatisfied: hasQuizBlocks ? quizSatisfied : true,
+      scrollReachedEnd,
+    });
+  }, [hasQuizBlocks, quizSatisfied, scrollReachedEnd, onRequirementsChange]);
+
+  const handleReachedEndChange = useCallback((atEnd: boolean) => {
+    setScrollReachedEnd((prev) => (prev === atEnd ? prev : atEnd));
+  }, []);
+
+  const handleAllQuizCorrectChange = useCallback((allCorrect: boolean) => {
+    setQuizSatisfied(allCorrect);
+  }, []);
+
+  let editorContent: React.ReactNode;
+  if (content) {
+    if (hasQuizBlocks) {
+      editorContent = (
+        <QuizCompletionProvider
+          onAllCorrectChange={handleAllQuizCorrectChange}
+          requiredCount={requiredQuizCount}
+        >
+          <div className="prose prose-neutral dark:prose-invert max-w-none [&_.editor-content]:min-h-0 [&_.editor-content]:p-0">
+            <Editor content={content} editable={false} variant="full" />
+          </div>
+        </QuizCompletionProvider>
+      );
+    } else {
+      editorContent = (
+        <div className="prose prose-neutral dark:prose-invert max-w-none [&_.editor-content]:min-h-0 [&_.editor-content]:p-0">
+          <Editor content={content} editable={false} variant="full" />
+        </div>
+      );
+    }
+  } else {
+    editorContent = (
+      <p className="text-muted-foreground text-sm">
+        No content for this lesson.
+      </p>
+    );
+  }
 
   useEffect(() => {
     const root = scrollRef.current;
@@ -28,38 +101,26 @@ export function LessonViewer({
     const observer = new IntersectionObserver(
       ([entry]) => {
         const nextAtEnd = entry?.isIntersecting === true;
-        setAtEnd((prev) => {
-          if (prev === nextAtEnd) {
-            return prev;
-          }
-          onReachedEndChange?.(nextAtEnd);
-          return nextAtEnd;
-        });
+        handleReachedEndChange(nextAtEnd);
       },
       { root, threshold: 0.1 }
     );
 
     observer.observe(end);
     return () => observer.disconnect();
-  }, [onReachedEndChange]);
+  }, [handleReachedEndChange]);
 
   return (
     <div
       className={cn("h-full min-h-0 overflow-y-auto px-6 py-6", className)}
       ref={scrollRef}
     >
-      {content ? (
-        <div className="prose prose-neutral dark:prose-invert max-w-none [&_.editor-content]:min-h-0 [&_.editor-content]:p-0">
-          <Editor content={content} editable={false} variant="full" />
-        </div>
-      ) : (
-        <p className="text-muted-foreground text-sm">
-          No content for this lesson.
-        </p>
-      )}
+      {editorContent}
       <div className="h-10" ref={endRef} />
       <div aria-live="polite" className="sr-only">
-        {atEnd ? "Reached end of lesson." : "Not yet at end of lesson."}
+        {scrollReachedEnd
+          ? "Reached end of lesson."
+          : "Not yet at end of lesson."}
       </div>
     </div>
   );

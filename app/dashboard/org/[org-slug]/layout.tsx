@@ -23,7 +23,6 @@ export default async function OrgSlugLayout({
     ? [
         { path: base, label: "Overview" },
         { path: `${base}/people` as Route, label: "People" },
-        { path: `${base}/cohorts` as Route, label: "Cohorts" },
         { path: `${base}/courses` as Route, label: "Courses" },
         ...(memberRole === "org_owner"
           ? ([
@@ -31,13 +30,10 @@ export default async function OrgSlugLayout({
             ] as const)
           : []),
       ]
-    : [
-        { path: `${base}/cohorts` as Route, label: "My cohorts" },
-        { path: `${base}/courses` as Route, label: "My courses" },
-      ];
+    : [{ path: `${base}/courses` as Route, label: "Courses" }];
 
   return (
-    <div className="mb-10 max-w-6xl md:ml-12">
+    <div className="mx-auto max-w-6xl">
       <OrgMenu items={items} />
       <section className="mt-6">{children}</section>
     </div>
