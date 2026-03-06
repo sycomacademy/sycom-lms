@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { VerifyEmailBroadcast } from "@/components/auth/verify-email-broadcast";
+import { Link } from "@/components/layout/foresight-link";
 import { Button } from "@/components/ui/button";
 import { getSession } from "@/packages/auth/helper";
 

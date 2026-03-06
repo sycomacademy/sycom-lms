@@ -7,9 +7,9 @@ import {
   EyeIcon,
   EyeOffIcon,
 } from "lucide-react";
-import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { Link } from "@/components/layout/foresight-link";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";

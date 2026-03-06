@@ -18,7 +18,6 @@ import {
   Trash2Icon,
   UsersIcon,
 } from "lucide-react";
-import Link from "next/link";
 import { useQueryStates } from "nuqs";
 import { useDeferredValue, useState } from "react";
 import type { RouterOutputs } from "@/app/api/trpc/router";
@@ -27,6 +26,7 @@ import { CourseCard } from "@/components/dashboard/courses/course-card";
 import { CoursePeopleDialog } from "@/components/dashboard/courses/course-people-dialog";
 import { coursesListParsers } from "@/components/dashboard/courses/courses-list-parsers";
 import { MultiSelectFilter } from "@/components/dashboard/courses/multi-select-filter";
+import { Link } from "@/components/layout/foresight-link";
 import {
   AlertDialog,
   AlertDialogAction,

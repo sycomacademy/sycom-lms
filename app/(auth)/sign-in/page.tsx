@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { SignInForm } from "@/components/auth/sign-in-form";
+import { Link } from "@/components/layout/foresight-link";
 import { signInGuard } from "@/packages/auth/helper";
 
 export const metadata: Metadata = {

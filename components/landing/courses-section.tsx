@@ -1,7 +1,8 @@
 "use client";
 
 import { ArrowRight, Clock, Star, Users } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/components/layout/foresight-link";
+
 import FadeContent from "@/components/reactbits/fade-content";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

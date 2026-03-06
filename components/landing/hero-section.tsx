@@ -1,7 +1,8 @@
 "use client";
 
 import { ArrowRight, Shield, Terminal } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/components/layout/foresight-link";
+
 import BlurText from "@/components/reactbits/blur-text";
 import ShinyText from "@/components/reactbits/shiny-text";
 import { Button } from "@/components/ui/button";

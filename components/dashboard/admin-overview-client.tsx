@@ -3,7 +3,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { BuildingIcon, FileTextIcon, UsersIcon } from "lucide-react";
 import type { Route } from "next";
-import Link from "next/link";
+import { Link } from "@/components/layout/foresight-link";
+
 import {
   Card,
   CardContent,

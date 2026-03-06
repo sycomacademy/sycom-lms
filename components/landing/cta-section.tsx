@@ -1,7 +1,8 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/components/layout/foresight-link";
+
 import FadeContent from "@/components/reactbits/fade-content";
 import { Button } from "@/components/ui/button";
 

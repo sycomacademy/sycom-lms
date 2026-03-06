@@ -2,7 +2,8 @@
 
 import { ArrowRight, Quote } from "lucide-react";
 import type { Route } from "next";
-import Link from "next/link";
+import { Link } from "@/components/layout/foresight-link";
+
 import { Card, CardContent } from "@/components/ui/card";
 
 export function TestimonialCards() {

@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect } from "react";
+import { Link } from "@/components/layout/foresight-link";
 import { Button } from "@/components/ui/button";
 import { captureException } from "@/packages/analytics/client";
 import { createLoggerWithContext } from "@/packages/utils/logger";

@@ -11,9 +11,9 @@ import {
   SettingsIcon,
   UsersIcon,
 } from "lucide-react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentProps } from "react";
+import { Link } from "@/components/layout/foresight-link";
 import {
   Sidebar,
   SidebarContent,

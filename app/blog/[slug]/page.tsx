@@ -1,8 +1,8 @@
 import { ArrowLeft, Calendar, Clock } from "lucide-react";
 import type { Metadata, Route } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Footer } from "@/components/layout/footer";
+import { Link } from "@/components/layout/foresight-link";
 import { Header } from "@/components/layout/header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

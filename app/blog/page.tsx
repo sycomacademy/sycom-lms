@@ -1,7 +1,7 @@
 import { Calendar, Clock } from "lucide-react";
 import type { Metadata, Route } from "next";
-import Link from "next/link";
 import { Footer } from "@/components/layout/footer";
+import { Link } from "@/components/layout/foresight-link";
 import { Header } from "@/components/layout/header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";

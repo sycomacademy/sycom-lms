@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/components/layout/foresight-link";
+
 import { Button } from "@/components/ui/button";
 
 export function HeaderAuth({ isSignedIn }: { isSignedIn: boolean }) {

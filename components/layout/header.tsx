@@ -1,6 +1,6 @@
 import type { Route } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
+import { Link } from "@/components/layout/foresight-link";
 import { getSession } from "@/packages/auth/helper";
 import { Skeleton } from "../ui/skeleton";
 import { HeaderAuth } from "./header-auth";

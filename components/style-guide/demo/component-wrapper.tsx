@@ -1,8 +1,8 @@
 "use client";
 
 import { EyeIcon } from "lucide-react";
-import Link from "next/link";
 import React from "react";
+import { Link } from "@/components/layout/foresight-link";
 import { cn } from "@/packages/utils/cn";
 import { createLoggerWithContext } from "@/packages/utils/logger";
 

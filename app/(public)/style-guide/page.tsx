@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/components/layout/foresight-link";
+
 import { ModeSwitcher } from "@/components/layout/mode-switcher";
 import { componentRegistry } from "@/components/style-guide/component-registry";
 import { ComponentWrapper } from "@/components/style-guide/demo/component-wrapper";

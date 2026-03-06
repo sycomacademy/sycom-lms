@@ -1,8 +1,8 @@
 "use client";
 
 import type { Route } from "next";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Link } from "@/components/layout/foresight-link";
 import { Tabs, TabsList, TabsTab } from "@/components/ui/tabs";
 
 export interface SupportMenuItem {

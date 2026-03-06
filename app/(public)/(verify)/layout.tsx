@@ -1,7 +1,7 @@
 import Image from "next/image";
-import Link from "next/link";
 import { AuthLeftPanel } from "@/components/auth/left-panel";
 import { LoginTestimonials } from "@/components/auth/testimonials";
+import { Link } from "@/components/layout/foresight-link";
 
 export default function AuthLayout({
   children,

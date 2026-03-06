@@ -7,8 +7,8 @@ import {
 } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import type { Route } from "next";
-import Link from "next/link";
 import { useDeferredValue, useMemo, useState } from "react";
+import { Link } from "@/components/layout/foresight-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";

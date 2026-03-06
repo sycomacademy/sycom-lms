@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
+import { Link } from "@/components/layout/foresight-link";
 import { Button } from "@/components/ui/button";
 import { signInGuard } from "@/packages/auth/helper";
 

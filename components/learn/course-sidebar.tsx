@@ -2,8 +2,8 @@
 
 import { CheckIcon, LockIcon } from "lucide-react";
 import type { Route } from "next";
-import Link from "next/link";
 import type { RouterOutputs } from "@/app/api/trpc/router";
+import { Link } from "@/components/layout/foresight-link";
 import {
   Accordion,
   AccordionContent,

@@ -2,7 +2,8 @@
 
 import { ArrowRight, Calendar, Clock } from "lucide-react";
 import type { Route } from "next";
-import Link from "next/link";
+import { Link } from "@/components/layout/foresight-link";
+
 import FadeContent from "@/components/reactbits/fade-content";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

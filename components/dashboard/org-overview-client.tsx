@@ -3,8 +3,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { UsersIcon } from "lucide-react";
 import type { Route } from "next";
-import Link from "next/link";
 import { OrgCohortsList } from "@/components/dashboard/org/org-cohorts-list";
+import { Link } from "@/components/layout/foresight-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useTRPC } from "@/packages/trpc/client";

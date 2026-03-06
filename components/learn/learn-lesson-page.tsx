@@ -7,10 +7,10 @@ import {
 } from "@tanstack/react-query";
 import type { JSONContent } from "@tiptap/react";
 import { ArrowLeftIcon } from "lucide-react";
-import Link from "next/link";
 import { useQueryState } from "nuqs";
 import { Suspense, useEffect, useState } from "react";
 import type { RouterOutputs } from "@/app/api/trpc/router";
+import { Link } from "@/components/layout/foresight-link";
 import { Button } from "@/components/ui/button";
 import { toastManager } from "@/components/ui/toast";
 import { useTRPC } from "@/packages/trpc/client";

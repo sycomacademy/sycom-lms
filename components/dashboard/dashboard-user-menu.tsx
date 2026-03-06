@@ -2,12 +2,12 @@
 
 import { Facehash } from "facehash";
 import type { Route } from "next";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useState } from "react";
 import { Icon } from "@/components/icons/old";
 import { useAnimatedIcon } from "@/components/icons/old/use-animated-icon";
+import { Link } from "@/components/layout/foresight-link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

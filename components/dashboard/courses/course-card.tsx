@@ -2,8 +2,8 @@
 
 import { PencilIcon, Trash2Icon, UsersIcon } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import type { RouterOutputs } from "@/app/api/trpc/router";
+import { Link } from "@/components/layout/foresight-link";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
