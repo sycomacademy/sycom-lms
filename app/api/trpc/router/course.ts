@@ -17,7 +17,7 @@ import {
   getCourseAccess,
   hasCourseAccessForLearning,
 } from "@/packages/db/queries/course";
-import { cohort, member, user } from "@/packages/db/schema/auth";
+import { cohort, cohort_member, member, user } from "@/packages/db/schema/auth";
 import {
   category,
   cohortCourse,
@@ -79,24 +79,33 @@ const instructorMiddleware = t.middleware(async ({ next, ctx }) => {
 
 const instructorProcedure = protectedProcedure.use(instructorMiddleware);
 
-const orgCourseMiddleware = t.middleware(async ({ next, ctx }) => {
-  if (!ctx.session?.user) {
-    throw new TRPCError({
-      code: "UNAUTHORIZED",
-      message: "Authentication required",
-    });
-  }
-  const sessionData = ctx.session as {
-    session?: { activeOrganizationId?: string };
-    user: { id: string };
-  };
-  const orgId = sessionData.session?.activeOrganizationId;
+function getActiveOrganizationIdFromSession(
+  session: {
+    session?: { activeOrganizationId?: string; activeTeamId?: string };
+  } | null
+): string {
+  const orgId = session?.session?.activeOrganizationId;
   if (!orgId) {
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: "No organization selected",
     });
   }
+  return orgId;
+}
+
+const orgCourseMemberMiddleware = t.middleware(async ({ next, ctx }) => {
+  if (!ctx.session?.user) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Authentication required",
+    });
+  }
+  const orgId = getActiveOrganizationIdFromSession(
+    ctx.session as {
+      session?: { activeOrganizationId?: string; activeTeamId?: string };
+    }
+  );
   const [memberRow] = await ctx.db
     .select({ role: member.role })
     .from(member)
@@ -113,26 +122,32 @@ const orgCourseMiddleware = t.middleware(async ({ next, ctx }) => {
       message: "You are not a member of this organization",
     });
   }
-  const canAssign =
-    memberRow.role === "org_owner" ||
-    memberRow.role === "org_admin" ||
-    memberRow.role === "org_teacher";
-  if (!canAssign) {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "Org owner, admin, or teacher access required",
-    });
-  }
   return next({
     ctx: {
       ...ctx,
       session: ctx.session,
       orgId,
+      orgMemberRole: memberRow.role,
     },
   });
 });
 
-const orgCourseProcedure = protectedProcedure.use(orgCourseMiddleware);
+const orgCourseProcedure = protectedProcedure.use(orgCourseMemberMiddleware);
+
+const orgCourseManageProcedure = orgCourseProcedure.use(
+  async ({ next, ctx }) => {
+    if (
+      ctx.orgMemberRole !== "org_owner" &&
+      ctx.orgMemberRole !== "org_admin"
+    ) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Org owner or admin access required",
+      });
+    }
+    return next({ ctx });
+  }
+);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -158,6 +173,7 @@ async function assertEnrolledCourseAccess(
   db: Parameters<typeof getCourseAccess>[0],
   courseId: string,
   userId: string,
+  organizationId: string,
   cohortId?: string | null
 ) {
   const [courseRow] = await db
@@ -183,6 +199,7 @@ async function assertEnrolledCourseAccess(
   const hasAccess = await hasCourseAccessForLearning(db, {
     courseId,
     userId,
+    organizationId,
     cohortId,
   });
 
@@ -334,13 +351,19 @@ export const courseRouter = router({
     .input(z.object({ courseId: z.string() }))
     .query(async ({ ctx, input }) => {
       const { db, session } = ctx;
+      const orgId = getActiveOrganizationIdFromSession(
+        session as {
+          session?: { activeOrganizationId?: string; activeTeamId?: string };
+        }
+      );
       const [row] = await db
         .select({ id: enrollment.id })
         .from(enrollment)
         .where(
           and(
             eq(enrollment.userId, session.user.id),
-            eq(enrollment.courseId, input.courseId)
+            eq(enrollment.courseId, input.courseId),
+            eq(enrollment.organizationId, orgId)
           )
         )
         .limit(1);
@@ -504,6 +527,11 @@ export const courseRouter = router({
       } = input;
       const { db, session } = ctx;
       const userId = session.user.id;
+      const orgId = getActiveOrganizationIdFromSession(
+        session as {
+          session?: { activeOrganizationId?: string; activeTeamId?: string };
+        }
+      );
 
       const conditions: Parameters<typeof and>[0][] = [
         eq(course.status, "published"),
@@ -582,7 +610,8 @@ export const courseRouter = router({
           .where(
             and(
               eq(enrollment.userId, userId),
-              inArray(enrollment.courseId, courseIds)
+              inArray(enrollment.courseId, courseIds),
+              eq(enrollment.organizationId, orgId)
             )
           ),
         db
@@ -596,6 +625,7 @@ export const courseRouter = router({
           .where(
             and(
               eq(lessonCompletion.userId, userId),
+              eq(lessonCompletion.organizationId, orgId),
               inArray(section.courseId, courseIds)
             )
           )
@@ -624,6 +654,11 @@ export const courseRouter = router({
     .query(async ({ ctx, input }) => {
       const { db, session } = ctx;
       const userId = session.user.id;
+      const orgId = getActiveOrganizationIdFromSession(
+        session as {
+          session?: { activeOrganizationId?: string; activeTeamId?: string };
+        }
+      );
       const cohortId =
         (session as { session?: { activeTeamId?: string } })?.session
           ?.activeTeamId ?? null;
@@ -631,6 +666,7 @@ export const courseRouter = router({
         db,
         input.courseId,
         userId,
+        orgId,
         cohortId
       );
 
@@ -653,6 +689,7 @@ export const courseRouter = router({
           .where(
             and(
               eq(lessonCompletion.userId, userId),
+              eq(lessonCompletion.organizationId, orgId),
               eq(section.courseId, input.courseId)
             )
           ),
@@ -714,6 +751,11 @@ export const courseRouter = router({
     .query(async ({ ctx, input }) => {
       const { db, session } = ctx;
       const userId = session.user.id;
+      const orgId = getActiveOrganizationIdFromSession(
+        session as {
+          session?: { activeOrganizationId?: string; activeTeamId?: string };
+        }
+      );
       const cohortId =
         (session as { session?: { activeTeamId?: string } })?.session
           ?.activeTeamId ?? null;
@@ -721,6 +763,7 @@ export const courseRouter = router({
         db,
         input.courseId,
         userId,
+        orgId,
         cohortId
       );
 
@@ -761,7 +804,8 @@ export const courseRouter = router({
           .where(
             and(
               eq(lessonCompletion.userId, userId),
-              eq(lessonCompletion.lessonId, lessonRow.id)
+              eq(lessonCompletion.lessonId, lessonRow.id),
+              eq(lessonCompletion.organizationId, orgId)
             )
           )
           .limit(1),
@@ -805,10 +849,21 @@ export const courseRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { db, session } = ctx;
       const userId = session.user.id;
+      const orgId = getActiveOrganizationIdFromSession(
+        session as {
+          session?: { activeOrganizationId?: string; activeTeamId?: string };
+        }
+      );
       const cohortId =
         (session as { session?: { activeTeamId?: string } })?.session
           ?.activeTeamId ?? null;
-      await assertEnrolledCourseAccess(db, input.courseId, userId, cohortId);
+      await assertEnrolledCourseAccess(
+        db,
+        input.courseId,
+        userId,
+        orgId,
+        cohortId
+      );
 
       const [lessonRow] = await db
         .select({ id: lesson.id, isLocked: lesson.isLocked })
@@ -834,7 +889,7 @@ export const courseRouter = router({
 
       await db
         .insert(lessonCompletion)
-        .values({ userId, lessonId: lessonRow.id })
+        .values({ userId, lessonId: lessonRow.id, organizationId: orgId })
         .onConflictDoNothing();
 
       const [totalLessonsRows, completedLessonsRows] = await Promise.all([
@@ -851,6 +906,7 @@ export const courseRouter = router({
           .where(
             and(
               eq(lessonCompletion.userId, userId),
+              eq(lessonCompletion.organizationId, orgId),
               eq(section.courseId, input.courseId)
             )
           ),
@@ -867,7 +923,8 @@ export const courseRouter = router({
           .where(
             and(
               eq(enrollment.userId, userId),
-              eq(enrollment.courseId, input.courseId)
+              eq(enrollment.courseId, input.courseId),
+              eq(enrollment.organizationId, orgId)
             )
           );
       }
@@ -879,6 +936,11 @@ export const courseRouter = router({
     .input(z.object({ courseId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const { db, session } = ctx;
+      const orgId = getActiveOrganizationIdFromSession(
+        session as {
+          session?: { activeOrganizationId?: string; activeTeamId?: string };
+        }
+      );
       const [courseRow] = await db
         .select({ id: course.id, status: course.status })
         .from(course)
@@ -903,6 +965,7 @@ export const courseRouter = router({
         .values({
           userId: session.user.id,
           courseId: input.courseId,
+          organizationId: orgId,
         })
         .onConflictDoNothing();
 
@@ -1786,7 +1849,7 @@ export const courseRouter = router({
   // Org: assign/unassign courses to cohorts, set due dates
   // -------------------------------------------------------------------------
 
-  assignCourseToCohort: orgCourseProcedure
+  assignCourseToCohort: orgCourseManageProcedure
     .input(assignCourseToCohortSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, orgId } = ctx;
@@ -1819,7 +1882,7 @@ export const courseRouter = router({
       return { success: true };
     }),
 
-  unassignCourseFromCohort: orgCourseProcedure
+  unassignCourseFromCohort: orgCourseManageProcedure
     .input(unassignCourseFromCohortSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, orgId } = ctx;
@@ -1879,7 +1942,7 @@ export const courseRouter = router({
   listCohortCourses: orgCourseProcedure
     .input(z.object({ cohortId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const { db, orgId } = ctx;
+      const { db, orgId, orgMemberRole } = ctx;
       const [cohortRow] = await db
         .select({ id: cohort.id, organizationId: cohort.organizationId })
         .from(cohort)
@@ -1891,6 +1954,29 @@ export const courseRouter = router({
           message: "Cohort not found or does not belong to your organization",
         });
       }
+
+      const isManager =
+        orgMemberRole === "org_owner" || orgMemberRole === "org_admin";
+      if (!isManager) {
+        const [cohortMembership] = await db
+          .select({ id: cohort_member.id })
+          .from(cohort_member)
+          .where(
+            and(
+              eq(cohort_member.teamId, input.cohortId),
+              eq(cohort_member.userId, ctx.session.user.id)
+            )
+          )
+          .limit(1);
+
+        if (!cohortMembership) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You are not a member of this cohort",
+          });
+        }
+      }
+
       const rows = await db
         .select({
           courseId: cohortCourse.courseId,
@@ -1905,7 +1991,154 @@ export const courseRouter = router({
       return { courses: rows };
     }),
 
-  listAssignableCourses: orgCourseProcedure
+  listOrgCourses: orgCourseProcedure.query(async ({ ctx }) => {
+    const { db, orgId, orgMemberRole, session } = ctx;
+    const userId = session.user.id;
+    const isManager =
+      orgMemberRole === "org_owner" || orgMemberRole === "org_admin";
+
+    const visibleCohorts = isManager
+      ? await db
+          .select({ id: cohort.id, name: cohort.name })
+          .from(cohort)
+          .where(eq(cohort.organizationId, orgId))
+      : await db
+          .select({ id: cohort.id, name: cohort.name })
+          .from(cohort_member)
+          .innerJoin(cohort, eq(cohort.id, cohort_member.teamId))
+          .where(
+            and(
+              eq(cohort_member.userId, userId),
+              eq(cohort.organizationId, orgId)
+            )
+          );
+
+    const visibleCohortIds = visibleCohorts.map((c) => c.id);
+    if (visibleCohortIds.length === 0) {
+      return { courses: [] };
+    }
+
+    const assignedRows = await db
+      .select({
+        courseId: course.id,
+        title: course.title,
+        slug: course.slug,
+        difficulty: course.difficulty,
+        description: course.description,
+        cohortId: cohort.id,
+        cohortName: cohort.name,
+      })
+      .from(cohortCourse)
+      .innerJoin(course, eq(course.id, cohortCourse.courseId))
+      .innerJoin(cohort, eq(cohort.id, cohortCourse.cohortId))
+      .where(
+        and(
+          inArray(cohortCourse.cohortId, visibleCohortIds),
+          eq(course.status, "published")
+        )
+      )
+      .orderBy(asc(course.title), asc(cohort.name));
+
+    if (assignedRows.length === 0) {
+      return { courses: [] };
+    }
+
+    const courseIds = Array.from(
+      new Set(assignedRows.map((row) => row.courseId))
+    );
+
+    const [enrolledRows, completedByCourse, lessonCountByCourse] =
+      await Promise.all([
+        db
+          .select({ courseId: enrollment.courseId })
+          .from(enrollment)
+          .where(
+            and(
+              eq(enrollment.userId, userId),
+              eq(enrollment.organizationId, orgId),
+              inArray(enrollment.courseId, courseIds)
+            )
+          ),
+        db
+          .select({
+            courseId: section.courseId,
+            completed: count(lessonCompletion.id),
+          })
+          .from(lessonCompletion)
+          .innerJoin(lesson, eq(lesson.id, lessonCompletion.lessonId))
+          .innerJoin(section, eq(section.id, lesson.sectionId))
+          .where(
+            and(
+              eq(lessonCompletion.userId, userId),
+              eq(lessonCompletion.organizationId, orgId),
+              inArray(section.courseId, courseIds)
+            )
+          )
+          .groupBy(section.courseId),
+        db
+          .select({
+            courseId: section.courseId,
+            lessonCount: count(lesson.id),
+          })
+          .from(lesson)
+          .innerJoin(section, eq(section.id, lesson.sectionId))
+          .where(inArray(section.courseId, courseIds))
+          .groupBy(section.courseId),
+      ]);
+
+    const byCourse = new Map<
+      string,
+      {
+        id: string;
+        title: string;
+        slug: string;
+        difficulty: string;
+        description: string | null;
+        cohorts: { id: string; name: string }[];
+      }
+    >();
+
+    for (const row of assignedRows) {
+      const existing = byCourse.get(row.courseId);
+      if (existing) {
+        existing.cohorts.push({ id: row.cohortId, name: row.cohortName });
+        continue;
+      }
+
+      byCourse.set(row.courseId, {
+        id: row.courseId,
+        title: row.title,
+        slug: row.slug,
+        difficulty: row.difficulty,
+        description: row.description,
+        cohorts: [{ id: row.cohortId, name: row.cohortName }],
+      });
+    }
+
+    const enrolledSet = new Set(enrolledRows.map((row) => row.courseId));
+    const completedMap = new Map(
+      completedByCourse.map((row) => [row.courseId, Number(row.completed)])
+    );
+    const lessonCountMap = new Map(
+      lessonCountByCourse.map((row) => [row.courseId, Number(row.lessonCount)])
+    );
+
+    return {
+      courses: Array.from(byCourse.values()).map((row) => {
+        const lessonCount = lessonCountMap.get(row.id) ?? 0;
+        const completedLessonCount = completedMap.get(row.id) ?? 0;
+
+        return {
+          ...row,
+          isEnrolled: enrolledSet.has(row.id),
+          lessonCount,
+          completedLessonCount,
+        };
+      }),
+    };
+  }),
+
+  listAssignableCourses: orgCourseManageProcedure
     .input(z.object({ search: z.string().optional() }))
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
@@ -1926,7 +2159,7 @@ export const courseRouter = router({
       return { courses: rows };
     }),
 
-  setSectionDueDate: orgCourseProcedure
+  setSectionDueDate: orgCourseManageProcedure
     .input(setSectionDueDateSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, orgId } = ctx;
@@ -1969,7 +2202,7 @@ export const courseRouter = router({
       return { success: true };
     }),
 
-  setLessonDueDate: orgCourseProcedure
+  setLessonDueDate: orgCourseManageProcedure
     .input(setLessonDueDateSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, orgId } = ctx;
@@ -2009,7 +2242,7 @@ export const courseRouter = router({
       return { success: true };
     }),
 
-  listCohortDueDates: orgCourseProcedure
+  listCohortDueDates: orgCourseManageProcedure
     .input(z.object({ cohortId: z.string() }))
     .query(async ({ ctx, input }) => {
       const { db, orgId } = ctx;

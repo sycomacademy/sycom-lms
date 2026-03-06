@@ -59,34 +59,73 @@ export const instructorGuard = async () => {
 
 const PUBLIC_ORG_SLUG = "platform";
 
+export interface ActiveOrgContext {
+  session: Awaited<ReturnType<typeof getSession>>;
+  organizationId: string;
+  slug: string;
+  memberRole:
+    | "org_owner"
+    | "org_admin"
+    | "org_auditor"
+    | "org_teacher"
+    | "org_student";
+}
+
+export const getActiveOrgContext = async (): Promise<ActiveOrgContext> => {
+  const session = await getSession();
+  if (!session) {
+    redirect("/sign-in");
+  }
+
+  const sessionWithOrg = session as typeof session & {
+    session?: { activeOrganizationId?: string };
+  };
+  const organizationId = sessionWithOrg.session?.activeOrganizationId;
+  if (!organizationId) {
+    redirect("/dashboard");
+  }
+
+  const [{ db }, { organization, member }, { and, eq }] = await Promise.all([
+    import("@/packages/db"),
+    import("@/packages/db/schema/auth"),
+    import("drizzle-orm"),
+  ]);
+
+  const [orgMembership] = await db
+    .select({
+      slug: organization.slug,
+      memberRole: member.role,
+    })
+    .from(organization)
+    .innerJoin(
+      member,
+      and(
+        eq(member.organizationId, organization.id),
+        eq(member.userId, session.user.id)
+      )
+    )
+    .where(eq(organization.id, organizationId))
+    .limit(1);
+
+  if (!orgMembership || orgMembership.slug === PUBLIC_ORG_SLUG) {
+    redirect("/dashboard");
+  }
+
+  return {
+    session,
+    organizationId,
+    slug: orgMembership.slug,
+    memberRole: orgMembership.memberRole,
+  };
+};
+
 /** Requires session and active non-public org. Returns session and org slug. */
 export const orgGuardWithSlug = async (): Promise<{
   session: Awaited<ReturnType<typeof getSession>>;
   slug: string;
 }> => {
-  const session = await getSession();
-  if (!session) {
-    redirect("/sign-in");
-  }
-  const sessionWithOrg = session as typeof session & {
-    session?: { activeOrganizationId?: string };
-  };
-  const orgId = sessionWithOrg.session?.activeOrganizationId;
-  if (!orgId) {
-    redirect("/dashboard");
-  }
-  const { db } = await import("@/packages/db");
-  const { organization } = await import("@/packages/db/schema/auth");
-  const { eq } = await import("drizzle-orm");
-  const [org] = await db
-    .select({ slug: organization.slug })
-    .from(organization)
-    .where(eq(organization.id, orgId))
-    .limit(1);
-  if (!org || org.slug === PUBLIC_ORG_SLUG) {
-    redirect("/dashboard");
-  }
-  return { session, slug: org.slug };
+  const { session, slug } = await getActiveOrgContext();
+  return { session, slug };
 };
 
 /** Requires session and active non-public org. Redirects to dashboard if not in an org context. */
@@ -97,22 +136,17 @@ export const orgGuard = async () => {
 
 /** Requires org owner role when in a non-public org. */
 export const orgOwnerGuard = async () => {
-  const session = await orgGuard();
-  if (!session) {
-    redirect("/sign-in");
-  }
-  const orgId = (session as { session?: { activeOrganizationId?: string } })
-    ?.session?.activeOrganizationId;
-  if (!orgId) {
+  const { session, memberRole } = await getActiveOrgContext();
+  if (memberRole !== "org_owner") {
     redirect("/dashboard");
   }
-  const { getOrgMemberRole } = await import("@/packages/db/queries/org");
-  const { db } = await import("@/packages/db");
-  const role = await getOrgMemberRole(db, {
-    organizationId: orgId,
-    userId: session.user.id,
-  });
-  if (role !== "org_owner") {
+  return session;
+};
+
+/** Requires org owner or org admin role in active non-public org. */
+export const orgOwnerOrAdminGuard = async () => {
+  const { session, memberRole } = await getActiveOrgContext();
+  if (memberRole !== "org_owner" && memberRole !== "org_admin") {
     redirect("/dashboard");
   }
   return session;

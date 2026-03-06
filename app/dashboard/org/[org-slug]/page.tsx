@@ -1,11 +1,17 @@
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { OrgOverviewClient } from "@/components/dashboard/org-overview-client";
 import { Spinner } from "@/components/ui/spinner";
-import { orgGuardWithSlug } from "@/packages/auth/helper";
+import { getActiveOrgContext } from "@/packages/auth/helper";
 import { HydrateClient, prefetch, trpc } from "@/packages/trpc/server";
 
 export default async function OrgOverviewPage() {
-  await orgGuardWithSlug();
+  const { slug, memberRole } = await getActiveOrgContext();
+  const canManageOrg = memberRole === "org_owner" || memberRole === "org_admin";
+
+  if (!canManageOrg) {
+    redirect(`/dashboard/org/${slug}/courses`);
+  }
 
   await prefetch(trpc.org.listCohorts.queryOptions());
   await prefetch(trpc.org.listMembers.queryOptions());

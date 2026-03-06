@@ -58,14 +58,9 @@ export function OrgCohortsList() {
   const { data } = useSuspenseQuery(trpc.org.listCohorts.queryOptions());
   const { data: activeMember } = authClient.useActiveMember();
 
-  const canManage = [
-    "owner",
-    "admin",
-    "teacher",
-    "org_owner",
-    "org_admin",
-    "org_teacher",
-  ].includes(activeMember?.role ?? "");
+  const canManage = ["owner", "admin", "org_owner", "org_admin"].includes(
+    activeMember?.role ?? ""
+  );
 
   const createMutation = useMutation(
     trpc.org.createCohort.mutationOptions({
@@ -109,7 +104,9 @@ export function OrgCohortsList() {
         <div>
           <h2 className="font-medium text-foreground text-sm">Cohorts</h2>
           <p className="text-muted-foreground text-xs">
-            Organize members into groups and assign courses.
+            {canManage
+              ? "Organize members into groups and assign courses."
+              : "Browse your cohorts and assigned courses."}
           </p>
         </div>
         {canManage && (
@@ -200,7 +197,13 @@ function CohortCard({
   expanded,
   onExpandToggle,
 }: {
-  cohort: { id: string; name: string; image?: string | null };
+  cohort: {
+    id: string;
+    name: string;
+    image?: string | null;
+    memberCount?: number;
+    courseCount?: number;
+  };
   canManage: boolean;
   expanded: boolean;
   onExpandToggle: () => void;
@@ -212,7 +215,7 @@ function CohortCard({
 
   const { data: membersData } = useQuery({
     ...trpc.org.listCohortMembers.queryOptions({ cohortId: cohort.id }),
-    enabled: expanded,
+    enabled: expanded && canManage,
   });
   const { data: coursesData } = useQuery({
     ...trpc.course.listCohortCourses.queryOptions({ cohortId: cohort.id }),
@@ -396,10 +399,9 @@ function CohortCard({
 
             <CollapsibleTrigger className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
               <span className="text-xs">
-                {membersData?.members?.length ?? "—"} members
-                {coursesData?.courses?.length
-                  ? ` · ${coursesData.courses.length} courses`
-                  : ""}
+                {cohort.memberCount ?? membersData?.members?.length ?? 0}{" "}
+                members
+                {` · ${cohort.courseCount ?? coursesData?.courses?.length ?? 0} courses`}
               </span>
               {expanded ? (
                 <ChevronDownIcon className="size-4" />

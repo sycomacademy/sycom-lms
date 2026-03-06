@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -35,12 +35,10 @@ import {
 } from "@/components/ui/select";
 import { toastManager } from "@/components/ui/toast";
 import { authClient } from "@/packages/auth/auth-client";
-import { useTRPC } from "@/packages/trpc/client";
 
 const inviteSchema = z.object({
   email: z.string().email("Invalid email"),
   role: z.enum(["org_admin", "org_auditor", "org_teacher", "org_student"]),
-  cohortId: z.string().optional(),
 });
 
 type InviteInput = z.infer<typeof inviteSchema>;
@@ -70,14 +68,8 @@ export function InviteMemberDialog({
   open,
   onOpenChange,
 }: InviteMemberDialogProps) {
-  const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [isPending, setIsPending] = useState(false);
-
-  const { data: cohortsData } = useQuery({
-    ...trpc.org.listCohorts.queryOptions(),
-    enabled: open === true,
-  });
 
   const form = useForm<InviteInput>({
     resolver: zodResolver(inviteSchema),
@@ -111,9 +103,7 @@ export function InviteMemberDialog({
       description: `An invitation was sent to ${data.email}`,
       type: "success",
     });
-    queryClient.invalidateQueries({
-      queryKey: trpc.org.listMembers.queryKey(),
-    });
+    queryClient.invalidateQueries();
     form.reset();
     onOpenChange?.(false);
   };
@@ -125,8 +115,7 @@ export function InviteMemberDialog({
         <DialogHeader>
           <DialogTitle>Invite member</DialogTitle>
           <DialogDescription>
-            Send an invitation to join your organization. You can optionally add
-            them to a cohort.
+            Send an invitation to join your organization.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -181,40 +170,6 @@ export function InviteMemberDialog({
                     </FormItem>
                   )}
                 />
-                {cohortsData?.cohorts && cohortsData.cohorts.length > 0 && (
-                  <FormField
-                    control={form.control}
-                    name="cohortId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Field>
-                          <FieldLabel className="text-xs">
-                            Cohort (optional)
-                          </FieldLabel>
-                          <FormControl>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value ?? ""}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="None" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="">None</SelectItem>
-                                {cohortsData.cohorts.map((c) => (
-                                  <SelectItem key={c.id} value={c.id}>
-                                    {c.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormControl>
-                          <FormMessage />
-                        </Field>
-                      </FormItem>
-                    )}
-                  />
-                )}
               </div>
             </DialogPanel>
             <DialogFooter>

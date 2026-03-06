@@ -1,4 +1,4 @@
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, asc, eq, ne, sql } from "drizzle-orm";
 import type { Database } from "@/packages/db";
 import { db } from "@/packages/db";
 import { createLoggerWithContext } from "@/packages/utils/logger";
@@ -186,31 +186,71 @@ export async function setSessionActiveOrgIfNull(
   database: Database,
   params: { sessionId: string }
 ) {
+  const [sessionRow] = await database
+    .select({
+      userId: sessionTable.userId,
+      activeOrganizationId: sessionTable.activeOrganizationId,
+    })
+    .from(sessionTable)
+    .where(eq(sessionTable.id, params.sessionId))
+    .limit(1);
+
+  if (!sessionRow) {
+    return;
+  }
+
+  if (sessionRow.activeOrganizationId) {
+    const [currentOrg] = await database
+      .select({ slug: organization.slug })
+      .from(organization)
+      .where(eq(organization.id, sessionRow.activeOrganizationId))
+      .limit(1);
+
+    if (currentOrg && currentOrg.slug !== PUBLIC_ORG_SLUG) {
+      return;
+    }
+  }
+
+  const [preferredOrgMembership] = await database
+    .select({ organizationId: member.organizationId })
+    .from(member)
+    .innerJoin(organization, eq(organization.id, member.organizationId))
+    .where(
+      and(
+        eq(member.userId, sessionRow.userId),
+        ne(organization.slug, PUBLIC_ORG_SLUG)
+      )
+    )
+    .orderBy(asc(member.createdAt))
+    .limit(1);
+
   const [org] = await database
     .select({ id: organization.id })
     .from(organization)
     .where(eq(organization.slug, PUBLIC_ORG_SLUG))
     .limit(1);
 
-  if (!org) {
+  if (!(org || preferredOrgMembership)) {
+    return;
+  }
+
+  const activeOrganizationId =
+    preferredOrgMembership?.organizationId ?? org?.id;
+  if (!activeOrganizationId) {
     return;
   }
 
   const [cohortRow] = await database
     .select({ id: cohort.id })
     .from(cohort)
-    .where(
-      and(
-        eq(cohort.organizationId, org.id),
-        eq(cohort.name, PUBLIC_COHORT_NAME)
-      )
-    )
+    .where(eq(cohort.organizationId, activeOrganizationId))
+    .orderBy(asc(cohort.createdAt))
     .limit(1);
 
   await database
     .update(sessionTable)
     .set({
-      activeOrganizationId: org.id,
+      activeOrganizationId,
       activeTeamId: cohortRow?.id ?? null,
     })
     .where(eq(sessionTable.id, params.sessionId));

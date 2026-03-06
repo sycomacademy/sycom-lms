@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import {
   getOrganization,
@@ -74,14 +74,10 @@ const orgOwnerProcedure = orgMemberProcedure.use(async ({ next, ctx }) => {
 });
 
 const orgManageProcedure = orgMemberProcedure.use(async ({ next, ctx }) => {
-  if (
-    ctx.memberRole !== "org_owner" &&
-    ctx.memberRole !== "org_admin" &&
-    ctx.memberRole !== "org_teacher"
-  ) {
+  if (ctx.memberRole !== "org_owner" && ctx.memberRole !== "org_admin") {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "Org management access required",
+      message: "Org owner or admin access required",
     });
   }
   return next({ ctx });
@@ -101,7 +97,7 @@ export const orgRouter = router({
     return org;
   }),
 
-  listMembers: orgMemberProcedure.query(async ({ ctx }) => {
+  listMembers: orgOwnerOrAdminProcedure.query(async ({ ctx }) => {
     const rows = await listOrgMembers(ctx.db, {
       organizationId: ctx.orgId,
     });
@@ -131,29 +127,189 @@ export const orgRouter = router({
           message: "Cohort not found",
         });
       }
-      if (ctx.memberRole === "org_teacher") {
-        const [inCohort] = await ctx.db
-          .select({ id: cohort_member.id })
-          .from(cohort_member)
-          .where(
-            and(
-              eq(cohort_member.teamId, input.cohortId),
-              eq(cohort_member.userId, ctx.session.user.id)
-            )
-          )
-          .limit(1);
-        if (!inCohort) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "You are not a member of this cohort",
-          });
-        }
-      }
-
       const rows = await listCohortMembers(ctx.db, {
         cohortId: input.cohortId,
       });
       return { members: rows };
+    }),
+
+  assignMemberToCohort: orgOwnerOrAdminProcedure
+    .input(z.object({ memberId: z.string(), cohortId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const [memberRow] = await ctx.db
+        .select({ id: member.id, userId: member.userId })
+        .from(member)
+        .where(
+          and(
+            eq(member.id, input.memberId),
+            eq(member.organizationId, ctx.orgId)
+          )
+        )
+        .limit(1);
+
+      if (!memberRow) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Member not found",
+        });
+      }
+
+      const [cohortRow] = await ctx.db
+        .select({ id: cohort.id })
+        .from(cohort)
+        .where(
+          and(
+            eq(cohort.id, input.cohortId),
+            eq(cohort.organizationId, ctx.orgId)
+          )
+        )
+        .limit(1);
+
+      if (!cohortRow) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Cohort not found",
+        });
+      }
+
+      const [existing] = await ctx.db
+        .select({ id: cohort_member.id })
+        .from(cohort_member)
+        .where(
+          and(
+            eq(cohort_member.userId, memberRow.userId),
+            eq(cohort_member.teamId, input.cohortId)
+          )
+        )
+        .limit(1);
+
+      if (existing) {
+        return { success: true };
+      }
+
+      await ctx.db.insert(cohort_member).values({
+        id: crypto.randomUUID(),
+        userId: memberRow.userId,
+        teamId: input.cohortId,
+      });
+
+      return { success: true };
+    }),
+
+  removeMemberFromCohort: orgOwnerOrAdminProcedure
+    .input(z.object({ memberId: z.string(), cohortId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const [memberRow] = await ctx.db
+        .select({ id: member.id, userId: member.userId })
+        .from(member)
+        .where(
+          and(
+            eq(member.id, input.memberId),
+            eq(member.organizationId, ctx.orgId)
+          )
+        )
+        .limit(1);
+
+      if (!memberRow) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Member not found",
+        });
+      }
+
+      const [cohortRow] = await ctx.db
+        .select({ id: cohort.id })
+        .from(cohort)
+        .where(
+          and(
+            eq(cohort.id, input.cohortId),
+            eq(cohort.organizationId, ctx.orgId)
+          )
+        )
+        .limit(1);
+
+      if (!cohortRow) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Cohort not found",
+        });
+      }
+
+      await ctx.db
+        .delete(cohort_member)
+        .where(
+          and(
+            eq(cohort_member.userId, memberRow.userId),
+            eq(cohort_member.teamId, input.cohortId)
+          )
+        );
+
+      return { success: true };
+    }),
+
+  moveMemberToCohort: orgOwnerOrAdminProcedure
+    .input(z.object({ memberId: z.string(), cohortId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const [memberRow] = await ctx.db
+        .select({ id: member.id, userId: member.userId })
+        .from(member)
+        .where(
+          and(
+            eq(member.id, input.memberId),
+            eq(member.organizationId, ctx.orgId)
+          )
+        )
+        .limit(1);
+
+      if (!memberRow) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Member not found",
+        });
+      }
+
+      const [targetCohort] = await ctx.db
+        .select({ id: cohort.id })
+        .from(cohort)
+        .where(
+          and(
+            eq(cohort.id, input.cohortId),
+            eq(cohort.organizationId, ctx.orgId)
+          )
+        )
+        .limit(1);
+
+      if (!targetCohort) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Cohort not found",
+        });
+      }
+
+      const orgCohorts = await ctx.db
+        .select({ id: cohort.id })
+        .from(cohort)
+        .where(eq(cohort.organizationId, ctx.orgId));
+
+      const orgCohortIds = orgCohorts.map((row) => row.id);
+      if (orgCohortIds.length > 0) {
+        await ctx.db
+          .delete(cohort_member)
+          .where(
+            and(
+              eq(cohort_member.userId, memberRow.userId),
+              inArray(cohort_member.teamId, orgCohortIds)
+            )
+          );
+      }
+
+      await ctx.db.insert(cohort_member).values({
+        id: crypto.randomUUID(),
+        userId: memberRow.userId,
+        teamId: input.cohortId,
+      });
+
+      return { success: true };
     }),
 
   createCohort: orgManageProcedure

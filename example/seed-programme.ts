@@ -545,9 +545,21 @@ export async function seedProgramme() {
 
   // 9. Enrollments and progress (alice, bob, eve)
   const ENROLLMENTS = [
-    { userId: USER_IDS.alice, courseId: COURSE_IDS.introSecurity },
-    { userId: USER_IDS.bob, courseId: COURSE_IDS.introSecurity },
-    { userId: USER_IDS.eve, courseId: COURSE_IDS.introSecurity },
+    {
+      userId: USER_IDS.alice,
+      courseId: COURSE_IDS.introSecurity,
+      organizationId: ORG_IDS.acme,
+    },
+    {
+      userId: USER_IDS.bob,
+      courseId: COURSE_IDS.introSecurity,
+      organizationId: ORG_IDS.acme,
+    },
+    {
+      userId: USER_IDS.eve,
+      courseId: COURSE_IDS.introSecurity,
+      organizationId: ORG_IDS.techcorp,
+    },
   ];
 
   console.log("  [programme] Seeding enrollments and lesson completions...");
@@ -555,12 +567,17 @@ export async function seedProgramme() {
     await db
       .insert(enrollment)
       .values({
-        id: `enr-${e.userId}-${e.courseId}`,
+        id: `enr-${e.userId}-${e.courseId}-${e.organizationId}`,
         userId: e.userId,
         courseId: e.courseId,
+        organizationId: e.organizationId,
       })
       .onConflictDoNothing({
-        target: [enrollment.userId, enrollment.courseId],
+        target: [
+          enrollment.userId,
+          enrollment.courseId,
+          enrollment.organizationId,
+        ],
       });
   }
 
@@ -574,9 +591,14 @@ export async function seedProgramme() {
         id: `lcp-alice-${firstLesson.id}`,
         userId: USER_IDS.alice,
         lessonId: firstLesson.id,
+        organizationId: ORG_IDS.acme,
       })
       .onConflictDoNothing({
-        target: [lessonCompletion.userId, lessonCompletion.lessonId],
+        target: [
+          lessonCompletion.userId,
+          lessonCompletion.lessonId,
+          lessonCompletion.organizationId,
+        ],
       });
   }
 

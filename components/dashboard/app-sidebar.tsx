@@ -148,10 +148,14 @@ const NAV: Record<NavRole, Record<string, NavItem[]>> = {
 
   org_teacher: {
     teaching: [
-      { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
+      {
+        href: "/dashboard/org/courses",
+        label: "My Courses",
+        icon: BookOpenIcon,
+      },
       {
         href: "/dashboard/org/cohorts",
-        label: "Organization",
+        label: "My Cohorts",
         icon: BuildingIcon,
       },
     ],
@@ -159,13 +163,15 @@ const NAV: Record<NavRole, Record<string, NavItem[]>> = {
   },
 
   org_auditor: {
-    main: [
-      { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
-    ],
-    org: [
+    auditing: [
       {
-        href: "/dashboard/org/people",
-        label: "Organization",
+        href: "/dashboard/org/courses",
+        label: "My Courses",
+        icon: BookOpenIcon,
+      },
+      {
+        href: "/dashboard/org/cohorts",
+        label: "My Cohorts",
         icon: BuildingIcon,
       },
     ],
@@ -174,17 +180,15 @@ const NAV: Record<NavRole, Record<string, NavItem[]>> = {
 
   org_student: {
     learning: [
-      { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
       {
-        href: "/dashboard/org/cohorts",
-        label: "Organization",
-        icon: BuildingIcon,
-      },
-      { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
-      {
-        href: "/dashboard/journey",
+        href: "/dashboard/org/courses",
         label: "My Courses",
         icon: BookOpenIcon,
+      },
+      {
+        href: "/dashboard/org/cohorts",
+        label: "My Cohorts",
+        icon: BuildingIcon,
       },
     ],
     general: GENERAL,

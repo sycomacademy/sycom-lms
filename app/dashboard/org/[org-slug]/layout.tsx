@@ -1,7 +1,7 @@
 import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { OrgMenu } from "@/components/dashboard/org/org-menu";
-import { orgGuardWithSlug } from "@/packages/auth/helper";
+import { getActiveOrgContext } from "@/packages/auth/helper";
 
 export default async function OrgSlugLayout({
   children,
@@ -10,7 +10,7 @@ export default async function OrgSlugLayout({
   children: React.ReactNode;
   params: Promise<{ "org-slug": string }>;
 }) {
-  const { slug } = await orgGuardWithSlug();
+  const { slug, memberRole } = await getActiveOrgContext();
   const { "org-slug": paramSlug } = await params;
 
   if (paramSlug !== slug) {
@@ -18,16 +18,26 @@ export default async function OrgSlugLayout({
   }
 
   const base = `/dashboard/org/${slug}` as Route;
-  const items = [
-    { path: base, label: "Overview" },
-    { path: `${base}/people` as Route, label: "People" },
-    { path: `${base}/cohorts` as Route, label: "Cohorts" },
-    { path: `${base}/courses` as Route, label: "Courses" },
-    { path: `${base}/settings` as Route, label: "Settings" },
-  ];
+  const canManageOrg = memberRole === "org_owner" || memberRole === "org_admin";
+  const items = canManageOrg
+    ? [
+        { path: base, label: "Overview" },
+        { path: `${base}/people` as Route, label: "People" },
+        { path: `${base}/cohorts` as Route, label: "Cohorts" },
+        { path: `${base}/courses` as Route, label: "Courses" },
+        ...(memberRole === "org_owner"
+          ? ([
+              { path: `${base}/settings` as Route, label: "Settings" },
+            ] as const)
+          : []),
+      ]
+    : [
+        { path: `${base}/cohorts` as Route, label: "My cohorts" },
+        { path: `${base}/courses` as Route, label: "My courses" },
+      ];
 
   return (
-    <div className="mb-10 max-w-4xl md:ml-12">
+    <div className="mb-10 max-w-6xl md:ml-12">
       <OrgMenu items={items} />
       <section className="mt-6">{children}</section>
     </div>

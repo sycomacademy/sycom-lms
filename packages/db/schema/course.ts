@@ -11,7 +11,7 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 import { createdAt, updatedAt } from "@/packages/db/helper";
-import { cohort, user } from "@/packages/db/schema/auth";
+import { cohort, organization, user } from "@/packages/db/schema/auth";
 
 // ---------------------------------------------------------------------------
 // Enums (inline text enums)
@@ -188,13 +188,21 @@ export const enrollment = pgTable(
     courseId: text("course_id")
       .notNull()
       .references(() => course.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
     enrolledAt: timestamp("enrolled_at").defaultNow().notNull(),
     completedAt: timestamp("completed_at"),
   },
   (table) => [
-    unique("enrollment_user_course_uniq").on(table.userId, table.courseId),
+    unique("enrollment_user_course_org_uniq").on(
+      table.userId,
+      table.courseId,
+      table.organizationId
+    ),
     index("enrollment_user_id_idx").on(table.userId),
     index("enrollment_course_id_idx").on(table.courseId),
+    index("enrollment_org_id_idx").on(table.organizationId),
   ]
 );
 
@@ -214,15 +222,20 @@ export const lessonCompletion = pgTable(
     lessonId: text("lesson_id")
       .notNull()
       .references(() => lesson.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
     completedAt: timestamp("completed_at").defaultNow().notNull(),
   },
   (table) => [
-    unique("lesson_completion_user_lesson_uniq").on(
+    unique("lesson_completion_user_lesson_org_uniq").on(
       table.userId,
-      table.lessonId
+      table.lessonId,
+      table.organizationId
     ),
     index("lesson_completion_user_id_idx").on(table.userId),
     index("lesson_completion_lesson_id_idx").on(table.lessonId),
+    index("lesson_completion_org_id_idx").on(table.organizationId),
   ]
 );
 

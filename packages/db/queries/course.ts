@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import type { Database } from "@/packages/db";
-import { cohort_member } from "@/packages/db/schema/auth";
+import { cohort, cohort_member } from "@/packages/db/schema/auth";
 import {
   cohortCourse,
   courseInstructor,
@@ -46,6 +46,7 @@ export async function hasCourseAccessForLearning(
   params: {
     courseId: string;
     userId: string;
+    organizationId: string;
     cohortId?: string | null;
   }
 ): Promise<boolean> {
@@ -55,7 +56,8 @@ export async function hasCourseAccessForLearning(
     .where(
       and(
         eq(enrollment.userId, params.userId),
-        eq(enrollment.courseId, params.courseId)
+        eq(enrollment.courseId, params.courseId),
+        eq(enrollment.organizationId, params.organizationId)
       )
     )
     .limit(1);
@@ -65,6 +67,21 @@ export async function hasCourseAccessForLearning(
   }
 
   if (params.cohortId) {
+    const [cohortRow] = await database
+      .select({ id: cohort.id })
+      .from(cohort)
+      .where(
+        and(
+          eq(cohort.id, params.cohortId),
+          eq(cohort.organizationId, params.organizationId)
+        )
+      )
+      .limit(1);
+
+    if (!cohortRow) {
+      return false;
+    }
+
     const [assigned] = await database
       .select({ courseId: cohortCourse.courseId })
       .from(cohortCourse)

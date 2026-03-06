@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import type { Database } from "@/packages/db";
 import {
   cohort,
@@ -50,7 +50,39 @@ export async function listOrgMembers(
     .innerJoin(user, eq(user.id, member.userId))
     .where(eq(member.organizationId, params.organizationId))
     .orderBy(asc(member.createdAt));
-  return rows;
+
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const userIds = rows.map((row) => row.userId);
+  const cohortRows = await db
+    .select({
+      userId: cohort_member.userId,
+      cohortId: cohort.id,
+      cohortName: cohort.name,
+    })
+    .from(cohort_member)
+    .innerJoin(cohort, eq(cohort.id, cohort_member.teamId))
+    .where(
+      and(
+        inArray(cohort_member.userId, userIds),
+        eq(cohort.organizationId, params.organizationId)
+      )
+    )
+    .orderBy(asc(cohort.name));
+
+  const cohortsByUser = new Map<string, { id: string; name: string }[]>();
+  for (const cohortRow of cohortRows) {
+    const existing = cohortsByUser.get(cohortRow.userId) ?? [];
+    existing.push({ id: cohortRow.cohortId, name: cohortRow.cohortName });
+    cohortsByUser.set(cohortRow.userId, existing);
+  }
+
+  return rows.map((row) => ({
+    ...row,
+    cohorts: cohortsByUser.get(row.userId) ?? [],
+  }));
 }
 
 export async function listOrgCohorts(
@@ -76,6 +108,14 @@ export async function listOrgCohorts(
         image: cohort.image,
         organizationId: cohort.organizationId,
         createdAt: cohort.createdAt,
+        memberCount:
+          sql<number>`(SELECT count(*)::int FROM "auth"."cohort_member" cm WHERE cm."team_id" = ${cohort.id})`.as(
+            "member_count"
+          ),
+        courseCount:
+          sql<number>`(SELECT count(*)::int FROM "cohort_course" cc WHERE cc."cohort_id" = ${cohort.id})`.as(
+            "course_count"
+          ),
       })
       .from(cohort)
       .where(eq(cohort.organizationId, organizationId))
@@ -99,6 +139,14 @@ export async function listOrgCohorts(
       image: cohort.image,
       organizationId: cohort.organizationId,
       createdAt: cohort.createdAt,
+      memberCount:
+        sql<number>`(SELECT count(*)::int FROM "auth"."cohort_member" cm WHERE cm."team_id" = ${cohort.id})`.as(
+          "member_count"
+        ),
+      courseCount:
+        sql<number>`(SELECT count(*)::int FROM "cohort_course" cc WHERE cc."cohort_id" = ${cohort.id})`.as(
+          "course_count"
+        ),
     })
     .from(cohort)
     .where(

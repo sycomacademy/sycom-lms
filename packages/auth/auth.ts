@@ -82,11 +82,9 @@ export const auth = betterAuth({
               userId: createdSession.userId,
               keepSessionId: createdSession.id,
             });
-            if (!createdSession.activeOrganizationId) {
-              await setSessionActiveOrgIfNull(db, {
-                sessionId: createdSession.id,
-              });
-            }
+            await setSessionActiveOrgIfNull(db, {
+              sessionId: createdSession.id,
+            });
           } catch (error) {
             authHookLogger.error("session hook failed", {
               sessionId: createdSession.id,
