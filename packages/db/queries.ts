@@ -1,9 +1,10 @@
-import { and, asc, eq, ne, sql } from "drizzle-orm";
+import { and, asc, count, eq, ne, sql } from "drizzle-orm";
 import type { Database } from "@/packages/db";
 import { db } from "@/packages/db";
 import { createLoggerWithContext } from "@/packages/utils/logger";
 import {
   CATEGORIES,
+  NotFoundError,
   PUBLIC_COHORT_NAME,
   PUBLIC_ORG_NAME,
   PUBLIC_ORG_SLUG,
@@ -15,6 +16,9 @@ import {
   courseInstructor,
   enrollment,
   type InstructorRole,
+  lesson,
+  lessonCompletion,
+  section,
 } from "./schema/course";
 import { feedback, report } from "./schema/feedback";
 import { profile, profileSettingsDefault } from "./schema/profile";
@@ -457,6 +461,65 @@ export async function requireCourseEnrollmentForLearning(
   }
 
   return context;
+}
+
+export async function getCourseProgress(
+  database: Database,
+  params: {
+    enrollmentId: string;
+    courseId: string;
+  }
+) {
+  const [enrollmentRow] = await database
+    .select({ id: enrollment.id })
+    .from(enrollment)
+    .where(
+      and(
+        eq(enrollment.id, params.enrollmentId),
+        eq(enrollment.courseId, params.courseId)
+      )
+    )
+    .limit(1);
+
+  if (!enrollmentRow) {
+    throw new NotFoundError("Enrollment not found for this course");
+  }
+
+  const [totalLessonsRows, completedLessonsRows] = await Promise.all([
+    database
+      .select({ lessonCount: count(lesson.id) })
+      .from(lesson)
+      .innerJoin(section, eq(section.id, lesson.sectionId))
+      .where(eq(section.courseId, params.courseId)),
+    database
+      .select({ completedLessonCount: count(lessonCompletion.id) })
+      .from(lessonCompletion)
+      .innerJoin(lesson, eq(lesson.id, lessonCompletion.lessonId))
+      .innerJoin(section, eq(section.id, lesson.sectionId))
+      .where(
+        and(
+          eq(lessonCompletion.enrollmentId, params.enrollmentId),
+          eq(section.courseId, params.courseId)
+        )
+      ),
+  ]);
+
+  const lessonCount = Number(totalLessonsRows[0]?.lessonCount ?? 0);
+  const completedLessonCount = Number(
+    completedLessonsRows[0]?.completedLessonCount ?? 0
+  );
+  const percent =
+    lessonCount > 0
+      ? Math.round((completedLessonCount / lessonCount) * 100)
+      : 0;
+
+  return {
+    enrollmentId: params.enrollmentId,
+    courseId: params.courseId,
+    lessonCount,
+    completedLessonCount,
+    percent,
+  };
 }
 
 export async function canEnrollInCohortCourse(
