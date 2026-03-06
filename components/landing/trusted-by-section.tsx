@@ -2,18 +2,19 @@ import { partnerLogos } from "@/lib/mock-data";
 
 export function TrustedBySection() {
   return (
-    <section className="border-border border-y bg-muted/30 py-10">
+    <section className="border-border/50 border-y bg-muted/20 py-8">
       <div className="container mx-auto px-4">
-        <p className="mb-8 text-center font-medium text-muted-foreground text-xs uppercase tracking-widest">
+        <p className="mb-6 text-center text-muted-foreground/60 text-xs uppercase tracking-widest">
           Aligned with leading certification bodies
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
+        <div className="flex flex-wrap items-center justify-center gap-8 md:gap-14">
           {partnerLogos.map((partner) => (
-            <div className="flex items-center justify-center" key={partner.id}>
-              <span className="font-semibold text-lg text-muted-foreground/60 tracking-tight transition-colors hover:text-muted-foreground">
-                {partner.name}
-              </span>
-            </div>
+            <span
+              className="cursor-default font-semibold text-base text-muted-foreground/40 tracking-tight transition-colors duration-300 hover:text-foreground"
+              key={partner.id}
+            >
+              {partner.name}
+            </span>
           ))}
         </div>
       </div>

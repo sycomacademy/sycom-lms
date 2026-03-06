@@ -1,40 +1,55 @@
 "use client";
 
-import { ArrowRight, Play, Shield } from "lucide-react";
+import { ArrowRight, Shield, Terminal } from "lucide-react";
 import Link from "next/link";
+import BlurText from "@/components/reactbits/blur-text";
+import ShinyText from "@/components/reactbits/shiny-text";
 import { Button } from "@/components/ui/button";
 
 export function HeroSection() {
   return (
-    <section className="relative w-full overflow-hidden bg-background">
+    <section className="relative w-full overflow-hidden bg-primary text-primary-foreground">
       <div
-        className="absolute inset-0 opacity-15"
+        className="absolute inset-0 opacity-10"
         style={{
-          backgroundImage: `linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px),
-            linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px)`,
-          backgroundSize: "4rem 4rem",
+          backgroundImage:
+            "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)",
+          backgroundSize: "32px 32px",
         }}
       />
 
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
+      <div className="absolute top-0 left-1/2 h-96 w-96 -translate-x-1/2 bg-brand/20 blur-3xl" />
+      <div className="absolute right-0 bottom-0 h-64 w-64 bg-highlight/10 blur-3xl" />
 
-      <div className="container relative mx-auto px-4 py-24 lg:py-32">
+      <div className="container relative mx-auto px-4 py-28 lg:py-40">
         <div className="mx-auto max-w-4xl text-center">
-          <div className="mb-6 inline-flex items-center gap-2 border border-primary/20 bg-primary/5 px-4 py-2">
-            <Shield className="h-4 w-4 text-primary" />
-            <span className="font-medium text-primary text-sm">
-              Cybersecurity Learning Platform
-            </span>
+          <div className="mb-8 inline-flex items-center gap-2 border border-primary-foreground/20 bg-primary-foreground/5 px-4 py-2 backdrop-blur-sm">
+            <Terminal className="h-4 w-4 text-brand" />
+            <ShinyText
+              className="font-medium text-sm"
+              color="rgba(255,255,255,0.5)"
+              shineColor="rgba(255,255,255,1)"
+              speed={3}
+              text="Cybersecurity Learning Platform"
+            />
           </div>
 
-          <h1 className="mb-6 font-bold text-4xl text-foreground leading-tight md:text-5xl lg:text-6xl">
-            <span className="text-balance">
-              Master cybersecurity.{" "}
-              <span className="text-primary">Advance your career.</span>
-            </span>
-          </h1>
+          <div className="mb-8">
+            <BlurText
+              animateBy="words"
+              className="font-bold text-4xl leading-tight md:text-6xl lg:text-7xl"
+              delay={80}
+              text="Master cybersecurity."
+            />
+            <BlurText
+              animateBy="words"
+              className="mt-2 font-bold text-4xl text-brand leading-tight md:text-6xl lg:text-7xl"
+              delay={80}
+              text="Advance your career."
+            />
+          </div>
 
-          <p className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground md:text-xl">
+          <p className="mx-auto mb-12 max-w-2xl text-lg text-primary-foreground/70 md:text-xl">
             Learn from industry experts with hands-on labs, certification prep,
             and structured learning paths. Join thousands of professionals
             building real-world security skills.
@@ -42,7 +57,7 @@ export function HeroSection() {
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button
-              className="gap-2"
+              className="gap-2 border-brand bg-brand text-primary hover:bg-brand/90"
               nativeButton={false}
               render={
                 <Link href="/sign-up">
@@ -53,11 +68,11 @@ export function HeroSection() {
               size="lg"
             />
             <Button
-              className="gap-2"
+              className="gap-2 border-primary-foreground/30 text-primary-foreground hover:border-primary-foreground/60 hover:bg-primary-foreground/10"
               nativeButton={false}
               render={
                 <Link href="#courses">
-                  <Play className="h-4 w-4" />
+                  <Shield className="h-4 w-4" />
                   Browse courses
                 </Link>
               }
@@ -66,19 +81,25 @@ export function HeroSection() {
             />
           </div>
 
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-8 text-muted-foreground text-sm">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-2xl text-foreground">15k+</span>
+          <div className="mt-16 flex flex-wrap items-center justify-center gap-10 text-primary-foreground/50 text-sm">
+            <div className="flex flex-col items-center gap-1">
+              <span className="font-bold text-3xl text-primary-foreground">
+                15k+
+              </span>
               <span>Active learners</span>
             </div>
-            <div className="h-8 w-px bg-border" />
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-2xl text-foreground">98%</span>
+            <div className="h-10 w-px bg-primary-foreground/20" />
+            <div className="flex flex-col items-center gap-1">
+              <span className="font-bold text-3xl text-primary-foreground">
+                98%
+              </span>
               <span>Pass rate</span>
             </div>
-            <div className="h-8 w-px bg-border" />
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-2xl text-foreground">50+</span>
+            <div className="h-10 w-px bg-primary-foreground/20" />
+            <div className="flex flex-col items-center gap-1">
+              <span className="font-bold text-3xl text-primary-foreground">
+                50+
+              </span>
               <span>Expert courses</span>
             </div>
           </div>

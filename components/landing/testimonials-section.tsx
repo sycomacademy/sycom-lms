@@ -1,50 +1,54 @@
 "use client";
 
 import { Quote, Star } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import FadeContent from "@/components/reactbits/fade-content";
 import { SectionLabel } from "@/components/ui/section-label";
 import { mockTestimonials } from "@/lib/mock-data";
 
 export function TestimonialsSection() {
   return (
-    <section className="bg-muted/30 py-20 lg:py-28" id="testimonials">
+    <section className="py-20 lg:py-28" id="testimonials">
       <div className="container mx-auto px-4">
-        <SectionLabel label="Testimonials" />
-        <div className="mb-12 text-center">
-          <h2 className="mb-4 font-bold text-3xl text-foreground md:text-4xl">
-            What our students say
-          </h2>
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            Hear from professionals who have transformed their careers with our
-            cybersecurity training programmes.
-          </p>
-        </div>
+        <FadeContent blur duration={800}>
+          <SectionLabel label="Testimonials" />
+          <div className="mb-14 text-center">
+            <h2 className="mb-4 font-bold text-3xl text-foreground md:text-4xl">
+              What our students say
+            </h2>
+            <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+              Hear from professionals who have transformed their careers with
+              our cybersecurity training programmes.
+            </p>
+          </div>
+        </FadeContent>
 
-        <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {mockTestimonials.map((testimonial) => (
-            <Card
-              className="transition-all hover:ring-primary/30"
+        <div className="mx-auto grid max-w-6xl gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {mockTestimonials.map((testimonial, i) => (
+            <FadeContent
+              blur
+              delay={i * 80}
+              duration={500}
               key={testimonial.id}
             >
-              <CardContent className="p-6">
-                <Quote className="mb-4 h-7 w-7 text-primary/30" />
+              <div className="flex h-full flex-col border border-border bg-card p-6 transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5">
+                <Quote className="mb-4 h-6 w-6 text-brand/40" />
 
                 <div className="mb-4 flex gap-0.5">
-                  {Array.from({ length: testimonial.rating }).map((_, i) => (
+                  {Array.from({ length: testimonial.rating }).map((_, j) => (
                     <Star
-                      className="h-4 w-4 fill-warning text-warning"
-                      key={`${testimonial.id}-star-${i}`}
+                      className="h-3.5 w-3.5 fill-warning text-warning"
+                      key={`${testimonial.id}-star-${j}`}
                     />
                   ))}
                 </div>
 
-                <p className="mb-6 text-foreground text-sm leading-relaxed">
+                <p className="mb-6 flex-1 text-foreground/80 text-sm leading-relaxed">
                   &ldquo;{testimonial.quote}&rdquo;
                 </p>
 
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center bg-primary/10">
-                    <span className="font-semibold text-primary text-sm">
+                <div className="flex items-center gap-3 border-border/50 border-t pt-4">
+                  <div className="flex h-9 w-9 items-center justify-center bg-primary text-primary-foreground">
+                    <span className="font-semibold text-xs">
                       {testimonial.name
                         .split(" ")
                         .map((n) => n[0])
@@ -60,8 +64,8 @@ export function TestimonialsSection() {
                     </p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </FadeContent>
           ))}
         </div>
       </div>
