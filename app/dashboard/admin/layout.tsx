@@ -39,6 +39,7 @@ export default async function AdminLayout({
       <div className="mx-auto max-w-7xl px-4 py-6">
         <AdminMenu
           items={[
+            { path: "/dashboard/admin", label: "Overview" },
             { path: "/dashboard/admin/users", label: "Users" },
             { path: "/dashboard/admin/organizations", label: "Organizations" },
             { path: "/dashboard/admin/reports", label: "Reports & Feedback" },

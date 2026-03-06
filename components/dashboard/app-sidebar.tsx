@@ -2,7 +2,6 @@
 
 import type { LucideIcon } from "lucide-react";
 import {
-  BarChart2Icon,
   BookOpenIcon,
   BuildingIcon,
   GraduationCapIcon,
@@ -68,8 +67,13 @@ type NavRole =
 const NAV: Record<NavRole, Record<string, NavItem[]>> = {
   // ── Platform roles ──────────────────────────────────────────────────────
   platform_admin: {
-    platform: [
-      { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
+    Main: [
+      {
+        href: "/dashboard/admin",
+        label: "Overview",
+        icon: LayoutDashboardIcon,
+      },
+      { href: "/dashboard/admin/users", label: "Users", icon: UsersIcon },
     ],
     courses: [
       {
@@ -267,6 +271,7 @@ export function AppSidebar() {
                     : resolveOrgHref(href, orgSlug);
                   const isOverviewHref =
                     resolvedHref === "/dashboard" ||
+                    resolvedHref === "/dashboard/admin" ||
                     (!!orgSlug && resolvedHref === `/dashboard/org/${orgSlug}`);
                   return (
                     <SidebarMenuItem key={resolvedHref}>
