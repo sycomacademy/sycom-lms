@@ -9,10 +9,10 @@
  */
 
 import "dotenv/config";
-import { db } from "../packages/db";
-import { user } from "../packages/db/schema/auth";
-import { feedback } from "../packages/db/schema/feedback";
-import { report } from "../packages/db/schema/report";
+import { db } from "../../db";
+import { user } from "../../db/schema/auth";
+import { feedback } from "../../db/schema/feedback";
+import { report } from "../../db/schema/report";
 
 const TOTAL_USERS = 55;
 const VERIFIED_COUNT = 30;

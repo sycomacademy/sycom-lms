@@ -1,0 +1,2 @@
+CREATE INDEX "enrollment_user_org_idx" ON "enrollment" USING btree ("user_id","organization_id");--> statement-breakpoint
+CREATE INDEX "lesson_completion_user_org_idx" ON "lesson_completion" USING btree ("user_id","organization_id");

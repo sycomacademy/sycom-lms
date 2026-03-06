@@ -11,14 +11,14 @@
 
 import "dotenv/config";
 import { eq, inArray } from "drizzle-orm";
-import { db } from "../packages/db";
-import { user } from "../packages/db/schema/auth";
+import { db } from "../../db";
+import { user } from "../../db/schema/auth";
 import {
   course,
   courseInstructor,
   lesson,
   section,
-} from "../packages/db/schema/course";
+} from "../../db/schema/course";
 
 // ---------------------------------------------------------------------------
 // Plate-compatible content (Value = array of block elements)

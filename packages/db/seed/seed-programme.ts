@@ -20,14 +20,14 @@
 
 import "dotenv/config";
 import { and, eq } from "drizzle-orm";
-import { db } from "../packages/db";
+import { db } from "../../db";
 import {
   cohort,
   cohort_member,
   member,
   organization,
   user,
-} from "../packages/db/schema/auth";
+} from "../../db/schema/auth";
 import {
   category,
   cohortCourse,
@@ -38,8 +38,8 @@ import {
   lesson,
   lessonCompletion,
   section,
-} from "../packages/db/schema/course";
-import { profile } from "../packages/db/schema/profile";
+} from "../../db/schema/course";
+import { profile } from "../../db/schema/profile";
 
 // ---------------------------------------------------------------------------
 // Fixed IDs (idempotent runs)
@@ -260,9 +260,7 @@ const COURSES = [
 
 export async function seedProgramme() {
   // 1. Ensure public org and categories exist
-  const { ensurePublicOrg, seedCategories } = await import(
-    "../packages/db/queries"
-  );
+  const { ensurePublicOrg, seedCategories } = await import("../../db/queries");
   await ensurePublicOrg(db);
   await seedCategories(db);
 

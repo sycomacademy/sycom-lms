@@ -148,7 +148,7 @@ export const section = pgTable(
 );
 
 // ---------------------------------------------------------------------------
-// Lessons (smallest learning unit — stores Plate.js JSON content)
+// Lessons (smallest learning unit — stores Tiptap JSON content)
 // ---------------------------------------------------------------------------
 
 export const lesson = pgTable(
@@ -203,6 +203,7 @@ export const enrollment = pgTable(
     index("enrollment_user_id_idx").on(table.userId),
     index("enrollment_course_id_idx").on(table.courseId),
     index("enrollment_org_id_idx").on(table.organizationId),
+    index("enrollment_user_org_idx").on(table.userId, table.organizationId),
   ]
 );
 
@@ -236,6 +237,10 @@ export const lessonCompletion = pgTable(
     index("lesson_completion_user_id_idx").on(table.userId),
     index("lesson_completion_lesson_id_idx").on(table.lessonId),
     index("lesson_completion_org_id_idx").on(table.organizationId),
+    index("lesson_completion_user_org_idx").on(
+      table.userId,
+      table.organizationId
+    ),
   ]
 );
 

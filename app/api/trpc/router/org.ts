@@ -1,90 +1,62 @@
 import { TRPCError } from "@trpc/server";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
+import type { Database } from "@/packages/db";
 import {
   getOrganization,
-  getOrgMemberRole,
   listCohortMembers,
   listOrgCohorts,
   listOrgMembers,
 } from "@/packages/db/queries/org";
 import { cohort, cohort_member, member } from "@/packages/db/schema/auth";
-import { protectedProcedure, router, t } from "../init";
+import { router } from "../init";
+import {
+  orgOwnerOrAdminProcedure,
+  orgOwnerProcedure,
+  orgProcedure,
+} from "../org-procedures";
 
-const orgContextMiddleware = t.middleware(async ({ next, ctx }) => {
-  if (!ctx.session?.user) {
-    throw new TRPCError({
-      code: "UNAUTHORIZED",
-      message: "Authentication required",
-    });
-  }
-  const sessionData = ctx.session as {
-    session?: { activeOrganizationId?: string };
-    user: { id: string };
-  };
-  const orgId = sessionData.session?.activeOrganizationId;
-  if (!orgId) {
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message: "No organization selected",
-    });
-  }
-  const memberRole = await getOrgMemberRole(ctx.db, {
-    organizationId: orgId,
-    userId: ctx.session.user.id,
-  });
-  if (!memberRole) {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "You are not a member of this organization",
-    });
-  }
-  return next({
-    ctx: {
-      ...ctx,
-      session: ctx.session,
-      orgId,
-      memberRole,
-    },
-  });
-});
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
-const orgMemberProcedure = protectedProcedure.use(orgContextMiddleware);
-
-const orgOwnerOrAdminProcedure = orgMemberProcedure.use(
-  async ({ next, ctx }) => {
-    if (ctx.memberRole !== "org_owner" && ctx.memberRole !== "org_admin") {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "Org owner or admin access required",
-      });
-    }
-    return next({ ctx });
+async function assertMemberInOrg(
+  db: Database,
+  memberId: string,
+  orgId: string
+): Promise<string> {
+  const [row] = await db
+    .select({ userId: member.userId })
+    .from(member)
+    .where(and(eq(member.id, memberId), eq(member.organizationId, orgId)))
+    .limit(1);
+  if (!row) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Member not found" });
   }
-);
+  return row.userId;
+}
 
-const orgOwnerProcedure = orgMemberProcedure.use(async ({ next, ctx }) => {
-  if (ctx.memberRole !== "org_owner") {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "Org owner access required",
-    });
+async function assertCohortInOrg(
+  db: Database,
+  cohortId: string,
+  orgId: string
+): Promise<void> {
+  const [row] = await db
+    .select({ id: cohort.id })
+    .from(cohort)
+    .where(and(eq(cohort.id, cohortId), eq(cohort.organizationId, orgId)))
+    .limit(1);
+  if (!row) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Cohort not found" });
   }
-  return next({ ctx });
-});
+}
 
-const orgManageProcedure = orgMemberProcedure.use(async ({ next, ctx }) => {
-  if (ctx.memberRole !== "org_owner" && ctx.memberRole !== "org_admin") {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "Org owner or admin access required",
-    });
-  }
-  return next({ ctx });
-});
+// ---------------------------------------------------------------------------
+// Router
+// ---------------------------------------------------------------------------
 
 export const orgRouter = router({
-  getOrganization: orgMemberProcedure.query(async ({ ctx }) => {
+  getOrganization: orgProcedure.query(async ({ ctx }) => {
     const org = await getOrganization(ctx.db, {
       organizationId: ctx.orgId,
     });
@@ -104,7 +76,7 @@ export const orgRouter = router({
     return { members: rows };
   }),
 
-  listCohorts: orgMemberProcedure.query(async ({ ctx }) => {
+  listCohorts: orgProcedure.query(async ({ ctx }) => {
     const rows = await listOrgCohorts(ctx.db, {
       organizationId: ctx.orgId,
       userId: ctx.session.user.id,
@@ -113,20 +85,10 @@ export const orgRouter = router({
     return { cohorts: rows };
   }),
 
-  listCohortMembers: orgManageProcedure
+  listCohortMembers: orgOwnerOrAdminProcedure
     .input(z.object({ cohortId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const [cohortRow] = await ctx.db
-        .select({ id: cohort.id, organizationId: cohort.organizationId })
-        .from(cohort)
-        .where(eq(cohort.id, input.cohortId))
-        .limit(1);
-      if (!cohortRow || cohortRow.organizationId !== ctx.orgId) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Cohort not found",
-        });
-      }
+      await assertCohortInOrg(ctx.db, input.cohortId, ctx.orgId);
       const rows = await listCohortMembers(ctx.db, {
         cohortId: input.cohortId,
       });
@@ -136,48 +98,15 @@ export const orgRouter = router({
   assignMemberToCohort: orgOwnerOrAdminProcedure
     .input(z.object({ memberId: z.string(), cohortId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const [memberRow] = await ctx.db
-        .select({ id: member.id, userId: member.userId })
-        .from(member)
-        .where(
-          and(
-            eq(member.id, input.memberId),
-            eq(member.organizationId, ctx.orgId)
-          )
-        )
-        .limit(1);
-
-      if (!memberRow) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Member not found",
-        });
-      }
-
-      const [cohortRow] = await ctx.db
-        .select({ id: cohort.id })
-        .from(cohort)
-        .where(
-          and(
-            eq(cohort.id, input.cohortId),
-            eq(cohort.organizationId, ctx.orgId)
-          )
-        )
-        .limit(1);
-
-      if (!cohortRow) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Cohort not found",
-        });
-      }
+      const userId = await assertMemberInOrg(ctx.db, input.memberId, ctx.orgId);
+      await assertCohortInOrg(ctx.db, input.cohortId, ctx.orgId);
 
       const [existing] = await ctx.db
         .select({ id: cohort_member.id })
         .from(cohort_member)
         .where(
           and(
-            eq(cohort_member.userId, memberRow.userId),
+            eq(cohort_member.userId, userId),
             eq(cohort_member.teamId, input.cohortId)
           )
         )
@@ -189,7 +118,7 @@ export const orgRouter = router({
 
       await ctx.db.insert(cohort_member).values({
         id: crypto.randomUUID(),
-        userId: memberRow.userId,
+        userId,
         teamId: input.cohortId,
       });
 
@@ -199,47 +128,14 @@ export const orgRouter = router({
   removeMemberFromCohort: orgOwnerOrAdminProcedure
     .input(z.object({ memberId: z.string(), cohortId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const [memberRow] = await ctx.db
-        .select({ id: member.id, userId: member.userId })
-        .from(member)
-        .where(
-          and(
-            eq(member.id, input.memberId),
-            eq(member.organizationId, ctx.orgId)
-          )
-        )
-        .limit(1);
-
-      if (!memberRow) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Member not found",
-        });
-      }
-
-      const [cohortRow] = await ctx.db
-        .select({ id: cohort.id })
-        .from(cohort)
-        .where(
-          and(
-            eq(cohort.id, input.cohortId),
-            eq(cohort.organizationId, ctx.orgId)
-          )
-        )
-        .limit(1);
-
-      if (!cohortRow) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Cohort not found",
-        });
-      }
+      const userId = await assertMemberInOrg(ctx.db, input.memberId, ctx.orgId);
+      await assertCohortInOrg(ctx.db, input.cohortId, ctx.orgId);
 
       await ctx.db
         .delete(cohort_member)
         .where(
           and(
-            eq(cohort_member.userId, memberRow.userId),
+            eq(cohort_member.userId, userId),
             eq(cohort_member.teamId, input.cohortId)
           )
         );
@@ -250,41 +146,8 @@ export const orgRouter = router({
   moveMemberToCohort: orgOwnerOrAdminProcedure
     .input(z.object({ memberId: z.string(), cohortId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const [memberRow] = await ctx.db
-        .select({ id: member.id, userId: member.userId })
-        .from(member)
-        .where(
-          and(
-            eq(member.id, input.memberId),
-            eq(member.organizationId, ctx.orgId)
-          )
-        )
-        .limit(1);
-
-      if (!memberRow) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Member not found",
-        });
-      }
-
-      const [targetCohort] = await ctx.db
-        .select({ id: cohort.id })
-        .from(cohort)
-        .where(
-          and(
-            eq(cohort.id, input.cohortId),
-            eq(cohort.organizationId, ctx.orgId)
-          )
-        )
-        .limit(1);
-
-      if (!targetCohort) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Cohort not found",
-        });
-      }
+      const userId = await assertMemberInOrg(ctx.db, input.memberId, ctx.orgId);
+      await assertCohortInOrg(ctx.db, input.cohortId, ctx.orgId);
 
       const orgCohorts = await ctx.db
         .select({ id: cohort.id })
@@ -297,7 +160,7 @@ export const orgRouter = router({
           .delete(cohort_member)
           .where(
             and(
-              eq(cohort_member.userId, memberRow.userId),
+              eq(cohort_member.userId, userId),
               inArray(cohort_member.teamId, orgCohortIds)
             )
           );
@@ -305,14 +168,14 @@ export const orgRouter = router({
 
       await ctx.db.insert(cohort_member).values({
         id: crypto.randomUUID(),
-        userId: memberRow.userId,
+        userId,
         teamId: input.cohortId,
       });
 
       return { success: true };
     }),
 
-  createCohort: orgManageProcedure
+  createCohort: orgOwnerOrAdminProcedure
     .input(z.object({ name: z.string().min(1).max(100) }))
     .mutation(async ({ ctx, input }) => {
       const id = crypto.randomUUID();
@@ -324,7 +187,7 @@ export const orgRouter = router({
       return { id, name: input.name.trim() };
     }),
 
-  updateCohort: orgManageProcedure
+  updateCohort: orgOwnerOrAdminProcedure
     .input(
       z.object({
         cohortId: z.string(),
@@ -333,17 +196,8 @@ export const orgRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const [row] = await ctx.db
-        .select({ id: cohort.id, organizationId: cohort.organizationId })
-        .from(cohort)
-        .where(eq(cohort.id, input.cohortId))
-        .limit(1);
-      if (!row || row.organizationId !== ctx.orgId) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Cohort not found",
-        });
-      }
+      await assertCohortInOrg(ctx.db, input.cohortId, ctx.orgId);
+
       const updates: { name?: string; image?: string | null; updatedAt: Date } =
         { updatedAt: new Date() };
       if (input.name !== undefined) {
@@ -372,15 +226,6 @@ export const orgRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const org = await getOrganization(ctx.db, {
-        organizationId: ctx.orgId,
-      });
-      if (!org) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Organization not found",
-        });
-      }
       const updates: { name?: string; slug?: string } = {};
       if (input.name !== undefined) {
         updates.name = input.name.trim();

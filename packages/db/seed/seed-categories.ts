@@ -9,8 +9,8 @@
  */
 
 import "dotenv/config";
-import { db } from "../packages/db";
-import { category } from "../packages/db/schema/course";
+import { db } from "../../db";
+import { category } from "../../db/schema/course";
 
 const CATEGORIES = [
   { name: "Cybersecurity", slug: "cybersecurity", order: 1 },

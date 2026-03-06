@@ -17,7 +17,7 @@ import {
   getCourseAccess,
   hasCourseAccessForLearning,
 } from "@/packages/db/queries/course";
-import { cohort, cohort_member, member, user } from "@/packages/db/schema/auth";
+import { cohort, cohort_member, user } from "@/packages/db/schema/auth";
 import {
   category,
   cohortCourse,
@@ -55,6 +55,11 @@ import {
   updateSectionSchema,
 } from "@/packages/utils/course-schemas";
 import { protectedProcedure, publicProcedure, router, t } from "../init";
+import {
+  extractCohortId,
+  orgOwnerOrAdminProcedure,
+  orgProcedure,
+} from "../org-procedures";
 
 // ---------------------------------------------------------------------------
 // Middleware
@@ -78,76 +83,6 @@ const instructorMiddleware = t.middleware(async ({ next, ctx }) => {
 });
 
 const instructorProcedure = protectedProcedure.use(instructorMiddleware);
-
-function getActiveOrganizationIdFromSession(
-  session: {
-    session?: { activeOrganizationId?: string; activeTeamId?: string };
-  } | null
-): string {
-  const orgId = session?.session?.activeOrganizationId;
-  if (!orgId) {
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message: "No organization selected",
-    });
-  }
-  return orgId;
-}
-
-const orgCourseMemberMiddleware = t.middleware(async ({ next, ctx }) => {
-  if (!ctx.session?.user) {
-    throw new TRPCError({
-      code: "UNAUTHORIZED",
-      message: "Authentication required",
-    });
-  }
-  const orgId = getActiveOrganizationIdFromSession(
-    ctx.session as {
-      session?: { activeOrganizationId?: string; activeTeamId?: string };
-    }
-  );
-  const [memberRow] = await ctx.db
-    .select({ role: member.role })
-    .from(member)
-    .where(
-      and(
-        eq(member.organizationId, orgId),
-        eq(member.userId, ctx.session.user.id)
-      )
-    )
-    .limit(1);
-  if (!memberRow) {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "You are not a member of this organization",
-    });
-  }
-  return next({
-    ctx: {
-      ...ctx,
-      session: ctx.session,
-      orgId,
-      orgMemberRole: memberRow.role,
-    },
-  });
-});
-
-const orgCourseProcedure = protectedProcedure.use(orgCourseMemberMiddleware);
-
-const orgCourseManageProcedure = orgCourseProcedure.use(
-  async ({ next, ctx }) => {
-    if (
-      ctx.orgMemberRole !== "org_owner" &&
-      ctx.orgMemberRole !== "org_admin"
-    ) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "Org owner or admin access required",
-      });
-    }
-    return next({ ctx });
-  }
-);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -347,15 +282,10 @@ export const courseRouter = router({
       };
     }),
 
-  isEnrolled: protectedProcedure
+  isEnrolled: orgProcedure
     .input(z.object({ courseId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
-      const orgId = getActiveOrganizationIdFromSession(
-        session as {
-          session?: { activeOrganizationId?: string; activeTeamId?: string };
-        }
-      );
+      const { db, session, orgId } = ctx;
       const [row] = await db
         .select({ id: enrollment.id })
         .from(enrollment)
@@ -514,7 +444,7 @@ export const courseRouter = router({
       };
     }),
 
-  listLibrary: protectedProcedure
+  listLibrary: orgProcedure
     .input(listLibrarySchema)
     .query(async ({ ctx, input }) => {
       const {
@@ -525,13 +455,8 @@ export const courseRouter = router({
         sortDirection,
         filterDifficulties,
       } = input;
-      const { db, session } = ctx;
+      const { db, session, orgId } = ctx;
       const userId = session.user.id;
-      const orgId = getActiveOrganizationIdFromSession(
-        session as {
-          session?: { activeOrganizationId?: string; activeTeamId?: string };
-        }
-      );
 
       const conditions: Parameters<typeof and>[0][] = [
         eq(course.status, "published"),
@@ -649,19 +574,12 @@ export const courseRouter = router({
       };
     }),
 
-  getEnrolledCourse: protectedProcedure
+  getEnrolledCourse: orgProcedure
     .input(getEnrolledCourseSchema)
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, orgId } = ctx;
       const userId = session.user.id;
-      const orgId = getActiveOrganizationIdFromSession(
-        session as {
-          session?: { activeOrganizationId?: string; activeTeamId?: string };
-        }
-      );
-      const cohortId =
-        (session as { session?: { activeTeamId?: string } })?.session
-          ?.activeTeamId ?? null;
+      const cohortId = extractCohortId(session);
       const { courseRow } = await assertEnrolledCourseAccess(
         db,
         input.courseId,
@@ -746,19 +664,12 @@ export const courseRouter = router({
       };
     }),
 
-  getEnrolledLesson: protectedProcedure
+  getEnrolledLesson: orgProcedure
     .input(getEnrolledLessonSchema)
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, orgId } = ctx;
       const userId = session.user.id;
-      const orgId = getActiveOrganizationIdFromSession(
-        session as {
-          session?: { activeOrganizationId?: string; activeTeamId?: string };
-        }
-      );
-      const cohortId =
-        (session as { session?: { activeTeamId?: string } })?.session
-          ?.activeTeamId ?? null;
+      const cohortId = extractCohortId(session);
       const { courseRow } = await assertEnrolledCourseAccess(
         db,
         input.courseId,
@@ -842,19 +753,12 @@ export const courseRouter = router({
       };
     }),
 
-  markLessonComplete: protectedProcedure
+  markLessonComplete: orgProcedure
     .input(markLessonCompleteSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, orgId } = ctx;
       const userId = session.user.id;
-      const orgId = getActiveOrganizationIdFromSession(
-        session as {
-          session?: { activeOrganizationId?: string; activeTeamId?: string };
-        }
-      );
-      const cohortId =
-        (session as { session?: { activeTeamId?: string } })?.session
-          ?.activeTeamId ?? null;
+      const cohortId = extractCohortId(session);
       await assertEnrolledCourseAccess(
         db,
         input.courseId,
@@ -930,15 +834,10 @@ export const courseRouter = router({
       return { completed: true, courseCompleted };
     }),
 
-  enroll: protectedProcedure
+  enroll: orgProcedure
     .input(z.object({ courseId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
-      const orgId = getActiveOrganizationIdFromSession(
-        session as {
-          session?: { activeOrganizationId?: string; activeTeamId?: string };
-        }
-      );
+      const { db, session, orgId } = ctx;
       const [courseRow] = await db
         .select({ id: course.id, status: course.status })
         .from(course)
@@ -1847,7 +1746,7 @@ export const courseRouter = router({
   // Org: assign/unassign courses to cohorts, set due dates
   // -------------------------------------------------------------------------
 
-  assignCourseToCohort: orgCourseManageProcedure
+  assignCourseToCohort: orgOwnerOrAdminProcedure
     .input(assignCourseToCohortSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, orgId } = ctx;
@@ -1880,7 +1779,7 @@ export const courseRouter = router({
       return { success: true };
     }),
 
-  unassignCourseFromCohort: orgCourseManageProcedure
+  unassignCourseFromCohort: orgOwnerOrAdminProcedure
     .input(unassignCourseFromCohortSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, orgId } = ctx;
@@ -1937,10 +1836,10 @@ export const courseRouter = router({
       return { success: true };
     }),
 
-  listCohortCourses: orgCourseProcedure
+  listCohortCourses: orgProcedure
     .input(z.object({ cohortId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const { db, orgId, orgMemberRole } = ctx;
+      const { db, orgId, memberRole } = ctx;
       const [cohortRow] = await db
         .select({ id: cohort.id, organizationId: cohort.organizationId })
         .from(cohort)
@@ -1954,7 +1853,7 @@ export const courseRouter = router({
       }
 
       const isManager =
-        orgMemberRole === "org_owner" || orgMemberRole === "org_admin";
+        memberRole === "org_owner" || memberRole === "org_admin";
       if (!isManager) {
         const [cohortMembership] = await db
           .select({ id: cohort_member.id })
@@ -1989,11 +1888,10 @@ export const courseRouter = router({
       return { courses: rows };
     }),
 
-  listOrgCourses: orgCourseProcedure.query(async ({ ctx }) => {
-    const { db, orgId, orgMemberRole, session } = ctx;
+  listOrgCourses: orgProcedure.query(async ({ ctx }) => {
+    const { db, orgId, memberRole, session } = ctx;
     const userId = session.user.id;
-    const isManager =
-      orgMemberRole === "org_owner" || orgMemberRole === "org_admin";
+    const isManager = memberRole === "org_owner" || memberRole === "org_admin";
 
     const visibleCohorts = isManager
       ? await db
@@ -2136,7 +2034,7 @@ export const courseRouter = router({
     };
   }),
 
-  listAssignableCourses: orgCourseManageProcedure
+  listAssignableCourses: orgOwnerOrAdminProcedure
     .input(z.object({ search: z.string().optional() }))
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
@@ -2157,7 +2055,7 @@ export const courseRouter = router({
       return { courses: rows };
     }),
 
-  setSectionDueDate: orgCourseManageProcedure
+  setSectionDueDate: orgOwnerOrAdminProcedure
     .input(setSectionDueDateSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, orgId } = ctx;
@@ -2200,7 +2098,7 @@ export const courseRouter = router({
       return { success: true };
     }),
 
-  setLessonDueDate: orgCourseManageProcedure
+  setLessonDueDate: orgOwnerOrAdminProcedure
     .input(setLessonDueDateSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, orgId } = ctx;
@@ -2240,7 +2138,7 @@ export const courseRouter = router({
       return { success: true };
     }),
 
-  listCohortDueDates: orgCourseManageProcedure
+  listCohortDueDates: orgOwnerOrAdminProcedure
     .input(z.object({ cohortId: z.string() }))
     .query(async ({ ctx, input }) => {
       const { db, orgId } = ctx;

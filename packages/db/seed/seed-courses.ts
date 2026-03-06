@@ -11,14 +11,14 @@
 
 import "dotenv/config";
 import { inArray } from "drizzle-orm";
-import { db } from "../packages/db";
-import { user } from "../packages/db/schema/auth";
+import { db } from "../../db";
+import { user } from "../../db/schema/auth";
 import {
   category,
   course,
   courseCategory,
   courseInstructor,
-} from "../packages/db/schema/course";
+} from "../../db/schema/course";
 
 const DIFFICULTIES = [
   "beginner",

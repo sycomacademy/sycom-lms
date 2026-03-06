@@ -57,6 +57,13 @@
       "when": 1772767390408,
       "tag": "0007_nasty_bloodstorm",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1772792649473,
+      "tag": "0008_lush_thanos",
+      "breakpoints": true
     }
   ]
 }

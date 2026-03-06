@@ -131,9 +131,7 @@ export function OrgCoursesList() {
                   <div className="flex items-center gap-2">
                     <Button
                       nativeButton={false}
-                      render={
-                        <Link href={`/learn/${course.id}` as Route} />
-                      }
+                      render={<Link href={`/learn/${course.id}` as Route} />}
                       size="sm"
                       variant="outline"
                     >

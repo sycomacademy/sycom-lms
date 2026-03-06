@@ -123,15 +123,6 @@ export async function listOrgCohorts(
     return rows;
   }
 
-  const cohortIds = await db
-    .select({ teamId: cohort_member.teamId })
-    .from(cohort_member)
-    .where(eq(cohort_member.userId, userId));
-  const ids = cohortIds.map((r) => r.teamId);
-  if (ids.length === 0) {
-    return [];
-  }
-
   const rows = await db
     .select({
       id: cohort.id,
@@ -149,9 +140,11 @@ export async function listOrgCohorts(
         ),
     })
     .from(cohort)
-    .where(
-      and(eq(cohort.organizationId, organizationId), inArray(cohort.id, ids))
+    .innerJoin(
+      cohort_member,
+      and(eq(cohort_member.teamId, cohort.id), eq(cohort_member.userId, userId))
     )
+    .where(eq(cohort.organizationId, organizationId))
     .orderBy(asc(cohort.name));
   return rows;
 }
@@ -181,7 +174,14 @@ export async function getOrganization(
   params: { organizationId: string }
 ) {
   const [row] = await db
-    .select()
+    .select({
+      id: organization.id,
+      name: organization.name,
+      slug: organization.slug,
+      logo: organization.logo,
+      createdAt: organization.createdAt,
+      metadata: organization.metadata,
+    })
     .from(organization)
     .where(eq(organization.id, params.organizationId))
     .limit(1);

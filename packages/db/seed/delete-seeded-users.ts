@@ -13,8 +13,8 @@
 
 import "dotenv/config";
 import { like } from "drizzle-orm";
-import { db } from "../packages/db";
-import { user } from "../packages/db/schema/auth";
+import { db } from "../../db";
+import { user } from "../../db/schema/auth";
 
 const isDryRun = process.argv.includes("--dry-run");
 
