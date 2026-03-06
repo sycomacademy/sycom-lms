@@ -29,10 +29,8 @@ import {
   ChevronRightIcon,
   GripVerticalIcon,
   Loader2Icon,
-  LockIcon,
   PlusIcon,
   Trash2Icon,
-  UnlockIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Editor } from "@/components/editor/editor";
@@ -405,10 +403,6 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
       }))
     );
     updateLessonMutation.mutate({ lessonId, title });
-  };
-
-  const handleToggleLessonLock = (lessonId: string, isLocked: boolean) => {
-    updateLessonMutation.mutate({ lessonId, isLocked: !isLocked });
   };
 
   const handleUpdateLessonContent = (
@@ -803,7 +797,6 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
                     onMoveLessonToSection={handleMoveLessonToSection}
                     onToggleCollapse={toggleSectionCollapse}
                     onToggleLessonExpand={toggleLessonExpand}
-                    onToggleLessonLock={handleToggleLessonLock}
                     onUpdateLessonContent={handleUpdateLessonContent}
                     onUpdateLessonTitle={handleUpdateLessonTitle}
                     onUpdateSectionTitle={handleUpdateSectionTitle}
@@ -888,7 +881,6 @@ interface SectionItemProps {
   onUpdateSectionTitle: (sectionId: string, title: string) => void;
   onDeleteSection: (sectionId: string) => void;
   onUpdateLessonTitle: (lessonId: string, title: string) => void;
-  onToggleLessonLock: (lessonId: string, isLocked: boolean) => void;
   onUpdateLessonContent: (lessonId: string, content: JSONContent) => void;
   onDeleteLesson: (lessonId: string) => void;
   onMoveLessonToSection: (lessonId: string, targetSectionId: string) => void;
@@ -906,7 +898,6 @@ function SectionItem({
   onUpdateSectionTitle,
   onDeleteSection,
   onUpdateLessonTitle,
-  onToggleLessonLock,
   onUpdateLessonContent,
   onDeleteLesson,
   onMoveLessonToSection,
@@ -1059,7 +1050,6 @@ function SectionItem({
                               : undefined
                           }
                           onToggleExpand={onToggleLessonExpand}
-                          onToggleLock={onToggleLessonLock}
                           onUpdateContent={onUpdateLessonContent}
                           onUpdateTitle={onUpdateLessonTitle}
                           otherSections={otherSections}
@@ -1087,7 +1077,6 @@ interface LessonItemProps {
   isUpdating: boolean;
   onToggleExpand: (lessonId: string) => void;
   onUpdateTitle: (lessonId: string, title: string) => void;
-  onToggleLock: (lessonId: string, isLocked: boolean) => void;
   onUpdateContent: (lessonId: string, content: JSONContent) => void;
   onDeleteLesson: (lessonId: string) => void;
   otherSections: Section[];
@@ -1100,7 +1089,6 @@ function LessonItem({
   isUpdating,
   onToggleExpand,
   onUpdateTitle,
-  onToggleLock,
   onUpdateContent,
   onDeleteLesson,
   otherSections,
@@ -1189,24 +1177,6 @@ function LessonItem({
             {lesson.title}
           </button>
         )}
-
-        {/* Lock Toggle */}
-        <Button
-          className={cn(
-            lesson.isLocked ? "text-amber-600" : "text-muted-foreground"
-          )}
-          onClick={() => onToggleLock(lesson.id, lesson.isLocked)}
-          size="sm"
-          title={lesson.isLocked ? "Unlock lesson" : "Lock lesson"}
-          type="button"
-          variant="ghost"
-        >
-          {lesson.isLocked ? (
-            <LockIcon className="size-3.5" />
-          ) : (
-            <UnlockIcon className="size-3.5" />
-          )}
-        </Button>
 
         {/* Move to section */}
         {onMoveToSection && otherSections.length > 0 && (

@@ -54,7 +54,7 @@ export function AdminOverviewClient() {
       href: "/dashboard/admin/organizations",
     },
     {
-      label: "Pending reports",
+      label: "Pending feedback",
       value: reportsData.total,
       description: "Awaiting review",
       icon: FileTextIcon,

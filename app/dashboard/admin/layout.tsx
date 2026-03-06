@@ -1,4 +1,3 @@
-import { AdminMenu } from "@/components/dashboard/admin/admin-menu";
 import { adminGuard } from "@/packages/auth/helper";
 import { HydrateClient, prefetch, trpc } from "@/packages/trpc/server";
 
@@ -36,17 +35,7 @@ export default async function AdminLayout({
 
   return (
     <HydrateClient>
-      <div className="mx-auto max-w-7xl px-4 py-6">
-        <AdminMenu
-          items={[
-            { path: "/dashboard/admin", label: "Overview" },
-            { path: "/dashboard/admin/users", label: "Users" },
-            { path: "/dashboard/admin/organizations", label: "Organizations" },
-            { path: "/dashboard/admin/reports", label: "Reports & Feedback" },
-          ]}
-        />
-        <section className="mt-6">{children}</section>
-      </div>
+      <section className="m-6">{children}</section>
     </HydrateClient>
   );
 }
