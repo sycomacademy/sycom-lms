@@ -121,7 +121,12 @@ export const adminRouter = router({
         })
         .from(member)
         .innerJoin(organization, eq(organization.id, member.organizationId))
-        .where(inArray(member.userId, userIds));
+        .where(
+          and(
+            inArray(member.userId, userIds),
+            ne(organization.slug, "platform")
+          )
+        );
 
       const membershipsByUser = new Map<
         string,

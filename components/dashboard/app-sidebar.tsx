@@ -272,6 +272,9 @@ export function AppSidebar() {
                   const resolvedHref = isPublicOrg
                     ? href
                     : resolveOrgHref(href, orgSlug);
+                  const isOverviewHref =
+                    resolvedHref === "/dashboard" ||
+                    (!!orgSlug && resolvedHref === `/dashboard/org/${orgSlug}`);
                   return (
                     <SidebarMenuItem key={resolvedHref}>
                       <SidebarMenuButton
@@ -283,7 +286,7 @@ export function AppSidebar() {
                         )}
                         isActive={
                           pathname === resolvedHref ||
-                          (resolvedHref !== `/dashboard/org/${orgSlug}` &&
+                          (!isOverviewHref &&
                             pathname.startsWith(`${resolvedHref}/`))
                         }
                         render={
