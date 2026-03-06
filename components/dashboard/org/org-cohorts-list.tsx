@@ -13,6 +13,9 @@ import {
   Loader2Icon,
   PencilIcon,
   PlusIcon,
+  SearchIcon,
+  UserPlusIcon,
+  XIcon,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -39,6 +42,7 @@ import { toastManager } from "@/components/ui/toast";
 import { authClient } from "@/packages/auth/auth-client";
 import { uploadFile } from "@/packages/storage/upload";
 import { useTRPC } from "@/packages/trpc/client";
+import { getInitials } from "@/packages/utils/string";
 import {
   getCohortImageUploadParams,
   persistCohortImageAsset,
@@ -47,6 +51,27 @@ import { CohortsCourseAssigner } from "./cohorts-course-assigner";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE = 1024 * 1024 * 4;
+
+interface OrgMember {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  image: string | null;
+}
+
+interface CohortMember {
+  id: string;
+  memberId: string;
+  userId: string;
+  name: string;
+  email: string;
+  image: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// OrgCohortsList
+// ---------------------------------------------------------------------------
 
 export function OrgCohortsList() {
   const trpc = useTRPC();
@@ -61,6 +86,12 @@ export function OrgCohortsList() {
   const canManage = ["owner", "admin", "org_owner", "org_admin"].includes(
     activeMember?.role ?? ""
   );
+
+  const { data: orgMembersData } = useQuery({
+    ...trpc.org.listMembers.queryOptions(),
+    enabled: canManage,
+  });
+  const allOrgMembers: OrgMember[] = orgMembersData?.members ?? [];
 
   const createMutation = useMutation(
     trpc.org.createCohort.mutationOptions({
@@ -89,10 +120,7 @@ export function OrgCohortsList() {
   const handleCreate = () => {
     const name = newCohortName.trim();
     if (!name) {
-      toastManager.add({
-        title: "Name required",
-        type: "warning",
-      });
+      toastManager.add({ title: "Name required", type: "warning" });
       return;
     }
     createMutation.mutate({ name });
@@ -174,7 +202,8 @@ export function OrgCohortsList() {
         <div className="space-y-3">
           {data.cohorts.map((cohort) => (
             <CohortCard
-              canManage={canManage ?? false}
+              allOrgMembers={allOrgMembers}
+              canManage={canManage}
               cohort={cohort}
               expanded={expandedCohortId === cohort.id}
               key={cohort.id}
@@ -191,11 +220,188 @@ export function OrgCohortsList() {
   );
 }
 
+// ---------------------------------------------------------------------------
+// AddMemberContent
+// ---------------------------------------------------------------------------
+
+function AddMemberContent({
+  cohortId,
+  cohortMemberUserIds,
+  allOrgMembers,
+  onClose,
+}: {
+  cohortId: string;
+  cohortMemberUserIds: Set<string>;
+  allOrgMembers: OrgMember[];
+  onClose: () => void;
+}) {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+
+  const assignMutation = useMutation(
+    trpc.org.assignMemberToCohort.mutationOptions({
+      onSuccess: () => {
+        toastManager.add({ title: "Member added to cohort", type: "success" });
+        queryClient.invalidateQueries({
+          queryKey: trpc.org.listCohortMembers.queryKey({ cohortId }),
+        });
+        queryClient.invalidateQueries({
+          queryKey: trpc.org.listMembers.queryKey(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: trpc.org.listCohorts.queryKey(),
+        });
+        onClose();
+      },
+      onError: (error) => {
+        toastManager.add({
+          title: "Failed to add member",
+          description: error.message,
+          type: "error",
+        });
+      },
+    })
+  );
+
+  const searchLower = search.trim().toLowerCase();
+  const available = allOrgMembers.filter(
+    (m) => !cohortMemberUserIds.has(m.userId)
+  );
+  const filtered = searchLower
+    ? available.filter(
+        (m) =>
+          m.name.toLowerCase().includes(searchLower) ||
+          m.email.toLowerCase().includes(searchLower)
+      )
+    : available;
+
+  return (
+    <div className="space-y-3">
+      <div className="relative">
+        <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          autoFocus
+          className="pl-8"
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search members..."
+          value={search}
+        />
+      </div>
+      <div className="max-h-64 space-y-0.5 overflow-y-auto">
+        {filtered.length === 0 ? (
+          <p className="py-4 text-center text-muted-foreground text-sm">
+            No members available to add
+          </p>
+        ) : (
+          filtered.map((m) => (
+            <button
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-muted disabled:opacity-50"
+              disabled={assignMutation.isPending}
+              key={m.id}
+              onClick={() =>
+                assignMutation.mutate({ memberId: m.id, cohortId })
+              }
+              type="button"
+            >
+              <Avatar className="size-7 shrink-0">
+                <AvatarImage alt={m.name} src={m.image ?? undefined} />
+                <AvatarFallback className="text-xs">
+                  {getInitials(m.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <div className="truncate font-medium text-sm">{m.name}</div>
+                <div className="truncate text-muted-foreground text-xs">
+                  {m.email}
+                </div>
+              </div>
+              {assignMutation.isPending && (
+                <Spinner className="ml-auto size-3.5 shrink-0" />
+              )}
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CohortMembersList
+// ---------------------------------------------------------------------------
+
+function CohortMembersList({
+  members,
+  isLoading,
+  onRemove,
+  removeIsPending,
+}: {
+  members: CohortMember[] | undefined;
+  isLoading: boolean;
+  onRemove: (memberId: string) => void;
+  removeIsPending: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-4">
+        <Spinner className="size-4" />
+      </div>
+    );
+  }
+
+  if (!members || members.length === 0) {
+    return (
+      <p className="text-muted-foreground text-sm">
+        No members yet. Add members using the button above.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-0.5">
+      {members.map((m) => (
+        <div
+          className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/50"
+          key={m.id}
+        >
+          <Avatar className="size-7 shrink-0">
+            <AvatarImage alt={m.name} src={m.image ?? undefined} />
+            <AvatarFallback className="text-xs">
+              {getInitials(m.name)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-medium text-sm">{m.name}</div>
+            <div className="truncate text-muted-foreground text-xs">
+              {m.email}
+            </div>
+          </div>
+          <button
+            aria-label={`Remove ${m.name} from cohort`}
+            className="shrink-0 text-muted-foreground hover:text-destructive disabled:opacity-50"
+            disabled={removeIsPending}
+            onClick={() => onRemove(m.memberId)}
+            type="button"
+          >
+            <XIcon className="size-3.5" />
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CohortCard
+// ---------------------------------------------------------------------------
+
 function CohortCard({
   cohort,
   canManage,
   expanded,
   onExpandToggle,
+  allOrgMembers,
 }: {
   cohort: {
     id: string;
@@ -207,13 +413,17 @@ function CohortCard({
   canManage: boolean;
   expanded: boolean;
   onExpandToggle: () => void;
+  allOrgMembers: OrgMember[];
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadPending, setUploadPending] = useState(false);
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editName, setEditName] = useState(cohort.name);
 
-  const { data: membersData } = useQuery({
+  const { data: membersData, isFetching: membersFetching } = useQuery({
     ...trpc.org.listCohortMembers.queryOptions({ cohortId: cohort.id }),
     enabled: expanded && canManage,
   });
@@ -221,6 +431,18 @@ function CohortCard({
     ...trpc.course.listCohortCourses.queryOptions({ cohortId: cohort.id }),
     enabled: expanded,
   });
+
+  const invalidateCohortData = () => {
+    queryClient.invalidateQueries({
+      queryKey: trpc.org.listCohortMembers.queryKey({ cohortId: cohort.id }),
+    });
+    queryClient.invalidateQueries({
+      queryKey: trpc.org.listMembers.queryKey(),
+    });
+    queryClient.invalidateQueries({
+      queryKey: trpc.org.listCohorts.queryKey(),
+    });
+  };
 
   const updateMutation = useMutation(
     trpc.org.updateCohort.mutationOptions({
@@ -240,8 +462,24 @@ function CohortCard({
     })
   );
 
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [editName, setEditName] = useState(cohort.name);
+  const removeMemberMutation = useMutation(
+    trpc.org.removeMemberFromCohort.mutationOptions({
+      onSuccess: () => {
+        toastManager.add({
+          title: "Member removed from cohort",
+          type: "success",
+        });
+        invalidateCohortData();
+      },
+      onError: (error) => {
+        toastManager.add({
+          title: "Failed to remove member",
+          description: error.message,
+          type: "error",
+        });
+      },
+    })
+  );
 
   const handleSaveName = () => {
     const name = editName.trim();
@@ -256,7 +494,6 @@ function CohortCard({
     if (!file) {
       return;
     }
-
     if (!ALLOWED_TYPES.includes(file.type)) {
       toastManager.add({
         title: "Invalid file type",
@@ -265,7 +502,6 @@ function CohortCard({
       });
       return;
     }
-
     if (file.size > MAX_SIZE) {
       toastManager.add({
         title: "File too large",
@@ -274,7 +510,6 @@ function CohortCard({
       });
       return;
     }
-
     setUploadPending(true);
     try {
       const signedParams = await getCohortImageUploadParams(cohort.id);
@@ -286,7 +521,6 @@ function CohortCard({
         });
         return;
       }
-
       const result = await uploadFile({ file, signedParams });
       const persistResult = await persistCohortImageAsset(result, cohort.id);
       if (!persistResult.success) {
@@ -297,7 +531,6 @@ function CohortCard({
         });
         return;
       }
-
       updateMutation.mutate({ cohortId: cohort.id, image: result.secureUrl });
     } catch (err) {
       toastManager.add({
@@ -313,6 +546,12 @@ function CohortCard({
       }
     }
   };
+
+  const cohortMemberUserIds = new Set(
+    membersData?.members.map((m) => m.userId) ?? []
+  );
+  const memberCount = cohort.memberCount ?? membersData?.members.length ?? 0;
+  const courseCount = cohort.courseCount ?? coursesData?.courses.length ?? 0;
 
   return (
     <Card>
@@ -399,9 +638,8 @@ function CohortCard({
 
             <CollapsibleTrigger className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
               <span className="text-xs">
-                {cohort.memberCount ?? membersData?.members?.length ?? 0}{" "}
-                members
-                {` · ${cohort.courseCount ?? coursesData?.courses?.length ?? 0} courses`}
+                {memberCount} {memberCount === 1 ? "member" : "members"}
+                {` · ${courseCount} ${courseCount === 1 ? "course" : "courses"}`}
               </span>
               {expanded ? (
                 <ChevronDownIcon className="size-4" />
@@ -412,33 +650,65 @@ function CohortCard({
           </div>
 
           <CollapsibleContent>
-            <div className="space-y-4 border-t px-4 pt-3 pb-4">
-              {membersData && (
+            <div className="space-y-5 border-t px-4 pt-3 pb-4">
+              {canManage && (
                 <div>
-                  <h3 className="font-medium text-muted-foreground text-xs">
-                    Members ({membersData.members.length})
-                  </h3>
-                  <div className="mt-1.5 flex flex-wrap gap-1">
-                    {membersData.members.length === 0 ? (
-                      <span className="text-muted-foreground text-sm">
-                        No members
-                      </span>
-                    ) : (
-                      membersData.members.map((m) => (
-                        <span
-                          className="rounded bg-muted px-2 py-0.5 text-xs"
-                          key={m.id}
-                        >
-                          {m.name}
-                        </span>
-                      ))
-                    )}
+                  <div className="mb-2 flex items-center justify-between">
+                    <h3 className="font-medium text-muted-foreground text-xs">
+                      Members ({membersData?.members.length ?? 0})
+                    </h3>
+                    <Dialog
+                      onOpenChange={setAddMemberOpen}
+                      open={addMemberOpen}
+                    >
+                      <DialogTrigger
+                        render={
+                          <Button
+                            className="h-6 gap-1 px-2 text-xs"
+                            size="sm"
+                            variant="ghost"
+                          >
+                            <UserPlusIcon className="size-3" />
+                            Add member
+                          </Button>
+                        }
+                      />
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add member to cohort</DialogTitle>
+                          <DialogDescription>
+                            Select a member to add to &ldquo;{cohort.name}
+                            &rdquo;.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogPanel>
+                          <AddMemberContent
+                            allOrgMembers={allOrgMembers}
+                            cohortId={cohort.id}
+                            cohortMemberUserIds={cohortMemberUserIds}
+                            onClose={() => setAddMemberOpen(false)}
+                          />
+                        </DialogPanel>
+                      </DialogContent>
+                    </Dialog>
                   </div>
+                  <CohortMembersList
+                    isLoading={membersFetching && !membersData}
+                    members={membersData?.members}
+                    onRemove={(memberId) =>
+                      removeMemberMutation.mutate({
+                        memberId,
+                        cohortId: cohort.id,
+                      })
+                    }
+                    removeIsPending={removeMemberMutation.isPending}
+                  />
                 </div>
               )}
+
               {coursesData && canManage && (
                 <div>
-                  <h3 className="font-medium text-muted-foreground text-xs">
+                  <h3 className="mb-1 font-medium text-muted-foreground text-xs">
                     Assigned courses
                   </h3>
                   <CohortsCourseAssigner
@@ -447,6 +717,7 @@ function CohortCard({
                   />
                 </div>
               )}
+
               {coursesData && !canManage && coursesData.courses.length > 0 && (
                 <div>
                   <h3 className="font-medium text-muted-foreground text-xs">

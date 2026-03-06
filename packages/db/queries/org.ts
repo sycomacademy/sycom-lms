@@ -156,6 +156,7 @@ export async function listCohortMembers(
   const rows = await db
     .select({
       id: cohort_member.id,
+      memberId: member.id,
       userId: user.id,
       name: user.name,
       email: user.email,
@@ -164,6 +165,14 @@ export async function listCohortMembers(
     })
     .from(cohort_member)
     .innerJoin(user, eq(user.id, cohort_member.userId))
+    .innerJoin(cohort, eq(cohort.id, cohort_member.teamId))
+    .innerJoin(
+      member,
+      and(
+        eq(member.userId, cohort_member.userId),
+        eq(member.organizationId, cohort.organizationId)
+      )
+    )
     .where(eq(cohort_member.teamId, params.cohortId))
     .orderBy(asc(cohort_member.createdAt));
   return rows;

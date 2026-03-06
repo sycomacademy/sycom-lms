@@ -31,10 +31,12 @@ import {
 
 export function ResetPasswordForm({
   token,
+  userEmail,
   isInvite = false,
 }: {
   token: string;
   isInvite?: boolean;
+  userEmail: string;
 }) {
   const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -68,6 +70,13 @@ export function ResetPasswordForm({
       event: analyticsEvents.passwordResetCompleted,
       is_invite: isInvite,
     });
+
+    if (isInvite) {
+      await authClient.sendVerificationEmail({
+        email: userEmail,
+        callbackURL: "/verify-email",
+      });
+    }
     setIsSuccess(true);
   };
 
@@ -83,7 +92,7 @@ export function ResetPasswordForm({
           </h1>
           <p className="text-muted-foreground text-sm">
             {isInvite
-              ? "Your password has been set. You can now sign in to your account."
+              ? "Your password has been set. Check your email for a verification link."
               : "Your password has been updated. You can now sign in with your new password."}
           </p>
         </div>
