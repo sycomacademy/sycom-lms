@@ -174,7 +174,7 @@ async function main() {
   const [creator] = await db
     .select({ id: user.id, name: user.name })
     .from(user)
-    .where(inArray(user.role, ["admin", "instructor"]))
+    .where(inArray(user.role, ["platform_admin", "content_creator"]))
     .limit(1);
 
   if (!creator) {

@@ -17,8 +17,6 @@ import {
   course,
   courseInstructor,
   lesson,
-  pathway,
-  pathwayCourse,
   section,
 } from "../packages/db/schema/course";
 
@@ -1058,7 +1056,6 @@ const module5Lessons = [
 // IDs and section/lesson data
 // ---------------------------------------------------------------------------
 
-const PATHWAY_ID = "pth-cybersecurity-programme";
 const COURSE_ID = "crs-cybersecurity-programme";
 
 const sectionData = [
@@ -1103,7 +1100,7 @@ export async function seedCybersecurityProgramme() {
   const [creator] = await db
     .select({ id: user.id, name: user.name })
     .from(user)
-    .where(inArray(user.role, ["admin", "instructor"]))
+    .where(inArray(user.role, ["platform_admin", "content_creator"]))
     .limit(1);
 
   if (!creator) {
@@ -1115,21 +1112,6 @@ export async function seedCybersecurityProgramme() {
   console.log(
     `  [cybersecurity-programme] Using creator: ${creator.name} (${creator.id})`
   );
-
-  console.log("  [cybersecurity-programme] Inserting pathway...");
-  await db
-    .insert(pathway)
-    .values({
-      id: PATHWAY_ID,
-      title: "Cybersecurity Programme",
-      description:
-        "A comprehensive programme covering core security fundamentals, web and API security, identity and access management, cloud and infrastructure security, and detection, response, and secure delivery. Designed to build end-to-end cybersecurity capability from foundations to operational security.",
-      slug: "cybersecurity-programme",
-      difficulty: "intermediate",
-      status: "published",
-      createdBy: creator.id,
-    })
-    .onConflictDoNothing();
 
   console.log("  [cybersecurity-programme] Inserting course...");
   await db
@@ -1153,16 +1135,6 @@ export async function seedCybersecurityProgramme() {
     .update(course)
     .set({ summary: courseSummary })
     .where(eq(course.id, COURSE_ID));
-
-  console.log("  [cybersecurity-programme] Linking pathway to course...");
-  await db
-    .insert(pathwayCourse)
-    .values({
-      pathwayId: PATHWAY_ID,
-      courseId: COURSE_ID,
-      order: 1,
-    })
-    .onConflictDoNothing();
 
   console.log("  [cybersecurity-programme] Adding course instructor...");
   await db

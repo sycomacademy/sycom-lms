@@ -112,11 +112,12 @@ async function main() {
       banned = false;
     }
 
-    let role: "admin" | "instructor" | "student" = "student";
+    let role: "platform_admin" | "content_creator" | "platform_student" =
+      "platform_student";
     if (i === 1) {
-      role = "admin";
+      role = "platform_admin";
     } else if (i <= 4) {
-      role = "instructor";
+      role = "content_creator";
     }
 
     userRows.push({
