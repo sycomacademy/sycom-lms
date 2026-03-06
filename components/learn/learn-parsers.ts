@@ -1,5 +1,5 @@
-import { parseAsArrayOf, parseAsString } from "nuqs";
+import { parseAsString } from "nuqs";
 
 export const learnParsers = {
-  expandedSections: parseAsArrayOf(parseAsString).withDefault([] as string[]),
+  lesson: parseAsString,
 } as const;

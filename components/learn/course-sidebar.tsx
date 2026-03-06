@@ -1,7 +1,9 @@
 "use client";
 
 import { CheckIcon, LockIcon } from "lucide-react";
+import type { Route } from "next";
 import Link from "next/link";
+import type { RouterOutputs } from "@/app/api/trpc/router";
 import {
   Accordion,
   AccordionContent,
@@ -14,7 +16,6 @@ import {
   ProgressLabel,
   ProgressValue,
 } from "@/components/ui/progress";
-import type { RouterOutputs } from "@/packages/trpc/server/router";
 import { cn } from "@/packages/utils/cn";
 
 type EnrolledCourse = RouterOutputs["course"]["getEnrolledCourse"];
@@ -43,16 +44,13 @@ export function CourseSidebar({
   return (
     <div className="flex h-dvh flex-col">
       <div className="border-border border-b px-4 py-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="truncate font-medium text-sm">{data.course.title}</p>
-            <p className="mt-0.5 text-muted-foreground text-xs">
-              {data.progress.completedLessonCount} / {data.progress.lessonCount}{" "}
-              lessons
-            </p>
-          </div>
+        <div className="min-w-0">
+          <p className="truncate font-medium text-sm">{data.course.title}</p>
+          <p className="mt-0.5 text-muted-foreground text-xs">
+            {data.progress.completedLessonCount} / {data.progress.lessonCount}{" "}
+            lessons
+          </p>
         </div>
-
         <div className="mt-4">
           <Progress value={data.progress.percent}>
             <ProgressLabel>Progress</ProgressLabel>
@@ -73,11 +71,9 @@ export function CourseSidebar({
             <AccordionItem key={section.id} value={section.id}>
               <AccordionTrigger className="px-2 py-2 text-sm hover:no-underline">
                 <div className="flex min-w-0 items-center gap-2">
-                  <span className="max-w-60 overflow-scroll">
-                    {section.title}
-                  </span>
+                  <span className="truncate">{section.title}</span>
                   {section.isCompleted ? (
-                    <CheckIcon className="size-4 text-primary" />
+                    <CheckIcon className="size-4 shrink-0 text-primary" />
                   ) : null}
                 </div>
               </AccordionTrigger>
@@ -89,7 +85,7 @@ export function CourseSidebar({
                   </p>
                 ) : null}
 
-                <div className={cn("-mx-2 mt-2 space-y-1")}>
+                <div className="-mx-2 mt-2 space-y-1">
                   {section.lessons.map((lesson) => {
                     const isActive = lesson.id === currentLessonId;
                     const isLocked = lesson.isLocked === true;
@@ -104,7 +100,7 @@ export function CourseSidebar({
                           )}
                           key={lesson.id}
                         >
-                          <LockIcon className="size-4 text-muted-foreground" />
+                          <LockIcon className="size-4 shrink-0 text-muted-foreground" />
                           <span className="truncate">{lesson.title}</span>
                         </div>
                       );
@@ -120,7 +116,9 @@ export function CourseSidebar({
                         nativeButton={false}
                         render={
                           <Link
-                            href={`/learn/course/${courseId}/${lesson.id}`}
+                            href={
+                              `/learn/${courseId}?lesson=${lesson.id}` as Route
+                            }
                           />
                         }
                         variant="ghost"

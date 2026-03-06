@@ -5,173 +5,152 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { ChevronLeftIcon, ChevronRightIcon, Loader2Icon } from "lucide-react";
-import type { Route } from "next";
+import type { JSONContent } from "@tiptap/react";
+import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { Editor } from "@/components/editor/editor";
+import { useQueryState } from "nuqs";
+import { Suspense, useEffect, useState } from "react";
+import type { RouterOutputs } from "@/app/api/trpc/router";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toastManager } from "@/components/ui/toast";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useTRPC } from "@/packages/trpc/client";
+import { CourseSidebar } from "./course-sidebar";
+import { learnParsers } from "./learn-parsers";
+import { LearnShell } from "./learn-shell";
+import { LessonBottomBar } from "./lesson-bottom-bar";
+import { LessonViewer } from "./lesson-viewer";
 
-interface LearnLessonPageProps {
-  courseId: string;
-  lessonId: string;
-}
+type EnrolledCourse = RouterOutputs["course"]["getEnrolledCourse"];
 
-export function LearnLessonPage({ courseId, lessonId }: LearnLessonPageProps) {
+export function LearnLessonPage({ courseId }: { courseId: string }) {
   const trpc = useTRPC();
-  const queryClient = useQueryClient();
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false);
+  const [lessonId, setLessonId] = useQueryState("lesson", learnParsers.lesson);
+
+  const { data: courseData } = useSuspenseQuery(
+    trpc.course.getEnrolledCourse.queryOptions({ courseId })
+  );
 
   useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) {
+    if (lessonId) {
       return;
     }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        if (entry?.isIntersecting) {
-          setHasScrolledToEnd(true);
-        }
-      },
-      { threshold: 1, rootMargin: "0px" }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+    const first = courseData.sections
+      .flatMap((s) => s.lessons)
+      .find((l) => !l.isLocked);
+    if (first) {
+      setLessonId(first.id);
+    }
+  }, [lessonId, courseData.sections, setLessonId]);
 
-  const { data } = useSuspenseQuery(
+  if (!lessonId) {
+    return null;
+  }
+
+  return (
+    <Suspense>
+      <LessonInner
+        courseData={courseData}
+        courseId={courseId}
+        key={lessonId}
+        lessonId={lessonId}
+      />
+    </Suspense>
+  );
+}
+
+function LessonInner({
+  courseId,
+  lessonId,
+  courseData,
+}: {
+  courseId: string;
+  lessonId: string;
+  courseData: EnrolledCourse;
+}) {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const [canMarkComplete, setCanMarkComplete] = useState(false);
+
+  const { data: lessonData } = useSuspenseQuery(
     trpc.course.getEnrolledLesson.queryOptions({ courseId, lessonId })
   );
 
-  const markComplete = useMutation(
+  const markCompleteMutation = useMutation(
     trpc.course.markLessonComplete.mutationOptions({
-      onSuccess: (result) => {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: trpc.course.getEnrolledCourse.queryKey({ courseId }),
+        });
         queryClient.invalidateQueries({
           queryKey: trpc.course.getEnrolledLesson.queryKey({
             courseId,
             lessonId,
           }),
         });
-        queryClient.invalidateQueries({
-          queryKey: trpc.course.getEnrolledCourse.queryKey({ courseId }),
+        toastManager.add({ title: "Lesson marked complete", type: "success" });
+      },
+      onError: (err) => {
+        toastManager.add({
+          title: "Couldn't mark complete",
+          description: err.message,
+          type: "error",
         });
-        if (result.courseCompleted) {
-          toastManager.add({ title: "Course completed!", type: "success" });
-        }
       },
     })
   );
 
-  return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-6 py-8">
-      <Card>
-        <CardHeader>
-          <h1 className="font-semibold text-2xl tracking-tight">
-            {data.lesson.title}
-          </h1>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {data.lesson.content ? (
-            <div className="prose prose-neutral dark:prose-invert max-w-none [&_.editor-content]:min-h-0 [&_.editor-content]:p-0">
-              <Editor
-                content={
-                  data.lesson.content as
-                    | import("@tiptap/react").JSONContent
-                    | string
-                }
-                editable={false}
-                variant="full"
-              />
-            </div>
-          ) : (
-            <p className="text-muted-foreground">No content for this lesson.</p>
-          )}
-
-          {/* Sentinel for scroll-to-end detection */}
-          <div ref={sentinelRef} />
-
-          {!data.lesson.isCompleted && (
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <span className="inline-block">
-                    <Button
-                      disabled={markComplete.isPending || !hasScrolledToEnd}
-                      onClick={() =>
-                        markComplete.mutate({ courseId, lessonId })
-                      }
-                    >
-                      {markComplete.isPending ? (
-                        <Loader2Icon className="size-4 animate-spin" />
-                      ) : (
-                        "Mark as complete"
-                      )}
-                    </Button>
-                  </span>
-                }
-              />
-              <TooltipContent>
-                {hasScrolledToEnd
-                  ? "Mark this lesson as complete"
-                  : "Scroll to the end of the lesson to unlock Mark as complete"}
-              </TooltipContent>
-            </Tooltip>
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="flex justify-between">
-        {data.nav.prevLessonId ? (
-          <Button
-            nativeButton={false}
-            render={
-              <Link
-                href={
-                  `/learn/course/${courseId}/${data.nav.prevLessonId}` as Route
-                }
-              />
-            }
-            variant="outline"
-          >
-            <ChevronLeftIcon className="size-4" />
-            Previous
-          </Button>
-        ) : (
-          <div />
-        )}
-        {data.nav.nextLessonId ? (
-          <Button
-            nativeButton={false}
-            render={
-              <Link
-                href={
-                  `/learn/course/${courseId}/${data.nav.nextLessonId}` as Route
-                }
-              />
-            }
-          >
-            Next
-            <ChevronRightIcon className="size-4" />
-          </Button>
-        ) : (
-          <Button
-            nativeButton={false}
-            render={<Link href={"/dashboard/journey" as Route} />}
-          >
-            Back to journey
-          </Button>
-        )}
+  const header = (
+    <div className="flex items-center justify-between gap-4 px-4 py-3">
+      <Button
+        nativeButton={false}
+        render={<Link href="/dashboard/library" />}
+        size="sm"
+        variant="outline"
+      >
+        <ArrowLeftIcon />
+        Back
+      </Button>
+      <div className="min-w-0 text-right">
+        <p className="truncate font-medium text-sm">
+          {lessonData.course.title}
+        </p>
+        <p className="truncate text-muted-foreground text-xs">
+          {lessonData.lesson.title}
+        </p>
       </div>
     </div>
+  );
+
+  return (
+    <LearnShell
+      bottomBar={
+        <LessonBottomBar
+          canMarkComplete={canMarkComplete}
+          courseId={courseId}
+          isCompleted={lessonData.lesson.isCompleted}
+          isMarkingComplete={markCompleteMutation.isPending}
+          nextIsLocked={lessonData.nav.nextIsLocked}
+          nextLessonId={lessonData.nav.nextLessonId}
+          onMarkComplete={() =>
+            markCompleteMutation.mutate({ courseId, lessonId })
+          }
+          prevLessonId={lessonData.nav.prevLessonId}
+        />
+      }
+      content={
+        <LessonViewer
+          content={lessonData.lesson.content as JSONContent}
+          onReachedEndChange={setCanMarkComplete}
+        />
+      }
+      header={header}
+      sidebar={
+        <CourseSidebar
+          courseId={courseId}
+          currentLessonId={lessonId}
+          data={courseData}
+        />
+      }
+    />
   );
 }

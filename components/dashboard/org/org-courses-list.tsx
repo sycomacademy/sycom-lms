@@ -132,7 +132,7 @@ export function OrgCoursesList() {
                     <Button
                       nativeButton={false}
                       render={
-                        <Link href={`/learn/course/${course.id}` as Route} />
+                        <Link href={`/learn/${course.id}` as Route} />
                       }
                       size="sm"
                       variant="outline"

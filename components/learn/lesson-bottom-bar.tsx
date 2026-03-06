@@ -4,6 +4,11 @@ import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/packages/utils/cn";
 
 export function LessonBottomBar({
@@ -26,10 +31,10 @@ export function LessonBottomBar({
   onMarkComplete: () => void;
 }) {
   const prevHref = prevLessonId
-    ? `/learn/course/${courseId}/${prevLessonId}`
+    ? (`/learn/${courseId}?lesson=${prevLessonId}` as Route)
     : null;
   const nextHref = nextLessonId
-    ? `/learn/course/${courseId}/${nextLessonId}`
+    ? (`/learn/${courseId}?lesson=${nextLessonId}` as Route)
     : null;
 
   let markLabel = "Mark complete";
@@ -39,13 +44,20 @@ export function LessonBottomBar({
     markLabel = "Marking...";
   }
 
+  let tooltipContent = "Mark this lesson as complete";
+  if (!canMarkComplete) {
+    tooltipContent = "Scroll to the end to enable completion";
+  } else if (isCompleted) {
+    tooltipContent = "Already completed";
+  }
+
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3">
       <div className="flex items-center gap-2">
         {prevHref ? (
           <Button
             nativeButton={false}
-            render={<Link href={prevHref as Route} />}
+            render={<Link href={prevHref} />}
             size="sm"
             variant="outline"
           >
@@ -64,7 +76,7 @@ export function LessonBottomBar({
             className={cn(nextIsLocked && "cursor-not-allowed")}
             disabled={nextIsLocked}
             nativeButton={false}
-            render={<Link href={nextHref as Route} />}
+            render={<Link href={nextHref} />}
             size="sm"
             variant="outline"
           >
@@ -79,20 +91,22 @@ export function LessonBottomBar({
         )}
       </div>
 
-      <div className="flex items-center gap-3">
-        {isCompleted || canMarkComplete ? null : (
-          <p className="text-muted-foreground text-xs">
-            Scroll to the end to enable completion.
-          </p>
-        )}
-        <Button
-          // disabled={!canMarkComplete || isCompleted || isMarkingComplete}
-          onClick={onMarkComplete}
-          size="sm"
-        >
-          {markLabel}
-        </Button>
-      </div>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <span className="inline-block">
+              <Button
+                disabled={!canMarkComplete || isCompleted || isMarkingComplete}
+                onClick={onMarkComplete}
+                size="sm"
+              >
+                {markLabel}
+              </Button>
+            </span>
+          }
+        />
+        <TooltipContent>{tooltipContent}</TooltipContent>
+      </Tooltip>
     </div>
   );
 }

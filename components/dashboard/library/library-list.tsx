@@ -79,7 +79,7 @@ export function LibraryList() {
                   {c.isEnrolled ? (
                     <Link
                       className="font-medium hover:underline"
-                      href={`/learn/course/${c.id}` as Route}
+                      href={`/learn/${c.id}` as Route}
                     >
                       {c.title}
                     </Link>
@@ -108,7 +108,7 @@ export function LibraryList() {
                 {c.isEnrolled ? (
                   <Button
                     nativeButton={false}
-                    render={<Link href={`/learn/course/${c.id}` as Route} />}
+                    render={<Link href={`/learn/${c.id}` as Route} />}
                     variant="outline"
                   >
                     Continue
