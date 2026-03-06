@@ -550,7 +550,6 @@ function CohortCard({
   const cohortMemberUserIds = new Set(
     membersData?.members.map((m) => m.userId) ?? []
   );
-  const memberCount = cohort.memberCount ?? membersData?.members.length ?? 0;
   const courseCount = cohort.courseCount ?? coursesData?.courses.length ?? 0;
 
   return (
@@ -638,8 +637,7 @@ function CohortCard({
 
             <CollapsibleTrigger className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
               <span className="text-xs">
-                {memberCount} {memberCount === 1 ? "member" : "members"}
-                {` · ${courseCount} ${courseCount === 1 ? "course" : "courses"}`}
+                {`${courseCount} ${courseCount === 1 ? "course" : "courses"}`}
               </span>
               {expanded ? (
                 <ChevronDownIcon className="size-4" />
