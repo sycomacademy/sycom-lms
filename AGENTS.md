@@ -149,3 +149,24 @@ No Copilot instruction file was found at `.github/copilot-instructions.md`.
 - Branch prefixes: `feature/`, `fix/`, `refactor/`, `docs/`, `other/`
 - Commit format: `<type> - <description>`
 - Use lowercase, concise, present-tense descriptions.
+
+## Cursor Cloud specific instructions
+
+### Environment overview
+- **Runtime**: Bun (installed to `~/.bun/bin`; ensure `PATH` includes it).
+- **Node**: System Node (v22+) is present via nvm but Bun is the primary runtime.
+- All required secrets are injected as environment variables. A `.env.local` is generated at setup time from these vars so Next.js picks them up.
+
+### Starting the dev server
+- `bun run dev` starts Next.js on port 3000.
+- `bun run dev:all` starts both Next.js and `trigger dev` concurrently (only needed when working on background jobs).
+- The app validates env vars at startup via `@t3-oss/env-nextjs`; if any required var is missing, the build/dev command will fail with a clear error naming the missing var.
+
+### Lefthook / Git hooks
+- `core.hooksPath` is set by the Cloud Agent environment. Use `bun x lefthook install --force` instead of `bun run prep` to install hooks into the existing hooks path.
+
+### Key gotchas
+- **No `.env.example`**: the repo has no `.env.example` file. Required env vars are defined in `packages/env/server.ts` and `packages/env/client.ts`.
+- **No test suite yet**: there are no `*.test.*` or `*.spec.*` files. `bun test` will find nothing. Lint (`bun run check`) and typecheck (`bun run typecheck`) are the primary quality gates.
+- **DB is remote (Neon)**: there is no local Postgres; all DB operations go through the `DATABASE_URL` pointing at Neon serverless Postgres. Ensure the secret is set.
+- **Trigger.dev is optional for basic dev**: the dev server starts fine without `bunx trigger dev` running; background job execution just won't fire locally.
