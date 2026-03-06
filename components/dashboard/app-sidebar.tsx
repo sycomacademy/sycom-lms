@@ -70,17 +70,6 @@ const NAV: Record<NavRole, Record<string, NavItem[]>> = {
   platform_admin: {
     platform: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
-      { href: "/dashboard/admin/users", label: "Users", icon: UsersIcon },
-      {
-        href: "/dashboard/admin/organizations",
-        label: "Organizations",
-        icon: BuildingIcon,
-      },
-      {
-        href: "/dashboard/admin/reports",
-        label: "Reports",
-        icon: BarChart2Icon,
-      },
     ],
     courses: [
       {
