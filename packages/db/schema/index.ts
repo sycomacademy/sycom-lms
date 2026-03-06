@@ -51,9 +51,13 @@ import {
   section,
   sectionRelations,
 } from "./course";
-import { feedback, feedbackRelations } from "./feedback";
+import {
+  feedback,
+  feedbackRelations,
+  report,
+  reportRelations,
+} from "./feedback";
 import { profile, profileRelations } from "./profile";
-import { report, reportRelations } from "./report";
 import {
   mediaAsset,
   storageFolderEnum,

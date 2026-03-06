@@ -1,91 +1,102 @@
-import { and, asc, eq, ne, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
 import type { Database } from "@/packages/db";
 import { db } from "@/packages/db";
 import { createLoggerWithContext } from "@/packages/utils/logger";
+import {
+  CATEGORIES,
+  PUBLIC_COHORT_NAME,
+  PUBLIC_ORG_NAME,
+  PUBLIC_ORG_SLUG,
+} from "./helper";
 import { schema } from "./schema";
-import { category } from "./schema/course";
+import type { OrganizationRole } from "./schema/auth";
+import {
+  category,
+  cohortCourse,
+  courseInstructor,
+  enrollment,
+  type InstructorRole,
+} from "./schema/course";
 import { feedback } from "./schema/feedback";
 import { profile, profileSettingsDefault } from "./schema/profile";
 
 const logger = createLoggerWithContext("db:queries");
 
-const CATEGORIES = [
-  { name: "Cybersecurity", slug: "cybersecurity", order: 1 },
-  { name: "Network Security", slug: "network-security", order: 2 },
-  { name: "Cloud Computing", slug: "cloud-computing", order: 3 },
-  { name: "Programming", slug: "programming", order: 4 },
-  { name: "Data Science", slug: "data-science", order: 5 },
-  { name: "DevOps", slug: "devops", order: 6 },
-  { name: "IT Fundamentals", slug: "it-fundamentals", order: 7 },
-  {
-    name: "Compliance & Governance",
-    slug: "compliance-governance",
-    order: 8,
-  },
-  { name: "Web Development", slug: "web-development", order: 9 },
-  { name: "Ethical Hacking", slug: "ethical-hacking", order: 10 },
-  { name: "Incident Response", slug: "incident-response", order: 11 },
-  { name: "Cryptography", slug: "cryptography", order: 12 },
-] as const;
 const {
   cohort,
   cohort_member,
   member,
   organization,
   session: sessionTable,
+  user,
 } = schema;
-const PUBLIC_ORG_SLUG = "platform";
-const PUBLIC_ORG_NAME = "Platform";
-const PUBLIC_COHORT_NAME = "General";
+
+/** Selected profile columns for reads/returning. */
+const profileColumns = {
+  id: profile.id,
+  userId: profile.userId,
+  bio: profile.bio,
+  settings: profile.settings,
+  createdAt: profile.createdAt,
+  updatedAt: profile.updatedAt,
+} as const;
 
 export async function checkHealth(database: Database = db) {
   await database.execute(sql`SELECT 1`);
   return true;
 }
 
-export async function ensurePublicOrg(database: Database = db) {
-  const [existing] = await database
-    .select({ id: organization.id })
+/**
+ * Fetch public org and cohort IDs in one query. Returns null if either is missing.
+ */
+export async function getPublicOrgAndCohortIds(database: Database = db) {
+  const [row] = await database
+    .select({
+      orgId: organization.id,
+      cohortId: cohort.id,
+    })
     .from(organization)
-    .where(eq(organization.slug, PUBLIC_ORG_SLUG))
-    .limit(1);
-
-  let orgId: string;
-
-  if (existing) {
-    orgId = existing.id;
-    logger.info(`Public org already exists (id: ${orgId})`);
-  } else {
-    orgId = crypto.randomUUID();
-    await database.insert(organization).values({
-      id: orgId,
-      name: PUBLIC_ORG_NAME,
-      slug: PUBLIC_ORG_SLUG,
-    });
-    logger.info(`Created public org "${PUBLIC_ORG_NAME}" (id: ${orgId})`);
-  }
-
-  const [existingCohort] = await database
-    .select({ id: cohort.id })
-    .from(cohort)
+    .innerJoin(cohort, eq(cohort.organizationId, organization.id))
     .where(
-      and(eq(cohort.organizationId, orgId), eq(cohort.name, PUBLIC_COHORT_NAME))
+      and(
+        eq(organization.slug, PUBLIC_ORG_SLUG),
+        eq(cohort.name, PUBLIC_COHORT_NAME)
+      )
     )
     .limit(1);
+  return row ?? null;
+}
 
-  if (existingCohort) {
-    logger.info(`Public cohort already exists (id: ${existingCohort.id})`);
-  } else {
-    const cohortId = crypto.randomUUID();
-    await database.insert(cohort).values({
-      id: cohortId,
-      name: PUBLIC_COHORT_NAME,
-      organizationId: orgId,
-    });
+/**
+ * Ensure platform org and General cohort exist. Returns their IDs for reuse.
+ */
+export async function ensurePublicOrg(database: Database = db) {
+  const existing = await getPublicOrgAndCohortIds(database);
+  if (existing) {
     logger.info(
-      `Created public cohort "${PUBLIC_COHORT_NAME}" (id: ${cohortId})`
+      `Public org and cohort already exist (org: ${existing.orgId}, cohort: ${existing.cohortId})`
     );
+    return existing;
   }
+
+  const orgId = crypto.randomUUID();
+  await database.insert(organization).values({
+    id: orgId,
+    name: PUBLIC_ORG_NAME,
+    slug: PUBLIC_ORG_SLUG,
+  });
+  logger.info(`Created public org "${PUBLIC_ORG_NAME}" (id: ${orgId})`);
+
+  const cohortId = crypto.randomUUID();
+  await database.insert(cohort).values({
+    id: cohortId,
+    name: PUBLIC_COHORT_NAME,
+    organizationId: orgId,
+  });
+  logger.info(
+    `Created public cohort "${PUBLIC_COHORT_NAME}" (id: ${cohortId})`
+  );
+  return { orgId, cohortId };
 }
 
 export async function seedCategories(database: Database = db) {
@@ -98,8 +109,6 @@ export async function seedCategories(database: Database = db) {
   logger.info(`Seeded ${rows.length} categories`);
 }
 
-// ── Auth provisioning (used by auth hooks) ──
-
 /**
  * Provision a newly created user: ensure platform org/cohort exist, create
  * profile, add user as member of platform org and General cohort.
@@ -108,26 +117,7 @@ export async function provisionNewUser(
   database: Database,
   params: { userId: string }
 ) {
-  await ensurePublicOrg(database);
-
-  const [org] = await database
-    .select({ id: organization.id })
-    .from(organization)
-    .where(eq(organization.slug, PUBLIC_ORG_SLUG))
-    .limit(1);
-
-  const [cohortRow] = org
-    ? await database
-        .select({ id: cohort.id })
-        .from(cohort)
-        .where(
-          and(
-            eq(cohort.organizationId, org.id),
-            eq(cohort.name, PUBLIC_COHORT_NAME)
-          )
-        )
-        .limit(1)
-    : [];
+  const { orgId, cohortId } = await ensurePublicOrg(database);
 
   await database
     .insert(profile)
@@ -139,22 +129,18 @@ export async function provisionNewUser(
     })
     .onConflictDoNothing({ target: profile.userId });
 
-  if (org) {
-    await database.insert(member).values({
-      id: crypto.randomUUID(),
-      organizationId: org.id,
-      userId: params.userId,
-      role: "org_student",
-    });
-  }
+  await database.insert(member).values({
+    id: crypto.randomUUID(),
+    organizationId: orgId,
+    userId: params.userId,
+    role: "org_student",
+  });
 
-  if (cohortRow) {
-    await database.insert(cohort_member).values({
-      id: crypto.randomUUID(),
-      teamId: cohortRow.id,
-      userId: params.userId,
-    });
-  }
+  await database.insert(cohort_member).values({
+    id: crypto.randomUUID(),
+    teamId: cohortId,
+    userId: params.userId,
+  });
 
   logger.info("user provisioned", { userId: params.userId });
 }
@@ -190,8 +176,13 @@ export async function setSessionActiveOrgIfNull(
     .select({
       userId: sessionTable.userId,
       activeOrganizationId: sessionTable.activeOrganizationId,
+      activeOrgSlug: organization.slug,
     })
     .from(sessionTable)
+    .leftJoin(
+      organization,
+      eq(organization.id, sessionTable.activeOrganizationId)
+    )
     .where(eq(sessionTable.id, params.sessionId))
     .limit(1);
 
@@ -199,64 +190,55 @@ export async function setSessionActiveOrgIfNull(
     return;
   }
 
-  if (sessionRow.activeOrganizationId) {
-    const [currentOrg] = await database
-      .select({ slug: organization.slug })
-      .from(organization)
-      .where(eq(organization.id, sessionRow.activeOrganizationId))
-      .limit(1);
-
-    if (currentOrg && currentOrg.slug !== PUBLIC_ORG_SLUG) {
-      return;
-    }
-  }
-
-  const [preferredOrgMembership] = await database
-    .select({ organizationId: member.organizationId })
-    .from(member)
-    .innerJoin(organization, eq(organization.id, member.organizationId))
-    .where(
-      and(
-        eq(member.userId, sessionRow.userId),
-        ne(organization.slug, PUBLIC_ORG_SLUG)
-      )
-    )
-    .orderBy(asc(member.createdAt))
-    .limit(1);
-
-  const [org] = await database
-    .select({ id: organization.id })
-    .from(organization)
-    .where(eq(organization.slug, PUBLIC_ORG_SLUG))
-    .limit(1);
-
-  if (!(org || preferredOrgMembership)) {
+  if (
+    sessionRow.activeOrgSlug != null &&
+    sessionRow.activeOrgSlug !== PUBLIC_ORG_SLUG
+  ) {
     return;
   }
 
+  const [publicIds, preferredRow] = await Promise.all([
+    getPublicOrgAndCohortIds(database),
+    database
+      .select({ organizationId: member.organizationId })
+      .from(member)
+      .innerJoin(organization, eq(organization.id, member.organizationId))
+      .where(
+        and(
+          eq(member.userId, sessionRow.userId),
+          ne(organization.slug, PUBLIC_ORG_SLUG)
+        )
+      )
+      .orderBy(asc(member.createdAt))
+      .limit(1)
+      .then((rows) => rows[0] ?? null),
+  ]);
+
   const activeOrganizationId =
-    preferredOrgMembership?.organizationId ?? org?.id;
+    preferredRow?.organizationId ?? publicIds?.orgId ?? null;
   if (!activeOrganizationId) {
     return;
   }
 
-  const [cohortRow] = await database
-    .select({ id: cohort.id })
-    .from(cohort)
-    .where(eq(cohort.organizationId, activeOrganizationId))
-    .orderBy(asc(cohort.createdAt))
-    .limit(1);
+  const activeCohortId = preferredRow
+    ? ((
+        await database
+          .select({ id: cohort.id })
+          .from(cohort)
+          .where(eq(cohort.organizationId, preferredRow.organizationId))
+          .orderBy(asc(cohort.createdAt))
+          .limit(1)
+      )[0]?.id ?? null)
+    : (publicIds?.cohortId ?? null);
 
   await database
     .update(sessionTable)
     .set({
       activeOrganizationId,
-      activeTeamId: cohortRow?.id ?? null,
+      activeTeamId: activeCohortId,
     })
     .where(eq(sessionTable.id, params.sessionId));
 }
-
-// ── Profile queries ──
 
 export type UpdateProfileData = Partial<
   Pick<typeof profile.$inferInsert, "bio" | "settings">
@@ -267,17 +249,9 @@ export async function getProfileByUserId(
   params: { userId: string }
 ) {
   const [result] = await database
-    .select({
-      id: profile.id,
-      userId: profile.userId,
-      bio: profile.bio,
-      settings: profile.settings,
-      createdAt: profile.createdAt,
-      updatedAt: profile.updatedAt,
-    })
+    .select(profileColumns)
     .from(profile)
     .where(eq(profile.userId, params.userId));
-
   return result ?? null;
 }
 
@@ -289,18 +263,9 @@ export async function updateProfileByUserId(
     .update(profile)
     .set(params.data)
     .where(eq(profile.userId, params.userId))
-    .returning({
-      id: profile.id,
-      userId: profile.userId,
-      bio: profile.bio,
-      settings: profile.settings,
-      createdAt: profile.createdAt,
-      updatedAt: profile.updatedAt,
-    });
+    .returning(profileColumns);
   return updated[0] ?? null;
 }
-
-// ── Feedback queries ──
 
 export async function submitFeedback(
   database: Database,
@@ -312,4 +277,263 @@ export async function submitFeedback(
     message: params.message,
   });
   return result;
+}
+
+export async function hasCourseAccessForEditing(
+  database: Database,
+  params: { courseId: string; userId: string; userRole: string | null }
+): Promise<{ instructorRole: InstructorRole | "admin" } | null> {
+  if (params.userRole === "platform_admin") {
+    return { instructorRole: "admin" };
+  }
+
+  const [row] = await database
+    .select({ role: courseInstructor.role })
+    .from(courseInstructor)
+    .where(
+      and(
+        eq(courseInstructor.courseId, params.courseId),
+        eq(courseInstructor.userId, params.userId)
+      )
+    )
+    .limit(1);
+
+  if (!row) {
+    return null;
+  }
+
+  return { instructorRole: row.role as InstructorRole };
+}
+
+export async function hasCourseAccessForLearning(
+  database: Database,
+  params: {
+    courseId: string;
+    userId: string;
+    organizationId: string;
+    cohortId?: string | null;
+  }
+): Promise<boolean> {
+  const [enrolled] = await database
+    .select({ id: enrollment.id })
+    .from(enrollment)
+    .where(
+      and(
+        eq(enrollment.userId, params.userId),
+        eq(enrollment.courseId, params.courseId),
+        eq(enrollment.organizationId, params.organizationId)
+      )
+    )
+    .limit(1);
+
+  if (enrolled) {
+    return true;
+  }
+
+  if (params.cohortId) {
+    const [cohortRow] = await database
+      .select({ id: cohort.id })
+      .from(cohort)
+      .where(
+        and(
+          eq(cohort.id, params.cohortId),
+          eq(cohort.organizationId, params.organizationId)
+        )
+      )
+      .limit(1);
+
+    if (!cohortRow) {
+      return false;
+    }
+
+    const [assigned] = await database
+      .select({ courseId: cohortCourse.courseId })
+      .from(cohortCourse)
+      .where(
+        and(
+          eq(cohortCourse.cohortId, params.cohortId),
+          eq(cohortCourse.courseId, params.courseId)
+        )
+      )
+      .limit(1);
+
+    if (assigned) {
+      const [memberOf] = await database
+        .select({ id: cohort_member.id })
+        .from(cohort_member)
+        .where(
+          and(
+            eq(cohort_member.teamId, params.cohortId),
+            eq(cohort_member.userId, params.userId)
+          )
+        )
+        .limit(1);
+      return !!memberOf;
+    }
+  }
+
+  return false;
+}
+
+// Stopped here
+export async function listOrgMembers(
+  database: Database,
+  params: { organizationId: string }
+) {
+  const rows = await database
+    .select({
+      id: member.id,
+      userId: user.id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+      role: member.role,
+      createdAt: member.createdAt,
+    })
+    .from(member)
+    .innerJoin(user, eq(user.id, member.userId))
+    .where(eq(member.organizationId, params.organizationId))
+    .orderBy(asc(member.createdAt));
+
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const userIds = rows.map((row) => row.userId);
+  const cohortRows = await database
+    .select({
+      userId: cohort_member.userId,
+      cohortId: cohort.id,
+      cohortName: cohort.name,
+    })
+    .from(cohort_member)
+    .innerJoin(cohort, eq(cohort.id, cohort_member.teamId))
+    .where(
+      and(
+        inArray(cohort_member.userId, userIds),
+        eq(cohort.organizationId, params.organizationId)
+      )
+    )
+    .orderBy(asc(cohort.name));
+
+  const cohortsByUser = new Map<string, { id: string; name: string }[]>();
+  for (const cohortRow of cohortRows) {
+    const existing = cohortsByUser.get(cohortRow.userId) ?? [];
+    existing.push({ id: cohortRow.cohortId, name: cohortRow.cohortName });
+    cohortsByUser.set(cohortRow.userId, existing);
+  }
+
+  return rows.map((row) => ({
+    ...row,
+    cohorts: cohortsByUser.get(row.userId) ?? [],
+  }));
+}
+
+export async function listOrgCohorts(
+  database: Database,
+  params: {
+    organizationId: string;
+    userId?: string;
+    memberRole?: OrganizationRole | null;
+  }
+) {
+  const { organizationId, userId, memberRole } = params;
+
+  const canSeeAllCohorts =
+    memberRole === "org_owner" ||
+    memberRole === "org_admin" ||
+    memberRole === "org_auditor";
+
+  if (canSeeAllCohorts || !userId) {
+    return database
+      .select({
+        id: cohort.id,
+        name: cohort.name,
+        image: cohort.image,
+        organizationId: cohort.organizationId,
+        createdAt: cohort.createdAt,
+        memberCount:
+          sql<number>`(SELECT count(*)::int FROM "auth"."cohort_member" cm WHERE cm."team_id" = ${cohort.id})`.as(
+            "member_count"
+          ),
+        courseCount:
+          sql<number>`(SELECT count(*)::int FROM "cohort_course" cc WHERE cc."cohort_id" = ${cohort.id})`.as(
+            "course_count"
+          ),
+      })
+      .from(cohort)
+      .where(eq(cohort.organizationId, organizationId))
+      .orderBy(asc(cohort.name));
+  }
+
+  return database
+    .select({
+      id: cohort.id,
+      name: cohort.name,
+      image: cohort.image,
+      organizationId: cohort.organizationId,
+      createdAt: cohort.createdAt,
+      memberCount:
+        sql<number>`(SELECT count(*)::int FROM "auth"."cohort_member" cm WHERE cm."team_id" = ${cohort.id})`.as(
+          "member_count"
+        ),
+      courseCount:
+        sql<number>`(SELECT count(*)::int FROM "cohort_course" cc WHERE cc."cohort_id" = ${cohort.id})`.as(
+          "course_count"
+        ),
+    })
+    .from(cohort)
+    .innerJoin(
+      cohort_member,
+      and(eq(cohort_member.teamId, cohort.id), eq(cohort_member.userId, userId))
+    )
+    .where(eq(cohort.organizationId, organizationId))
+    .orderBy(asc(cohort.name));
+}
+
+export async function listCohortMembers(
+  database: Database,
+  params: { cohortId: string }
+) {
+  return database
+    .select({
+      id: cohort_member.id,
+      memberId: member.id,
+      userId: user.id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+      createdAt: cohort_member.createdAt,
+    })
+    .from(cohort_member)
+    .innerJoin(user, eq(user.id, cohort_member.userId))
+    .innerJoin(cohort, eq(cohort.id, cohort_member.teamId))
+    .innerJoin(
+      member,
+      and(
+        eq(member.userId, cohort_member.userId),
+        eq(member.organizationId, cohort.organizationId)
+      )
+    )
+    .where(eq(cohort_member.teamId, params.cohortId))
+    .orderBy(asc(cohort_member.createdAt));
+}
+
+export async function getOrganization(
+  database: Database,
+  params: { organizationId: string }
+) {
+  const [row] = await database
+    .select({
+      id: organization.id,
+      name: organization.name,
+      slug: organization.slug,
+      logo: organization.logo,
+      createdAt: organization.createdAt,
+      metadata: organization.metadata,
+    })
+    .from(organization)
+    .where(eq(organization.id, params.organizationId))
+    .limit(1);
+  return row ?? null;
 }

@@ -12,7 +12,6 @@ import {
 } from "@/packages/db/queries";
 import { schema } from "@/packages/db/schema";
 import { env } from "@/packages/env/server";
-import { createLoggerWithContext } from "@/packages/utils/logger";
 import {
   adminPlugin,
   afterEmailVerification,
@@ -23,8 +22,6 @@ import {
   sendVerificationEmail,
   ssoPlugin,
 } from "./config";
-
-const authHookLogger = createLoggerWithContext("auth:hook");
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -37,7 +34,6 @@ export const auth = betterAuth({
   advanced: {
     useSecureCookies: env.NODE_ENV === "production",
     ipAddress: {
-      // Use Vercel's forwarded-for header in production, Cloudflare's in development (for tunneling)
       ipAddressHeaders: [
         process.env.NODE_ENV === "production"
           ? "x-vercel-forwarded-for"
@@ -63,34 +59,20 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user) => {
-          try {
-            await provisionNewUser(db, { userId: user.id });
-          } catch (error) {
-            authHookLogger.error("user provisioning failed", {
-              userId: user.id,
-              error,
-            });
-          }
+          await provisionNewUser(db, { userId: user.id });
         },
       },
     },
     session: {
       create: {
         after: async (createdSession) => {
-          try {
-            await deleteOtherSessionsForUser(db, {
-              userId: createdSession.userId,
-              keepSessionId: createdSession.id,
-            });
-            await setSessionActiveOrgIfNull(db, {
-              sessionId: createdSession.id,
-            });
-          } catch (error) {
-            authHookLogger.error("session hook failed", {
-              sessionId: createdSession.id,
-              error,
-            });
-          }
+          await deleteOtherSessionsForUser(db, {
+            userId: createdSession.userId,
+            keepSessionId: createdSession.id,
+          });
+          await setSessionActiveOrgIfNull(db, {
+            sessionId: createdSession.id,
+          });
         },
       },
     },
@@ -134,7 +116,7 @@ export const auth = betterAuth({
     passkey({
       rpID:
         env.NODE_ENV === "production" ? new URL(baseURL).hostname : "localhost",
-      rpName: "Sycom LMS",
+      rpName: "Sycom Academy LMS",
       origin: baseURL,
     }),
     twoFactor({

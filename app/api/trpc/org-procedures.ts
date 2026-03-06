@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
-import type { OrgMemberRole } from "@/packages/db/queries/org";
+import type { OrgMemberRole } from "@/packages/db/queries";
 import { member } from "@/packages/db/schema/auth";
 import { protectedProcedure, t } from "./init";
 

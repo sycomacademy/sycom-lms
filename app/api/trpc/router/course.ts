@@ -14,9 +14,9 @@ import {
 } from "drizzle-orm";
 import { z } from "zod";
 import {
-  getCourseAccess,
+  hasCourseAccessForEditing,
   hasCourseAccessForLearning,
-} from "@/packages/db/queries/course";
+} from "@/packages/db/queries";
 import { cohort, cohort_member, user } from "@/packages/db/schema/auth";
 import {
   category,
@@ -89,12 +89,16 @@ const instructorProcedure = protectedProcedure.use(instructorMiddleware);
 // ---------------------------------------------------------------------------
 
 async function assertCourseAccess(
-  db: Parameters<typeof getCourseAccess>[0],
+  db: Parameters<typeof hasCourseAccessForEditing>[0],
   courseId: string,
   userId: string,
   userRole: string | null
 ) {
-  const result = await getCourseAccess(db, { courseId, userId, userRole });
+  const result = await hasCourseAccessForEditing(db, {
+    courseId,
+    userId,
+    userRole,
+  });
   if (!result) {
     throw new TRPCError({
       code: "FORBIDDEN",
@@ -105,7 +109,7 @@ async function assertCourseAccess(
 }
 
 async function assertEnrolledCourseAccess(
-  db: Parameters<typeof getCourseAccess>[0],
+  db: Parameters<typeof hasCourseAccessForLearning>[0],
   courseId: string,
   userId: string,
   organizationId: string,

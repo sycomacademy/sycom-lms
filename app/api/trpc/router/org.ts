@@ -7,7 +7,7 @@ import {
   listCohortMembers,
   listOrgCohorts,
   listOrgMembers,
-} from "@/packages/db/queries/org";
+} from "@/packages/db/queries";
 import { cohort, cohort_member, member } from "@/packages/db/schema/auth";
 import { router } from "../init";
 import {
