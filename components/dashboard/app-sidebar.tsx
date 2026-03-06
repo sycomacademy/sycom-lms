@@ -27,12 +27,12 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { authClient } from "@/packages/auth/auth-client";
 import { useDelayedValue } from "@/packages/hooks/use-delayed-value";
 import { useIsMobile } from "@/packages/hooks/use-mobile";
 import { useUserQuery } from "@/packages/hooks/use-user";
 import { cn } from "@/packages/utils/cn";
 import { capitalize } from "@/packages/utils/string";
+import { useDashboardOrg } from "./dashboard-org-context";
 import { OrgSwitcher } from "./org-switcher";
 
 interface NavItem {
@@ -222,8 +222,7 @@ export function AppSidebar() {
   const isMobile = useIsMobile();
   const isOpen = useDelayedValue(open, 195);
 
-  const { data: orgs } = authClient.useListOrganizations();
-  const { data: activeMember } = authClient.useActiveMember();
+  const { activeMember, orgs } = useDashboardOrg();
 
   const activeOrg = orgs?.find((o) => o.id === activeMember?.organizationId);
   const orgSlug = (activeOrg as { slug?: string })?.slug;

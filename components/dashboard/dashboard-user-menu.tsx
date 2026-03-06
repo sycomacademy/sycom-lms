@@ -26,6 +26,7 @@ import { authClient } from "@/packages/auth/auth-client";
 import { useUserQuery } from "@/packages/hooks/use-user";
 import { useKeyboardShortcutLabels } from "../layout/keyboard-shortcuts";
 import { toastManager } from "../ui/toast";
+import { useDashboardOrg } from "./dashboard-org-context";
 
 const {
   UserIcon,
@@ -54,8 +55,7 @@ export function DashboardUserMenu() {
   const router = useRouter();
   const { profile, user, isPending } = useUserQuery();
   const { setTheme, resolvedTheme } = useTheme();
-  const { data: orgs } = authClient.useListOrganizations();
-  const { data: activeMember } = authClient.useActiveMember();
+  const { activeMember, orgs } = useDashboardOrg();
   const shortcuts = useKeyboardShortcutLabels();
   const [signOutPending, setSignOutPending] = useState(false);
   const [userIconRef, userHover] = useAnimatedIcon();

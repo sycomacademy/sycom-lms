@@ -14,6 +14,7 @@ import { SidebarMenuButton, useSidebar } from "@/components/ui/sidebar";
 import { authClient } from "@/packages/auth/auth-client";
 import { cn } from "@/packages/utils/cn";
 import { getInitials } from "@/packages/utils/string";
+import { useDashboardOrg } from "./dashboard-org-context";
 
 /** Collapse class: fixed dimensions + hide name span + hide chevron when icon-only. */
 const collapseClass =
@@ -42,8 +43,7 @@ export function OrgSwitcher() {
   const { open } = useSidebar();
   const [search, setSearch] = useState("");
   const [switching, setSwitching] = useState(false);
-  const { data: orgs } = authClient.useListOrganizations();
-  const { data: activeMember } = authClient.useActiveMember();
+  const { activeMember, orgs } = useDashboardOrg();
 
   const activeOrgId = activeMember?.organizationId;
   const activeOrg = orgs?.find((o) => o.id === activeOrgId) ?? orgs?.[0];
@@ -101,7 +101,6 @@ export function OrgSwitcher() {
         {/* Search */}
         <div className="px-3 py-2">
           <input
-            autoFocus
             className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.stopPropagation()}

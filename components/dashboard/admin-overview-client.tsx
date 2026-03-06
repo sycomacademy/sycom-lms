@@ -31,7 +31,7 @@ export function AdminOverviewClient() {
   );
   const { data: reportsData } = useSuspenseQuery(
     trpc.admin.listReports.queryOptions({
-      limit: 5,
+      limit: 10,
       offset: 0,
       type: "report",
       status: "pending",
