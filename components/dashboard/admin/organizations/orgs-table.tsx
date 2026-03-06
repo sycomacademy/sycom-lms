@@ -33,12 +33,72 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
 import { useTRPC } from "@/packages/trpc/client";
+import { getInitials } from "@/packages/utils/string";
 
 type Org = RouterOutputs["admin"]["listOrganizations"]["orgs"][number];
+
+const USER_PREVIEW_LIMIT = 3;
+
+function OrgUsersCell({ org }: { org: Org }) {
+  if (!org.userCount || org.users.length === 0) {
+    return <span className="text-muted-foreground text-sm">No users</span>;
+  }
+
+  const preview = org.users
+    .slice(0, USER_PREVIEW_LIMIT)
+    .map((u) => u.name ?? u.email);
+  const remaining = org.userCount - preview.length;
+  const previewLabel =
+    remaining > 0 ? `${preview.join(", ")} +${remaining}` : preview.join(", ");
+
+  return (
+    <HoverCard>
+      <HoverCardTrigger
+        render={
+          <button className="cursor-help text-left text-sm" type="button" />
+        }
+      >
+        <span className="line-clamp-2">{previewLabel}</span>
+      </HoverCardTrigger>
+      <HoverCardContent align="start" className="w-80">
+        <div className="mb-2 font-medium text-foreground text-xs">
+          Users ({org.userCount})
+        </div>
+        <div className="max-h-60 space-y-1.5 overflow-y-auto">
+          {org.users.map((orgUser) => (
+            <div
+              className="flex items-center gap-2 rounded-md border px-2 py-1.5"
+              key={orgUser.id}
+            >
+              <Avatar className="size-6">
+                <AvatarFallback className="text-[10px]">
+                  {getInitials(orgUser.name ?? orgUser.email)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <div className="truncate text-xs">
+                  {orgUser.name ?? "Unnamed user"}
+                </div>
+                <div className="truncate text-muted-foreground text-xs">
+                  {orgUser.email}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </HoverCardContent>
+    </HoverCard>
+  );
+}
 
 const slugRegex = /^[a-z0-9-]+$/;
 
@@ -279,6 +339,13 @@ const columns: ColumnDef<Org, unknown>[] = [
         {row.getValue("memberCount") ?? 0}
       </span>
     ),
+  },
+  {
+    id: "users",
+    header: "Users",
+    size: 260,
+    enableSorting: false,
+    cell: ({ row }) => <OrgUsersCell org={row.original} />,
   },
   {
     accessorKey: "createdAt",

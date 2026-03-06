@@ -269,7 +269,9 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {items.map(({ href, label, icon: Icon }) => {
-                  const resolvedHref = resolveOrgHref(href, orgSlug);
+                  const resolvedHref = isPublicOrg
+                    ? href
+                    : resolveOrgHref(href, orgSlug);
                   return (
                     <SidebarMenuItem key={resolvedHref}>
                       <SidebarMenuButton

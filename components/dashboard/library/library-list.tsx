@@ -21,6 +21,7 @@ export function LibraryList() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [pendingCourseId, setPendingCourseId] = useState<string | null>(null);
   const deferredSearch = useDeferredValue(search);
 
   const { data } = useSuspenseQuery(
@@ -33,8 +34,13 @@ export function LibraryList() {
 
   const enrollMutation = useMutation(
     trpc.course.enroll.mutationOptions({
+      onMutate: ({ courseId }) => {
+        setPendingCourseId(courseId);
+      },
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["course", "listLibrary"] });
+        queryClient.invalidateQueries({
+          queryKey: trpc.course.listLibrary.queryKey(),
+        });
         toastManager.add({ title: "Enrolled successfully", type: "success" });
       },
       onError: (err) => {
@@ -43,6 +49,9 @@ export function LibraryList() {
           description: err.message,
           type: "error",
         });
+      },
+      onSettled: () => {
+        setPendingCourseId(null);
       },
     })
   );
@@ -67,14 +76,16 @@ export function LibraryList() {
             <Card key={c.id}>
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">
-                  <Link
-                    className="font-medium hover:underline"
-                    href={
-                      (c.isEnrolled ? `/learn/course/${c.id}` : "#") as Route
-                    }
-                  >
-                    {c.title}
-                  </Link>
+                  {c.isEnrolled ? (
+                    <Link
+                      className="font-medium hover:underline"
+                      href={`/learn/course/${c.id}` as Route}
+                    >
+                      {c.title}
+                    </Link>
+                  ) : (
+                    <span className="font-medium">{c.title}</span>
+                  )}
                   <Badge variant="outline">{c.difficulty}</Badge>
                 </div>
                 <p className="line-clamp-2 text-muted-foreground text-sm">
@@ -107,7 +118,7 @@ export function LibraryList() {
                     disabled={enrollMutation.isPending}
                     onClick={() => enrollMutation.mutate({ courseId: c.id })}
                   >
-                    {enrollMutation.isPending ? (
+                    {enrollMutation.isPending && pendingCourseId === c.id ? (
                       <Loader2Icon className="size-4 animate-spin" />
                     ) : (
                       "Enroll"
