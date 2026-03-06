@@ -5,6 +5,7 @@ import { adminRouter } from "./admin";
 import { categoryRouter } from "./category";
 import { courseRouter } from "./course";
 import { feedbackRouter } from "./feedback";
+import { orgRouter } from "./org";
 import { userRouter } from "./user";
 
 export const appRouter = router({
@@ -17,6 +18,7 @@ export const appRouter = router({
   admin: adminRouter,
   category: categoryRouter,
   course: courseRouter,
+  org: orgRouter,
 });
 
 export type AppRouter = typeof appRouter;

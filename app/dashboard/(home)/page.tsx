@@ -1,4 +1,5 @@
 import { BuildingIcon, FileTextIcon, UsersIcon } from "lucide-react";
+import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSession } from "@/packages/auth/helper";
 import { getCaller } from "@/packages/trpc/server";
@@ -100,9 +101,27 @@ async function AdminOverview() {
 export default async function DashboardHomePage() {
   const session = await getSession();
   const role = session?.user?.role;
+  const sessionWithOrg = session as typeof session & {
+    session?: { activeOrganizationId?: string };
+  };
+  const orgId = sessionWithOrg.session?.activeOrganizationId;
 
-  if (role === "platform_admin") {
+  if (role === "platform_admin" && !orgId) {
     return <AdminOverview />;
+  }
+
+  if (orgId) {
+    const { db } = await import("@/packages/db");
+    const { organization } = await import("@/packages/db/schema/auth");
+    const { eq } = await import("drizzle-orm");
+    const [org] = await db
+      .select({ slug: organization.slug })
+      .from(organization)
+      .where(eq(organization.id, orgId))
+      .limit(1);
+    if (org && org.slug !== "platform") {
+      redirect(`/dashboard/org/${org.slug}`);
+    }
   }
 
   return (

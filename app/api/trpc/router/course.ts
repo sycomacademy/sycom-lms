@@ -1905,6 +1905,27 @@ export const courseRouter = router({
       return { courses: rows };
     }),
 
+  listAssignableCourses: orgCourseProcedure
+    .input(z.object({ search: z.string().optional() }))
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const conditions = [eq(course.status, "published")];
+      if (input.search?.trim()) {
+        conditions.push(ilike(course.title, `%${input.search.trim()}%`));
+      }
+      const rows = await db
+        .select({
+          id: course.id,
+          title: course.title,
+          slug: course.slug,
+        })
+        .from(course)
+        .where(and(...conditions))
+        .orderBy(asc(course.title))
+        .limit(100);
+      return { courses: rows };
+    }),
+
   setSectionDueDate: orgCourseProcedure
     .input(setSectionDueDateSchema)
     .mutation(async ({ ctx, input }) => {

@@ -1,0 +1,1 @@
+ALTER TABLE "auth"."cohort" ADD COLUMN "image" text;

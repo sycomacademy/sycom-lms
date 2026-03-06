@@ -43,6 +43,13 @@
       "when": 1772712762445,
       "tag": "0005_wild_thena",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1772759478782,
+      "tag": "0006_rainy_morlocks",
+      "breakpoints": true
     }
   ]
 }

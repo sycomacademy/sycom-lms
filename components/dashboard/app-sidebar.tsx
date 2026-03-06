@@ -119,28 +119,28 @@ const NAV: Record<NavRole, Record<string, NavItem[]>> = {
 
   // ── Org roles ────────────────────────────────────────────────────────────
   org_owner: {
-    overview: [
+    main: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
     ],
-    courses: [
+    org: [
       {
-        href: "/dashboard/courses",
-        label: "Courses",
-        icon: GraduationCapIcon,
+        href: "/dashboard/org/people",
+        label: "Organization",
+        icon: BuildingIcon,
       },
     ],
     general: GENERAL,
   },
 
   org_admin: {
-    overview: [
+    main: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
     ],
-    courses: [
+    org: [
       {
-        href: "/dashboard/courses",
-        label: "Courses",
-        icon: GraduationCapIcon,
+        href: "/dashboard/org/people",
+        label: "Organization",
+        icon: BuildingIcon,
       },
     ],
     general: GENERAL,
@@ -150,21 +150,23 @@ const NAV: Record<NavRole, Record<string, NavItem[]>> = {
     teaching: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
       {
-        href: "/dashboard/courses",
-        label: "My Courses",
-        icon: GraduationCapIcon,
+        href: "/dashboard/org/cohorts",
+        label: "Organization",
+        icon: BuildingIcon,
       },
     ],
     general: GENERAL,
   },
 
   org_auditor: {
-    overview: [
+    main: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
+    ],
+    org: [
       {
-        href: "/dashboard/admin/reports",
-        label: "Reports",
-        icon: BarChart2Icon,
+        href: "/dashboard/org/people",
+        label: "Organization",
+        icon: BuildingIcon,
       },
     ],
     general: GENERAL,
@@ -173,6 +175,11 @@ const NAV: Record<NavRole, Record<string, NavItem[]>> = {
   org_student: {
     learning: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
+      {
+        href: "/dashboard/org/cohorts",
+        label: "Organization",
+        icon: BuildingIcon,
+      },
       { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
       {
         href: "/dashboard/journey",
@@ -198,6 +205,19 @@ const groupLabelCollapseClass =
 
 const PUBLIC_ORG_SLUG = "platform";
 
+const ORG_HREF_RE = /^\/dashboard\/org\/(people|cohorts|courses|settings)$/;
+
+function resolveOrgHref(href: string, orgSlug: string | undefined): string {
+  if (!orgSlug) {
+    return href;
+  }
+  if (href === "/dashboard") {
+    return `/dashboard/org/${orgSlug}`;
+  }
+  const m = href.match(ORG_HREF_RE);
+  return m ? `/dashboard/org/${orgSlug}/${m[1]}` : href;
+}
+
 export function AppSidebar() {
   const { user } = useUserQuery();
   const { open } = useSidebar();
@@ -209,7 +229,8 @@ export function AppSidebar() {
   const { data: activeMember } = authClient.useActiveMember();
 
   const activeOrg = orgs?.find((o) => o.id === activeMember?.organizationId);
-  const isPublicOrg = !activeOrg || activeOrg.slug === PUBLIC_ORG_SLUG;
+  const orgSlug = (activeOrg as { slug?: string })?.slug;
+  const isPublicOrg = !activeOrg || orgSlug === PUBLIC_ORG_SLUG;
 
   const effectiveRole: NavRole = isPublicOrg
     ? ((user?.role as NavRole | undefined) ?? "platform_student")
@@ -247,29 +268,40 @@ export function AppSidebar() {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {items.map(({ href, label, icon: Icon }) => (
-                  <SidebarMenuItem key={href}>
-                    <SidebarMenuButton
-                      className={cn(
-                        "text-sm",
-                        menuButtonIconClass,
-                        menuButtonCollapseClass,
-                        isOpen || isMobile ? "" : "justify-center"
-                      )}
-                      isActive={pathname === href}
-                      render={
-                        <Link
-                          href={href as ComponentProps<typeof Link>["href"]}
-                        />
-                      }
-                      size="lg"
-                      tooltip={label}
-                    >
-                      <Icon />
-                      <span>{label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                {items.map(({ href, label, icon: Icon }) => {
+                  const resolvedHref = resolveOrgHref(href, orgSlug);
+                  return (
+                    <SidebarMenuItem key={resolvedHref}>
+                      <SidebarMenuButton
+                        className={cn(
+                          "text-sm",
+                          menuButtonIconClass,
+                          menuButtonCollapseClass,
+                          isOpen || isMobile ? "" : "justify-center"
+                        )}
+                        isActive={
+                          pathname === resolvedHref ||
+                          (resolvedHref !== `/dashboard/org/${orgSlug}` &&
+                            pathname.startsWith(`${resolvedHref}/`))
+                        }
+                        render={
+                          <Link
+                            href={
+                              resolvedHref as ComponentProps<
+                                typeof Link
+                              >["href"]
+                            }
+                          />
+                        }
+                        size="lg"
+                        tooltip={label}
+                      >
+                        <Icon />
+                        <span>{label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
