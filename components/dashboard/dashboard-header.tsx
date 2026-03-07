@@ -1,5 +1,3 @@
-"use client";
-
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/packages/utils/cn";
 import { DashboardUserMenu } from "./dashboard-user-menu";
