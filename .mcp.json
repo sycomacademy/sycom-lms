@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "trigger": {
+      "args": ["trigger.dev@4.4.1", "mcp", "--dev-only"],
+      "command": "bunx"
+    },
+    "neon": {
+      "type": "http",
+      "url": "https://mcp.neon.tech/mcp"
+    },
+    "shadcn": {
+      "command": "npx",
+      "args": ["shadcn@latest", "mcp"]
+    },
+    "shoogle": {
+      "type": "http",
+      "url": "https://mcp.shoogle.dev/mcp"
+    },
+    "kibo-ui": {
+      "command": "bunx",
+      "args": ["-y", "mcp-remote", "https://www.kibo-ui.com/api/mcp/mcp"]
+    }
+  }
+}

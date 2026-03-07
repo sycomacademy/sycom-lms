@@ -1,5 +1,6 @@
 - move course-schema int schema in utils
 - migrate to new animated icons
+- migrate to cloudinary cdn media
 
 - look into ratelimiting the trpc
 - email design
