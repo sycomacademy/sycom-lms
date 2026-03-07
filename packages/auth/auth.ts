@@ -17,6 +17,7 @@ import {
   afterEmailVerification,
   baseURL,
   organizationPlugin,
+  queueWelcomeEmail,
   scimPlugin,
   sendResetPassword,
   sendVerificationEmail,
@@ -73,6 +74,7 @@ export const auth = betterAuth({
           await setSessionActiveOrgIfNull(db, {
             sessionId: createdSession.id,
           });
+          await queueWelcomeEmail({ id: createdSession.userId });
         },
       },
     },

@@ -31,6 +31,7 @@ const {
   member,
   organization,
   session: sessionTable,
+  user,
 } = schema;
 
 /** Selected profile columns for reads/returning. */
@@ -264,6 +265,91 @@ export async function updateProfileByUserId(
     .where(eq(profile.userId, params.userId))
     .returning(profileColumns);
   return updated[0] ?? null;
+}
+
+export async function claimWelcomeEmailSend(
+  database: Database,
+  params: { userId: string }
+) {
+  const [userRow] = await database
+    .select({
+      email: user.email,
+      emailVerified: user.emailVerified,
+      name: user.name,
+      settings: profile.settings,
+    })
+    .from(user)
+    .innerJoin(profile, eq(profile.userId, user.id))
+    .where(eq(user.id, params.userId))
+    .limit(1);
+
+  if (!userRow?.emailVerified) {
+    return null;
+  }
+
+  const currentSettings = {
+    ...profileSettingsDefault,
+    ...(userRow.settings ?? {}),
+  };
+
+  if (currentSettings.welcomeEmailSent) {
+    return null;
+  }
+
+  const updated = await database
+    .update(profile)
+    .set({
+      settings: {
+        ...currentSettings,
+        welcomeEmailSent: true,
+      },
+    })
+    .where(
+      and(
+        eq(profile.userId, params.userId),
+        sql`coalesce(${profile.settings} ->> 'welcomeEmailSent', 'false') <> 'true'`
+      )
+    )
+    .returning({ userId: profile.userId });
+
+  if (!updated[0]) {
+    return null;
+  }
+
+  return {
+    email: userRow.email,
+    name: userRow.name,
+    userId: params.userId,
+  };
+}
+
+export async function unsubscribeUserFromMarketingEmails(
+  database: Database,
+  params: { userId: string }
+) {
+  const [row] = await database
+    .select({ settings: profile.settings })
+    .from(profile)
+    .where(eq(profile.userId, params.userId))
+    .limit(1);
+
+  if (!row) {
+    return null;
+  }
+
+  const nextSettings = {
+    ...profileSettingsDefault,
+    ...(row.settings ?? {}),
+    marketingEmails: false,
+  };
+
+  const [updated] = await database
+    .update(profile)
+    .set({ settings: nextSettings })
+    .where(eq(profile.userId, params.userId))
+    .returning(profileColumns);
+
+  return updated ?? null;
 }
 
 export async function submitFeedback(

@@ -12,28 +12,20 @@ import {
   UsersIcon,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import type { ComponentProps } from "react";
 import { Link } from "@/components/layout/foresight-link";
 import {
   Sidebar,
-  SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useDelayedValue } from "@/packages/hooks/use-delayed-value";
 import { useIsMobile } from "@/packages/hooks/use-mobile";
 import { useUserQuery } from "@/packages/hooks/use-user";
-import { cn } from "@/packages/utils/cn";
-import { capitalize } from "@/packages/utils/string";
-import { useDashboardOrg } from "./dashboard-org-context";
-import { OrgSwitcher } from "./org-switcher";
+
+// import { useDashboardOrg } from "./dashboard-org-context";
+
+// import { OrgSwitcher } from "./org-switcher";
 
 interface NavItem {
   href: string;
@@ -222,17 +214,17 @@ export function AppSidebar() {
   const isMobile = useIsMobile();
   const isOpen = useDelayedValue(open, 195);
 
-  const { activeMember, orgs } = useDashboardOrg();
+  // const { activeMember, orgs } = useDashboardOrg();
 
-  const activeOrg = orgs?.find((o) => o.id === activeMember?.organizationId);
-  const orgSlug = (activeOrg as { slug?: string })?.slug;
-  const isPublicOrg = !activeOrg || orgSlug === PUBLIC_ORG_SLUG;
+  // const activeOrg = orgs?.find((o) => o.id === activeMember?.organizationId);
+  // const orgSlug = (activeOrg as { slug?: string })?.slug;
+  // const isPublicOrg = !activeOrg || orgSlug === PUBLIC_ORG_SLUG;
 
-  const effectiveRole: NavRole = isPublicOrg
-    ? ((user?.role as NavRole | undefined) ?? "platform_student")
-    : ((activeMember?.role as NavRole | undefined) ?? "org_student");
+  // const effectiveRole: NavRole = isPublicOrg
+  //   ? ((user?.role as NavRole | undefined) ?? "platform_student")
+  //   : ((activeMember?.role as NavRole | undefined) ?? "org_student");
 
-  const navGroups = NAV[effectiveRole];
+  // const navGroups = NAV[effectiveRole];
 
   return (
     <Sidebar
@@ -251,7 +243,7 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
 
-      <SidebarContent>
+      {/* <SidebarContent>
         {Object.entries(navGroups).map(([groupLabel, items]) => (
           <SidebarGroup key={groupLabel}>
             <SidebarGroupLabel
@@ -308,11 +300,9 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
-      </SidebarContent>
+      </SidebarContent> */}
 
-      <SidebarFooter>
-        <OrgSwitcher />
-      </SidebarFooter>
+      <SidebarFooter>{/* <OrgSwitcher /> */}</SidebarFooter>
     </Sidebar>
   );
 }

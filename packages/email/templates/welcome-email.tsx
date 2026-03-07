@@ -2,6 +2,7 @@ import {
   Body,
   Container,
   Heading,
+  Link,
   Preview,
   Section,
   Text,
@@ -14,9 +15,13 @@ import { colors, EmailThemeProvider } from "../_components/theme";
 
 interface WelcomeEmailProps {
   name: string;
+  unsubscribeUrl: string;
 }
 
-export function WelcomeEmail({ name = "there" }: WelcomeEmailProps) {
+export function WelcomeEmail({
+  name = "there",
+  unsubscribeUrl = "https://example.com/unsubscribe",
+}: WelcomeEmailProps) {
   const firstName = name ? name.split(" ").at(0) : "";
   const previewText = `${firstName ? `Hi ${firstName}, welcome` : "Welcome"} to Sycom LMS — built for aspiring cybersecurity professionals like you.`;
 
@@ -75,6 +80,13 @@ export function WelcomeEmail({ name = "there" }: WelcomeEmailProps) {
           <Section className="mt-8 mb-8 text-center">
             <Button href={`${baseUrl}/dashboard`}>Get started</Button>
           </Section>
+
+          <Text className="text-xs leading-6" style={{ color: colors.muted }}>
+            This welcome note is occasional product and onboarding email. If you
+            would rather not get emails like this,{" "}
+            <Link href={unsubscribeUrl}>click here to unsubscribe</Link>.
+          </Text>
+
           <br />
 
           <Footer />
@@ -87,4 +99,5 @@ export function WelcomeEmail({ name = "there" }: WelcomeEmailProps) {
 export default WelcomeEmail;
 WelcomeEmail.PreviewProps = {
   name: "Jane Smith",
+  unsubscribeUrl: "https://example.com/unsubscribe?token=example",
 } as WelcomeEmailProps;

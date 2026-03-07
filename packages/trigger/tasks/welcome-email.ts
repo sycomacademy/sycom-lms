@@ -2,6 +2,10 @@ import { logger, schemaTask, wait } from "@trigger.dev/sdk";
 import { render } from "@/packages/email/render";
 import { sendEmail } from "@/packages/email/resend";
 import { WelcomeEmail } from "@/packages/email/templates/welcome-email";
+import {
+  createUnsubscribeToken,
+  getUnsubscribeUrl,
+} from "@/packages/email/unsubscribe";
 import { WelcomeEmailPayload } from "../schema";
 
 export const welcomeEmailTask = schemaTask({
@@ -17,12 +21,24 @@ export const welcomeEmailTask = schemaTask({
   run: async (payload) => {
     await wait.for({ minutes: 1 });
 
-    const html = await render(WelcomeEmail({ name: payload.name }));
+    const unsubscribeToken = createUnsubscribeToken({
+      email: payload.email,
+      userId: payload.userId,
+    });
+    const unsubscribeUrl = getUnsubscribeUrl(unsubscribeToken);
+
+    const html = await render(
+      WelcomeEmail({ name: payload.name, unsubscribeUrl })
+    );
 
     const { error, data } = await sendEmail({
       to: payload.email,
       subject: "Welcome to Sycom LMS 🎉",
       from: "Abdul <abdul@learn.sycomsolutions.com>",
+      headers: {
+        "List-Unsubscribe": `<${unsubscribeUrl}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
       replyTo: "a.shehu@sycomsolutions.com",
       html,
     });

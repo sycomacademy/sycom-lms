@@ -66,6 +66,7 @@ export type UpdateUserInput = z.infer<typeof updateUserSchema>;
 export const profileSettingsSchema = z.object({
   useDeviceTimezone: z.boolean().optional().default(true),
   enableFacehash: z.boolean().optional().default(true),
+  marketingEmails: z.boolean().optional().default(true),
 });
 export type ProfileSettingsInput = z.infer<typeof profileSettingsSchema>;
 
