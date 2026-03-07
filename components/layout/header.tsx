@@ -7,9 +7,8 @@ import { HeaderAuth } from "./header-auth";
 
 const navLinks: { href: Route; label: string }[] = [
   { href: "/#courses" as Route, label: "Courses" },
-  { href: "/#features" as Route, label: "Features" },
+  { href: "/#business" as Route, label: "Business" },
   { href: "/blog" as Route, label: "Blog" },
-  { href: "/#faq" as Route, label: "FAQ" },
 ];
 
 export async function Header() {

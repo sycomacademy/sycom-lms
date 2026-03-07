@@ -1,4 +1,12 @@
-import { MailIcon, MapPinIcon, PhoneIcon } from "lucide-react";
+import {
+  FacebookIcon,
+  InstagramIcon,
+  MailIcon,
+  MapPinIcon,
+  PhoneIcon,
+  TwitterIcon,
+  YoutubeIcon,
+} from "lucide-react";
 import type { Route } from "next";
 import { Link } from "@/components/layout/foresight-link";
 
@@ -29,6 +37,29 @@ const recentPosts = [
   },
 ];
 
+const socialLinks = [
+  {
+    href: "https://x.com/sycomsolutions",
+    label: "Twitter",
+    icon: TwitterIcon,
+  },
+  {
+    href: "https://www.youtube.com/@sycomacademy",
+    label: "YouTube",
+    icon: YoutubeIcon,
+  },
+  {
+    href: "https://www.instagram.com/sycomsolutions",
+    label: "Instagram",
+    icon: InstagramIcon,
+  },
+  {
+    href: "https://www.facebook.com/sycomsolutions",
+    label: "Facebook",
+    icon: FacebookIcon,
+  },
+];
+
 export function Footer() {
   return (
     <footer className="relative w-full overflow-hidden bg-primary">
@@ -36,12 +67,11 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 lg:gap-12">
           <div className="flex flex-col gap-4">
             <h3 className="font-sans font-semibold text-lg text-primary-foreground">
-              About Sycom Academy
+              Sycom Academy
             </h3>
             <p className="font-sans text-primary-foreground/80 text-sm leading-relaxed">
-              We are dedicated to providing unparalleled education and training
-              to prepare individuals for the challenges and opportunities in the
-              rapidly evolving field of cybersecurity.
+              Industry-leading cybersecurity training built by Sycom Solutions.
+              13+ years of protecting organizations.
             </p>
           </div>
 
@@ -125,17 +155,10 @@ export function Footer() {
           </p>
           <div className="flex items-center gap-4">
             <ModeSwitcher />
-            <span className="font-sans text-muted-foreground text-sm">
-              Call Center:
-            </span>
-            <a
-              className="font-sans text-muted-foreground text-sm transition-colors hover:text-foreground"
-              href="tel:+441133280244"
-            >
-              +44-113-328-0244
-            </a>
+            <span className="font-sans text-muted-foreground text-sm">.</span>
+
             <div className="flex items-center gap-2">
-              {/* {socialLinks.map((item) => (
+              {socialLinks.map((item) => (
                 <a
                   aria-label={item.label}
                   className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-muted-foreground/10 hover:text-foreground"
@@ -146,7 +169,7 @@ export function Footer() {
                 >
                   <item.icon className="size-4" />
                 </a>
-              ))} */}
+              ))}
             </div>
           </div>
         </div>

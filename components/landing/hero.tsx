@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { Link } from "@/components/layout/foresight-link";
 import { Button } from "@/components/ui/button";
+import { Badge } from "../ui/badge";
 
 const terminalLines = [
   { prefix: "$", text: "nmap -sV --script vuln target.local", delay: 0 },
@@ -45,7 +46,7 @@ function TerminalAnimation() {
   }, []);
 
   return (
-    <div className="relative overflow-hidden border border-white/10 bg-[oklch(0.08_0.005_285.823)]">
+    <div className="relative overflow-hidden border-2 border-border bg-[oklch(0.08_0.005_285.823)]">
       <div className="flex items-center gap-2 border-white/5 border-b px-4 py-2.5">
         <div className="size-2.5 rounded-full bg-red-500/60" />
         <div className="size-2.5 rounded-full bg-yellow-500/60" />
@@ -80,28 +81,7 @@ function TerminalAnimation() {
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen overflow-hidden bg-[oklch(0.1_0.005_285.823)]">
-      {/* Grid background */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage: `
-            linear-gradient(oklch(0.623 0.214 259.815 / 0.04) 1px, transparent 1px),
-            linear-gradient(90deg, oklch(0.623 0.214 259.815 / 0.04) 1px, transparent 1px)
-          `,
-          backgroundSize: "64px 64px",
-        }}
-      />
-
-      {/* Radial gradient overlay */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 60% 50% at 50% 50%, oklch(0.623 0.214 259.815 / 0.08), transparent)",
-        }}
-      />
-
+    <section className="relative min-h-screen overflow-hidden">
       <div className="relative mx-auto grid min-h-screen max-w-7xl items-center gap-12 px-6 pt-24 pb-16 lg:grid-cols-2 lg:gap-16 lg:pt-0">
         {/* Left column */}
         <div className="flex flex-col items-start">
@@ -110,22 +90,22 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="mb-6 inline-flex items-center gap-2 border border-brand/20 bg-brand/5 px-3 py-1.5">
-              <Terminal className="size-3.5 text-brand" />
-              <span className="font-mono text-brand text-xs tracking-wide">
+            <Badge className="p-4" variant={"outline"}>
+              <Terminal className="size-3.5 text-primary" />
+              <span className="font-mono text-primary text-xs tracking-wide">
                 HANDS-ON CYBER TRAINING
               </span>
-            </div>
+            </Badge>
           </motion.div>
 
           <motion.h1
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 font-bold text-4xl text-white leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl"
+            className="mb-6 font-bold text-4xl leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl"
             initial={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
             Master the art of{" "}
-            <span className="relative inline-block text-brand">
+            <span className="relative inline-block">
               cyber defense
               <svg
                 aria-hidden="true"
@@ -146,7 +126,7 @@ export function Hero() {
 
           <motion.p
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8 max-w-lg text-lg text-white/50 leading-relaxed"
+            className="mb-8 max-w-lg text-lg leading-relaxed"
             initial={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
@@ -162,7 +142,6 @@ export function Hero() {
             transition={{ duration: 0.5, delay: 0.3 }}
           >
             <Button
-              className="bg-brand text-white hover:bg-brand/80"
               nativeButton={false}
               render={<Link href="/sign-up" />}
               size="lg"
@@ -171,16 +150,12 @@ export function Hero() {
               <ArrowRight className="ml-1 size-4" data-icon="inline-end" />
             </Button>
             <Button
-              className="border-white/10 text-white hover:border-white/20 hover:bg-white/5"
               nativeButton={false}
-              render={
-                // biome-ignore lint/a11y/useAnchorContent: Base UI render prop injects children
-                <a aria-label="Explore Platform" href="#features" />
-              }
+              render={<Link href="/#courses" />}
               size="lg"
               variant="outline"
             >
-              Explore Platform
+              Explore Courses
             </Button>
           </motion.div>
 
@@ -196,10 +171,10 @@ export function Hero() {
               { value: "13+", label: "Years Experience" },
             ].map((stat) => (
               <div className="flex flex-col" key={stat.label}>
-                <span className="font-bold font-mono text-brand text-xl">
+                <span className="font-bold font-mono text-primary text-xl">
                   {stat.value}
                 </span>
-                <span className="text-white/40 text-xs">{stat.label}</span>
+                <span className="text-xs">{stat.label}</span>
               </div>
             ))}
           </motion.div>
@@ -221,7 +196,7 @@ export function Hero() {
           {/* Floating badge */}
           <motion.div
             animate={{ opacity: 1, x: 0 }}
-            className="absolute -right-4 -bottom-4 border border-white/10 bg-[oklch(0.12_0.005_285.823)] px-4 py-3 sm:right-4 sm:-bottom-6"
+            className="absolute -right-4 -bottom-4 border border-muted bg-[oklch(0.12_0.005_285.823)] px-4 py-3 sm:right-4 sm:-bottom-6"
             initial={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.5, delay: 1.2 }}
           >
