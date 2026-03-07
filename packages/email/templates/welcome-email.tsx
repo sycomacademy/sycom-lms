@@ -1,53 +1,88 @@
-import { Text } from "@react-email/components";
+import {
+  Body,
+  Container,
+  Heading,
+  Preview,
+  Section,
+  Text,
+} from "@react-email/components";
+import { getWebsiteUrl } from "@/packages/env/utils";
 import { Button } from "../_components/button";
-import { EmailLayout } from "../_components/layout";
+import { Footer } from "../_components/footer";
+import { Logo } from "../_components/logo";
+import { colors, EmailThemeProvider } from "../_components/theme";
 
 interface WelcomeEmailProps {
   name: string;
 }
 
 export function WelcomeEmail({ name = "there" }: WelcomeEmailProps) {
+  const firstName = name ? name.split(" ").at(0) : "";
+  const previewText = `${firstName ? `Hi ${firstName}, welcome` : "Welcome"} to Sycom LMS — built for aspiring cybersecurity professionals like you.`;
+
+  const baseUrl = getWebsiteUrl();
+
   return (
-    <EmailLayout preview="Welcome to Sycom LMS — you're all set!">
-      <Text style={heading}>Welcome aboard 👋</Text>
+    <EmailThemeProvider preview={<Preview>{previewText}</Preview>}>
+      <Body
+        className="mx-auto my-auto font-sans"
+        style={{ backgroundColor: colors.surface, color: colors.foreground }}
+      >
+        <Container
+          className="mx-auto my-10 max-w-xl border border-solid p-5"
+          style={{
+            borderColor: colors.border,
+            backgroundColor: colors.background,
+          }}
+        >
+          <Logo />
 
-      <Text style={paragraph}>Hi {name},</Text>
+          <Heading
+            className="mx-0 my-8 p-0 text-center font-semibold text-xl"
+            style={{ color: colors.foreground }}
+          >
+            Welcome to Sycom LMS
+          </Heading>
 
-      <Text style={paragraph}>
-        Your email is verified and your Sycom LMS account is ready. Start
-        exploring your courses, labs, and learning paths.
-      </Text>
+          <br />
 
-      <Button href="https://lms.sycom.io/dashboard">Go to dashboard</Button>
+          <span
+            className="font-medium text-sm"
+            style={{ color: colors.foreground }}
+          >
+            {firstName ? `Hi ${firstName},` : "Hello,"}
+          </span>
 
-      <Text style={muted}>
-        If you have any questions, reply to this email — we&apos;re happy to
-        help.
-      </Text>
-    </EmailLayout>
+          <Text
+            className="text-sm leading-6"
+            style={{ color: colors.foreground }}
+          >
+            I'm Abdul, the CEO of Sycom Solutions.
+            <br />
+            <br />
+            We built Sycom LMS after years of training security teams, tired of
+            platforms that teach theory but skip the hands-on work. If that
+            sounds familiar, you're in the right place.
+            <br />
+            <br />
+            If you have any questions, please feel free to reach out to me. I
+            read and reply to every email.
+            <br />
+            <br />
+            Cheers, Abdul
+          </Text>
+
+          <Section className="mt-8 mb-8 text-center">
+            <Button href={`${baseUrl}/dashboard`}>Get started</Button>
+          </Section>
+          <br />
+
+          <Footer />
+        </Container>
+      </Body>
+    </EmailThemeProvider>
   );
 }
-
-const heading: React.CSSProperties = {
-  fontSize: "18px",
-  fontWeight: 600,
-  color: "#1a1a1a",
-  margin: "0 0 16px",
-};
-
-const paragraph: React.CSSProperties = {
-  fontSize: "14px",
-  lineHeight: "1.6",
-  color: "#333333",
-  margin: "0 0 16px",
-};
-
-const muted: React.CSSProperties = {
-  fontSize: "12px",
-  lineHeight: "1.5",
-  color: "#8c8c8c",
-  margin: "24px 0 0",
-};
 
 export default WelcomeEmail;
 WelcomeEmail.PreviewProps = {

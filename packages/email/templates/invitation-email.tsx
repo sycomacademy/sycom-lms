@@ -1,6 +1,15 @@
-import { Text } from "@react-email/components";
+import {
+  Body,
+  Container,
+  Heading,
+  Preview,
+  Section,
+  Text,
+} from "@react-email/components";
 import { Button } from "../_components/button";
-import { EmailLayout } from "../_components/layout";
+import { Footer } from "../_components/footer";
+import { Logo } from "../_components/logo";
+import { colors, EmailThemeProvider } from "../_components/theme";
 
 interface InvitationEmailProps {
   organizationName: string;
@@ -16,50 +25,63 @@ export function InvitationEmail({
   role = "member",
 }: InvitationEmailProps) {
   return (
-    <EmailLayout
-      preview={`You've been invited to join ${organizationName} on Sycom LMS`}
+    <EmailThemeProvider
+      preview={
+        <Preview>
+          You've been invited to join {organizationName} on Sycom LMS
+        </Preview>
+      }
     >
-      <Text style={heading}>You&apos;re invited</Text>
+      <Body
+        className="mx-auto my-auto font-sans"
+        style={{ backgroundColor: colors.surface, color: colors.foreground }}
+      >
+        <Container
+          className="mx-auto my-10 max-w-xl border border-solid p-5"
+          style={{
+            borderColor: colors.border,
+            backgroundColor: colors.background,
+          }}
+        >
+          <Logo />
 
-      <Text style={paragraph}>
-        <strong>{inviterName}</strong> has invited you to join{" "}
-        <strong>{organizationName}</strong> as a {role} on Sycom LMS.
-      </Text>
+          <Heading
+            className="mx-0 my-8 p-0 text-center font-semibold text-xl"
+            style={{ color: colors.foreground }}
+          >
+            You're invited
+          </Heading>
 
-      <Text style={paragraph}>
-        Click the button below to accept the invitation and get started.
-      </Text>
+          <Text
+            className="text-sm leading-6"
+            style={{ color: colors.foreground }}
+          >
+            <strong>{inviterName}</strong> has invited you to join{" "}
+            <strong>{organizationName}</strong> as a {role} on Sycom LMS.
+          </Text>
 
-      <Button href={inviteUrl}>Accept invitation</Button>
+          <Text
+            className="text-sm leading-6"
+            style={{ color: colors.foreground }}
+          >
+            Click the button below to accept the invitation and get started.
+          </Text>
 
-      <Text style={muted}>
-        If you weren&apos;t expecting this invitation, you can safely ignore
-        this email. The invitation will expire in 48 hours.
-      </Text>
-    </EmailLayout>
+          <Section className="mt-8 mb-8 text-center">
+            <Button href={inviteUrl}>Accept invitation</Button>
+          </Section>
+
+          <Text className="text-xs" style={{ color: colors.muted }}>
+            If you weren't expecting this invitation, you can safely ignore this
+            email. The invitation will expire in 48 hours.
+          </Text>
+
+          <Footer />
+        </Container>
+      </Body>
+    </EmailThemeProvider>
   );
 }
-
-const heading: React.CSSProperties = {
-  fontSize: "18px",
-  fontWeight: 600,
-  color: "#1a1a1a",
-  margin: "0 0 16px",
-};
-
-const paragraph: React.CSSProperties = {
-  fontSize: "14px",
-  lineHeight: "1.6",
-  color: "#333333",
-  margin: "0 0 16px",
-};
-
-const muted: React.CSSProperties = {
-  fontSize: "12px",
-  lineHeight: "1.5",
-  color: "#8c8c8c",
-  margin: "24px 0 0",
-};
 
 export default InvitationEmail;
 InvitationEmail.PreviewProps = {

@@ -15,13 +15,21 @@ export async function sendEmail({
   subject,
   html,
   from = DEFAULT_FROM,
+  replyTo,
 }: {
   to: string;
   subject: string;
   html: string;
   from?: string;
+  replyTo?: string | string[];
 }) {
-  const response = await resend.emails.send({ from, to, subject, html });
+  const response = await resend.emails.send({
+    from,
+    to,
+    subject,
+    html,
+    replyTo,
+  });
   if (response.error) {
     emailLogger.error("Error sending email", {
       subject,

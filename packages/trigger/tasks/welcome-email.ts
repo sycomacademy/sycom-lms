@@ -22,6 +22,8 @@ export const welcomeEmailTask = schemaTask({
     const { error, data } = await sendEmail({
       to: payload.email,
       subject: "Welcome to Sycom LMS 🎉",
+      from: "Abdul <abdul@learn.sycomsolutions.com>",
+      replyTo: "a.shehu@sycomsolutions.com",
       html,
     });
     if (error) {

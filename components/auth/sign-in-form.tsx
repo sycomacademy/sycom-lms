@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "@/components/layout/foresight-link";
 import { Button } from "@/components/ui/button";
@@ -28,37 +28,6 @@ import { OAuthButtons } from "./oauth-buttons";
 export function SignInForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-
-  useEffect(() => {
-    if (
-      typeof PublicKeyCredential !== "undefined" &&
-      "isConditionalMediationAvailable" in PublicKeyCredential &&
-      typeof PublicKeyCredential.isConditionalMediationAvailable === "function"
-    ) {
-      PublicKeyCredential.isConditionalMediationAvailable()
-        .then((available) => {
-          if (available) {
-            return authClient.signIn.passkey({
-              autoFill: true,
-              fetchOptions: {
-                onSuccess() {
-                  track({ event: analyticsEvents.passkeySignInSuccess });
-                  toastManager.add({
-                    description: "Signed in successfully",
-                    title: "Signed in",
-                    type: "success",
-                  });
-                  router.push("/dashboard");
-                },
-              },
-            });
-          }
-        })
-        .catch(() => {
-          /* Conditional UI unavailable or cancelled */
-        });
-    }
-  }, [router]);
 
   const form = useForm<SignInInput>({
     resolver: zodResolver(signInSchema),
