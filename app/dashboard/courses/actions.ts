@@ -36,19 +36,19 @@ export async function persistCourseThumbnail(
     bytes: result.bytes,
     width: result.width,
     height: result.height,
-    ownerId: courseId,
-    ownerType: "course",
+    entityId: courseId,
+    entityType: "course",
     uploadedBy: session?.user?.id ?? undefined,
   });
 }
 
 /**
  * Get signed upload params for lesson media (images, video, audio, files).
- * Uses lessonId for folder organization; for drafts use courseId as ownerId.
+ * Uses lessonId for folder organization; for drafts use courseId as entityId.
  */
-export async function getLessonMediaSignedParams(ownerId: string) {
+export async function getLessonMediaSignedParams(entityId: string) {
   await instructorGuard();
-  return signUploadParams(COURSE_CONTENT_FOLDER, ownerId);
+  return signUploadParams(COURSE_CONTENT_FOLDER, entityId);
 }
 
 /**
@@ -69,8 +69,8 @@ export async function persistLessonMedia(
     bytes: result.bytes,
     width: result.width,
     height: result.height,
-    ownerId: lessonId,
-    ownerType: "lesson",
+    entityId: lessonId,
+    entityType: "lesson",
     uploadedBy: session?.user?.id ?? undefined,
   });
 }

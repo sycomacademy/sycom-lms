@@ -71,6 +71,13 @@
       "when": 1772835462953,
       "tag": "0009_enrollment_scoped_lesson_completion",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1772922071127,
+      "tag": "0010_storage-entity-rename",
+      "breakpoints": true
     }
   ]
 }

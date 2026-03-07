@@ -38,8 +38,8 @@ export const feedbackRouter = router({
           bytes: uploadResult.bytes,
           width: uploadResult.width,
           height: uploadResult.height,
-          ownerId: ctx.session.user.id,
-          ownerType: "report",
+          entityId: ctx.session.user.id,
+          entityType: "report",
           uploadedBy: ctx.session.user.id,
         });
 

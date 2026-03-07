@@ -24,18 +24,18 @@ export interface SignedUploadParams {
 
 export function buildPublicId(
   folder: StorageFolder,
-  ownerId: string,
+  entityId: string,
   fileId = crypto.randomUUID()
 ): string {
-  return `${CLOUD_ROOT}/${folder}/${ownerId}/${fileId}`;
+  return `${CLOUD_ROOT}/${folder}/${entityId}/${fileId}`;
 }
 
 export function signUploadParams(
   folder: StorageFolder,
-  ownerId: string
+  entityId: string
 ): SignedUploadParams {
-  const publicId = buildPublicId(folder, ownerId);
-  const assetFolder = `${CLOUD_ROOT}/${folder}/${ownerId}`;
+  const publicId = buildPublicId(folder, entityId);
+  const assetFolder = `${CLOUD_ROOT}/${folder}/${entityId}`;
   const timestamp = Math.round(Date.now() / 1000);
   const signature = cld.utils.api_sign_request(
     { asset_folder: assetFolder, public_id: publicId, timestamp },
@@ -84,7 +84,7 @@ export async function getSignedUrl(
 export async function uploadBase64(
   base64Data: string,
   folder: StorageFolder,
-  ownerId: string
+  entityId: string
 ): Promise<{
   publicId: string;
   secureUrl: string;
@@ -96,9 +96,9 @@ export async function uploadBase64(
   height: number;
 }> {
   const result = await cld.uploader.upload(base64Data, {
-    public_id: buildPublicId(folder, ownerId),
+    public_id: buildPublicId(folder, entityId),
     resource_type: "auto",
-    folder: `${CLOUD_ROOT}/${folder}/${ownerId}`,
+    folder: `${CLOUD_ROOT}/${folder}/${entityId}`,
   });
 
   const resourceType = mapCloudinaryResourceType(result.resource_type);
@@ -115,9 +115,7 @@ export async function uploadBase64(
   };
 }
 
-function mapCloudinaryResourceType(
-  type: string
-): StorageResourceType {
+function mapCloudinaryResourceType(type: string): StorageResourceType {
   switch (type) {
     case "image":
       return "image";

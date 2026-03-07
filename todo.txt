@@ -1,5 +1,5 @@
 [ ] move course chema int schema in utils
-[ ] migrate to new animated icons
+[x] migrate to new animated icons
 [ ] migrate to cloudinary cdn media
 [ ] blog post schema & update course schema
 [ ] sycom logos, seo and og images and metadata (/appletouchicon.png 404 /appletouchiconprecomposed.png 404 )
@@ -11,6 +11,4 @@
 [ ] plan to clear orphaned images storage
 [ ] fix editor to be more simplified
 [ ] fix oauth error linking
-
-
 [x] email design

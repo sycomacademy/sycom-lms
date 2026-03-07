@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  storageEntityTypeEnum,
   storageFolderEnum,
   storageResourceTypeEnum,
 } from "../db/schema/storage";
@@ -122,17 +123,55 @@ export const submitReportSchema = z.object({
 });
 export type SubmitReportInput = z.infer<typeof submitReportSchema>;
 
+export const submitReportFormSchema = submitReportSchema
+  .omit({ imageBase64: true, imageMimeType: true })
+  .extend({
+    screenshot: z.instanceof(File).nullable().optional(),
+  });
+export type SubmitReportFormInput = z.infer<typeof submitReportFormSchema>;
+
+export const AVATAR_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+] as const;
+export const avatarMimeTypeSchema = z.enum(AVATAR_MIME_TYPES);
+export const avatarAccept = {
+  "image/*": [".jpg", ".jpeg", ".png", ".webp"],
+} as const;
+export const MAX_AVATAR_SIZE = 1024 * 1024 * 4;
+
+export const avatarFormSchema = z.object({
+  avatar: z
+    .instanceof(File)
+    .refine(
+      (file) =>
+        AVATAR_MIME_TYPES.includes(
+          file.type as (typeof AVATAR_MIME_TYPES)[number]
+        ),
+      {
+        message: "Please upload a JPEG, PNG, or WebP image",
+      }
+    )
+    .refine((file) => file.size <= MAX_AVATAR_SIZE, {
+      message: "Maximum file size is 4MB",
+    })
+    .nullable(),
+});
+export type AvatarFormInput = z.infer<typeof avatarFormSchema>;
+
 /**
  * Storage schema.
  */
 export const storageFolderSchema = z.enum(storageFolderEnum.enumValues);
+export const storageEntityTypeSchema = z.enum(storageEntityTypeEnum.enumValues);
 export const storageResourceTypeSchema = z.enum(
   storageResourceTypeEnum.enumValues
 );
 
 export const signUploadSchema = z.object({
   folder: storageFolderSchema,
-  ownerId: z.string().min(1),
+  entityId: z.string().min(1),
 });
 
 export const saveAssetSchema = z.object({
@@ -144,8 +183,8 @@ export const saveAssetSchema = z.object({
   bytes: z.number().int().nonnegative().optional(),
   width: z.number().int().nonnegative().optional(),
   height: z.number().int().nonnegative().optional(),
-  ownerId: z.string().min(1),
-  ownerType: z.string().min(1),
+  entityId: z.string().min(1),
+  entityType: storageEntityTypeSchema,
 });
 
 export const signedUrlSchema = z.object({

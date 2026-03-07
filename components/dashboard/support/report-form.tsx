@@ -3,7 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { FileUploader } from "@/components/elements/file-uploader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,28 +20,11 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { toastManager } from "@/components/ui/toast";
 import { useTRPC } from "@/packages/trpc/client";
-
-const reportFormSchema = z.object({
-  type: z.enum(["bug", "feature", "complaint", "other"]),
-  subject: z
-    .string()
-    .min(1, "Subject is required")
-    .max(200, "Subject must be less than 200 characters"),
-  description: z
-    .string()
-    .min(1, "Description is required")
-    .max(2000, "Description must be less than 2000 characters"),
-  screenshot: z.custom<File>().nullable().optional(),
-});
-
-type ReportFormInput = z.infer<typeof reportFormSchema>;
-
-const REPORT_TYPES = [
-  { value: "bug", label: "Bug Report" },
-  { value: "feature", label: "Feature Request" },
-  { value: "complaint", label: "Complaint" },
-  { value: "other", label: "Other" },
-] as const;
+import {
+  REPORT_TYPE_OPTIONS,
+  type SubmitReportFormInput,
+  submitReportFormSchema,
+} from "@/packages/utils/schema";
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -55,41 +37,23 @@ function fileToBase64(file: File): Promise<string> {
 
 export function ReportForm() {
   const trpc = useTRPC();
+  const submitReportMutation = useMutation(
+    trpc.feedback.submitReport.mutationOptions()
+  );
 
-  const form = useForm<ReportFormInput>({
-    resolver: zodResolver(reportFormSchema),
+  const form = useForm<SubmitReportFormInput>({
+    resolver: zodResolver(submitReportFormSchema),
     defaultValues: {
-      type: "bug",
+      type: REPORT_TYPE_OPTIONS[0].value,
       subject: "",
       description: "",
       screenshot: null,
     },
   });
 
-  const submitMutation = useMutation(
-    trpc.feedback.submitReport.mutationOptions({
-      onSuccess: () => {
-        toastManager.add({
-          type: "success",
-          title: "Report submitted",
-          description: "Your report has been submitted successfully.",
-        });
-        form.reset();
-      },
-      onError: (error) => {
-        toastManager.add({
-          type: "error",
-          title: "Failed to submit report",
-          description:
-            error.message ?? "An unexpected error occurred. Please try again.",
-        });
-      },
-    })
-  );
-
-  const onSubmit = async (data: ReportFormInput) => {
-    let imageBase64: string | undefined;
-    let imageMimeType: string | undefined;
+  const onSubmit = async (data: SubmitReportFormInput) => {
+    let imageBase64: string | null | undefined;
+    let imageMimeType: string | null | undefined;
 
     if (data.screenshot) {
       try {
@@ -105,13 +69,31 @@ export function ReportForm() {
       }
     }
 
-    submitMutation.mutate({
-      type: data.type,
-      subject: data.subject,
-      description: data.description,
-      imageBase64,
-      imageMimeType,
-    });
+    try {
+      await submitReportMutation.mutateAsync({
+        type: data.type,
+        subject: data.subject,
+        description: data.description,
+        imageBase64,
+        imageMimeType,
+      });
+
+      toastManager.add({
+        type: "success",
+        title: "Report submitted",
+        description: "Your report has been submitted successfully.",
+      });
+      form.reset();
+    } catch (error) {
+      toastManager.add({
+        type: "error",
+        title: "Failed to submit report",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred. Please try again.",
+      });
+    }
   };
 
   return (
@@ -147,7 +129,7 @@ export function ReportForm() {
                             <SelectValue placeholder="Select a report type" />
                           </SelectTrigger>
                           <SelectContent>
-                            {REPORT_TYPES.map(({ value, label }) => (
+                            {REPORT_TYPE_OPTIONS.map(({ value, label }) => (
                               <SelectItem key={value} value={value}>
                                 {label}
                               </SelectItem>
@@ -209,9 +191,15 @@ export function ReportForm() {
                       <FormControl>
                         <FileUploader
                           accept={{
-                            "image/*": [".png", ".jpg", ".jpeg", ".gif", ".webp"],
+                            "image/*": [
+                              ".png",
+                              ".jpg",
+                              ".jpeg",
+                              ".gif",
+                              ".webp",
+                            ],
                           }}
-                          disabled={submitMutation.isPending}
+                          disabled={submitReportMutation.isPending}
                           maxFileCount={1}
                           maxSize={1024 * 1024 * 5}
                           onValueChange={(files) => {
@@ -227,19 +215,19 @@ export function ReportForm() {
 
               <div className="flex justify-end">
                 <Button
-                  disabled={submitMutation.isPending}
+                  disabled={submitReportMutation.isPending}
                   size="sm"
                   type="submit"
                 >
                   <span className="relative inline-flex items-center justify-center">
                     <span
                       className={
-                        submitMutation.isPending ? "invisible" : undefined
+                        submitReportMutation.isPending ? "invisible" : undefined
                       }
                     >
                       Submit Report
                     </span>
-                    {submitMutation.isPending && (
+                    {submitReportMutation.isPending && (
                       <Spinner className="absolute size-3" />
                     )}
                   </span>

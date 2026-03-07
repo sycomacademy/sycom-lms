@@ -1,6 +1,7 @@
 "use client";
 
 import { PencilIcon, Trash2Icon, UsersIcon } from "lucide-react";
+import type { Route } from "next";
 import Image from "next/image";
 import type { RouterOutputs } from "@/app/api/trpc/router";
 import { Link } from "@/components/layout/foresight-link";
@@ -50,7 +51,7 @@ export function CourseCard({
     <Card className="flex flex-col overflow-hidden pt-0" size="default">
       <Link
         className="outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        href={`/dashboard/courses/${course.id}/edit`}
+        href={`/dashboard/courses/${course.id}/edit` as Route}
       >
         <AspectRatio ratio={16 / 9}>
           {course.imageUrl ? (
@@ -89,7 +90,7 @@ export function CourseCard({
           </Badge>
         </div>
         <CardTitle className="line-clamp-1 font-semibold text-base">
-          <Link href={`/dashboard/courses/${course.id}/edit`}>
+          <Link href={`/dashboard/courses/${course.id}/edit` as Route}>
             {course.title}
           </Link>
         </CardTitle>
@@ -121,7 +122,9 @@ export function CourseCard({
         </Button>
         <Button
           nativeButton={false}
-          render={<Link href={`/dashboard/courses/${course.id}/edit`} />}
+          render={
+            <Link href={`/dashboard/courses/${course.id}/edit` as Route} />
+          }
           size="sm"
           variant="outline"
         >

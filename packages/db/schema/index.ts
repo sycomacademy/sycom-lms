@@ -60,6 +60,7 @@ import {
 import { profile, profileRelations } from "./profile";
 import {
   mediaAsset,
+  storageEntityTypeEnum,
   storageFolderEnum,
   storageResourceTypeEnum,
 } from "./storage";
@@ -107,6 +108,7 @@ const schema = {
 
   // storage
   mediaAsset,
+  storageEntityTypeEnum,
   storageFolderEnum,
   storageResourceTypeEnum,
 
