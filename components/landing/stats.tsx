@@ -45,7 +45,7 @@ function AnimatedNumber({ value }: { value: string }) {
 
 export function Stats() {
   return (
-    <section className="relative border-white/5 border-y bg-[oklch(0.1_0.005_285.823)] py-16">
+    <section className="relative border-border border-y bg-background py-16">
       <div className="mx-auto max-w-7xl px-6">
         <div className="grid grid-cols-2 gap-8 lg:grid-cols-4">
           {mockStats.map((stat, i) => (
@@ -57,13 +57,15 @@ export function Stats() {
               viewport={{ once: true }}
               whileInView={{ opacity: 1, y: 0 }}
             >
-              <p className="font-bold font-mono text-3xl text-brand sm:text-4xl">
+              <p className="font-bold font-mono text-3xl text-primary sm:text-4xl">
                 <AnimatedNumber value={stat.value} />
               </p>
-              <p className="mt-1 font-semibold text-sm text-white">
+              <p className="mt-1 font-semibold text-foreground text-sm">
                 {stat.label}
               </p>
-              <p className="mt-1 text-white/30 text-xs">{stat.description}</p>
+              <p className="mt-1 text-muted-foreground text-xs">
+                {stat.description}
+              </p>
             </motion.div>
           ))}
         </div>

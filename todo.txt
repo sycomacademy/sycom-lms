@@ -1,7 +1,7 @@
 - move course-schema int schema in utils
 - migrate to new animated icons
 - migrate to cloudinary cdn media
-
+- blog post schema
 - look into ratelimiting the trpc
 - email design
 - keyboard shortcut for app

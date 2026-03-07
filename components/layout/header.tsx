@@ -13,7 +13,7 @@ const navLinks: { href: Route; label: string }[] = [
 
 export async function Header() {
   const session = await getSession();
-  const isSignedIn = !!session?.user;
+  const isSignedIn = !!session;
   return (
     <header className="sticky top-0 z-50 w-full border-border border-b bg-background">
       <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-6 px-4 py-4 sm:px-8">
@@ -32,7 +32,7 @@ export async function Header() {
         <nav className="hidden flex-1 items-center justify-center gap-6 md:flex">
           {navLinks.map((item) => (
             <Link
-              className="font-sans text-primary text-sm transition-colors hover:text-primary/70"
+              className="font-sans text-primary text-sm transition-colors hover:text-primary/70 dark:text-primary-foreground dark:hover:text-primary/9p0"
               href={item.href}
               key={item.href}
             >

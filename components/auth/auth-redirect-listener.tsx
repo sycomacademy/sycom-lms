@@ -1,9 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
-import { identify } from "@/packages/analytics/client";
-import { useSession } from "@/packages/auth/auth-client";
+import { useEffect } from "react";
 import { listenToAuthEvents } from "@/packages/utils/auth-broadcast";
 import { createLoggerWithContext } from "@/packages/utils/logger";
 
@@ -23,11 +21,9 @@ const isRedirectEligiblePath = (pathname: string) => {
   );
 };
 
-export function AuthEventsProvider() {
+export function AuthRedirectListener() {
   const pathname = usePathname();
   const router = useRouter();
-  const { data: session } = useSession();
-  const lastIdentifiedUserEmail = useRef<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = listenToAuthEvents((message) => {
@@ -45,27 +41,6 @@ export function AuthEventsProvider() {
 
     return unsubscribe;
   }, [pathname, router]);
-
-  useEffect(() => {
-    const user = session?.user;
-
-    if (!user?.email) {
-      lastIdentifiedUserEmail.current = null;
-      return;
-    }
-
-    if (lastIdentifiedUserEmail.current === user.email) {
-      return;
-    }
-
-    identify(user.email, {
-      email: user.email,
-      name: user.name,
-      userId: user.id,
-    });
-    console.log("identified user", user.email);
-    lastIdentifiedUserEmail.current = user.email;
-  }, [session?.user]);
 
   return null;
 }

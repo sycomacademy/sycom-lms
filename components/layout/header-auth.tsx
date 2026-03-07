@@ -18,7 +18,7 @@ export function HeaderAuth({ isSignedIn }: { isSignedIn: boolean }) {
   return (
     <Button
       nativeButton={false}
-      render={<Link href="/dashboard">Go to Dashboard</Link>}
+      render={<Link href="/dashboard">Dashboard</Link>}
       variant="outline"
     />
   );

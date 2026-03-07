@@ -1,6 +1,12 @@
 "use client";
 
 import { motion } from "motion/react";
+import {
+  Marquee,
+  MarqueeContent,
+  MarqueeFade,
+  MarqueeItem,
+} from "@/components/landing/marquee";
 
 const certifications = [
   "CompTIA Security+",
@@ -15,58 +21,28 @@ const certifications = [
   "ISACA CISM",
 ];
 
-function MarqueeRow({
-  items,
-  direction = "left",
-}: {
-  items: string[];
-  direction?: "left" | "right";
-}) {
-  const doubled = [...items, ...items];
-
+function CertItem({ cert }: { cert: string }) {
   return (
-    <div className="relative overflow-hidden">
-      {/* Edge fades */}
-      <div className="pointer-events-none absolute top-0 bottom-0 left-0 z-10 w-24 bg-gradient-to-r from-[oklch(0.1_0.005_285.823)] to-transparent" />
-      <div className="pointer-events-none absolute top-0 right-0 bottom-0 z-10 w-24 bg-gradient-to-l from-[oklch(0.1_0.005_285.823)] to-transparent" />
-
-      <div
-        className="flex w-max gap-4"
-        style={{
-          animation: `marquee-${direction} 40s linear infinite`,
-        }}
-      >
-        {doubled.map((cert, i) => (
-          <div
-            className="flex shrink-0 items-center gap-3 border border-white/5 bg-white/[0.02] px-5 py-3 transition-colors hover:border-brand/20 hover:bg-brand/5"
-            key={`${cert}-${i}`}
-          >
-            <div className="flex size-6 items-center justify-center bg-brand/10 font-bold font-mono text-brand text-xs">
-              {cert
-                .split(" ")
-                .map((w) => w[0])
-                .join("")
-                .slice(0, 2)}
-            </div>
-            <span className="whitespace-nowrap font-medium text-sm text-white/60">
-              {cert}
-            </span>
-          </div>
-        ))}
+    <MarqueeItem className="mx-2">
+      <div className="flex items-center gap-3 border border-border bg-card px-5 py-3 transition-colors hover:border-primary/20 hover:bg-primary/5">
+        <div className="flex size-6 items-center justify-center bg-primary/10 font-bold font-mono text-primary text-xs">
+          {cert
+            .split(" ")
+            .map((w) => w[0])
+            .join("")
+            .slice(0, 2)}
+        </div>
+        <span className="whitespace-nowrap font-medium text-muted-foreground text-sm">
+          {cert}
+        </span>
       </div>
-    </div>
+    </MarqueeItem>
   );
 }
 
 export function Partners() {
-  const firstHalf = certifications.slice(0, 5);
-  const secondHalf = certifications.slice(5);
-
   return (
-    <section
-      className="relative bg-[oklch(0.1_0.005_285.823)] py-20"
-      id="certifications"
-    >
+    <section className="relative bg-background py-20" id="certifications">
       <div className="mx-auto mb-12 max-w-7xl px-6">
         <motion.div
           className="text-center"
@@ -75,30 +51,36 @@ export function Partners() {
           viewport={{ once: true }}
           whileInView={{ opacity: 1, y: 0 }}
         >
-          <span className="font-mono text-brand/60 text-xs uppercase tracking-widest">
+          <span className="font-mono text-primary/60 text-xs uppercase tracking-widest">
             Certification Paths
           </span>
-          <h2 className="mt-3 font-bold text-2xl text-white sm:text-3xl">
+          <h2 className="mt-3 font-bold text-2xl text-foreground sm:text-3xl">
             Industry-Recognized Credentials
           </h2>
         </motion.div>
       </div>
 
       <div className="space-y-4">
-        <MarqueeRow direction="left" items={firstHalf} />
-        <MarqueeRow direction="right" items={secondHalf} />
-      </div>
+        <Marquee>
+          <MarqueeFade side="left" />
+          <MarqueeContent direction="left" speed={30}>
+            {certifications.map((cert) => (
+              <CertItem cert={cert} key={cert} />
+            ))}
+          </MarqueeContent>
+          <MarqueeFade side="right" />
+        </Marquee>
 
-      <style>{`
-        @keyframes marquee-left {
-          from { transform: translateX(0); }
-          to { transform: translateX(-50%); }
-        }
-        @keyframes marquee-right {
-          from { transform: translateX(-50%); }
-          to { transform: translateX(0); }
-        }
-      `}</style>
+        <Marquee>
+          <MarqueeFade side="left" />
+          <MarqueeContent direction="right" speed={30}>
+            {certifications.map((cert) => (
+              <CertItem cert={cert} key={cert} />
+            ))}
+          </MarqueeContent>
+          <MarqueeFade side="right" />
+        </Marquee>
+      </div>
     </section>
   );
 }
