@@ -27,6 +27,7 @@
     "@kibo-ui": "https://www.kibo-ui.com/r/{name}.json",
     "@reui": "https://reui.io/r/{style}/{name}.json",
     "@react-bits": "https://reactbits.dev/r/{name}.json",
-    "@magicui": "https://magicui.design/r/{name}"
+    "@magicui": "https://magicui.design/r/{name}",
+    "@elements": "https://www.tryelements.dev/r/{name}.json"
   }
 }

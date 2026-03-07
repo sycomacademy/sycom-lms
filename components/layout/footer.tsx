@@ -1,15 +1,11 @@
-import {
-  FacebookIcon,
-  InstagramIcon,
-  MailIcon,
-  MapPinIcon,
-  PhoneIcon,
-  TwitterIcon,
-  YoutubeIcon,
-} from "lucide-react";
+import { MailIcon, MapPinIcon, PhoneIcon } from "lucide-react";
 import type { Route } from "next";
+import { DiscordLogo } from "@/components/icons/logos/discord";
+import { InstagramLogo } from "@/components/icons/logos/instagram";
+import { LinkedinLogo } from "@/components/icons/logos/linkedin";
+import { TwitterLogo } from "@/components/icons/logos/twitter";
 import { Link } from "@/components/layout/foresight-link";
-
+import { Separator } from "../ui/separator";
 import { ModeSwitcher } from "./mode-switcher";
 
 const popularCourses = [
@@ -38,27 +34,31 @@ const recentPosts = [
 ];
 
 const socialLinks = [
+  { href: "https://x.com/sycomsolutions", label: "Twitter" },
+  { href: "https://www.instagram.com/sycomsolutions", label: "Instagram" },
   {
-    href: "https://x.com/sycomsolutions",
-    label: "Twitter",
-    icon: TwitterIcon,
+    href: "https://www.linkedin.com/company/sycomsolutions",
+    label: "LinkedIn",
   },
-  {
-    href: "https://www.youtube.com/@sycomacademy",
-    label: "YouTube",
-    icon: YoutubeIcon,
-  },
-  {
-    href: "https://www.instagram.com/sycomsolutions",
-    label: "Instagram",
-    icon: InstagramIcon,
-  },
-  {
-    href: "https://www.facebook.com/sycomsolutions",
-    label: "Facebook",
-    icon: FacebookIcon,
-  },
+  { href: "https://discord.gg/sycomacademy", label: "Discord" },
 ];
+
+const iconClass = "size-4";
+
+function SocialIcon({ label }: { label: string }) {
+  switch (label) {
+    case "Twitter":
+      return <TwitterLogo className={iconClass} />;
+    case "Instagram":
+      return <InstagramLogo className={iconClass} />;
+    case "LinkedIn":
+      return <LinkedinLogo className={iconClass} colorScheme="grayscale" />;
+    case "Discord":
+      return <DiscordLogo className={iconClass} />;
+    default:
+      return null;
+  }
+}
 
 export function Footer() {
   return (
@@ -151,23 +151,25 @@ export function Footer() {
       <div className="w-full bg-muted">
         <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-4 px-4 py-4 sm:flex-row sm:px-8">
           <p className="font-sans text-muted-foreground text-sm">
-            © Copyright Sycom Solutions
+            {new Date().getFullYear()} © Copyright Sycom Solutions
           </p>
           <div className="flex items-center gap-4">
             <ModeSwitcher />
-            <span className="font-sans text-muted-foreground text-sm">.</span>
-
+            <Separator
+              className="h-4 w-px shrink-0 bg-muted-foreground/40"
+              orientation="vertical"
+            />
             <div className="flex items-center gap-2">
               {socialLinks.map((item) => (
                 <a
                   aria-label={item.label}
-                  className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-muted-foreground/10 hover:text-foreground"
+                  className="flex size-8 items-center justify-center bg-muted text-muted-foreground transition-colors hover:bg-muted-foreground/10 hover:text-foreground"
                   href={item.href}
                   key={item.href}
                   rel="noopener noreferrer"
                   target="_blank"
                 >
-                  <item.icon className="size-4" />
+                  <SocialIcon label={item.label} />
                 </a>
               ))}
             </div>

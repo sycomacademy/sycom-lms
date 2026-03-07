@@ -13,7 +13,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { mockBlogPosts } from "@/packages/utils/mock-data";
+import { mockBlogPosts } from "./mock-data";
 
 export function BlogPreview() {
   const posts = mockBlogPosts.slice(0, 3);

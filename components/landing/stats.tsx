@@ -2,10 +2,36 @@
 
 import { motion, useInView } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import { mockStats } from "@/packages/utils/mock-data";
 
 const NUMERIC_REGEX = /[^0-9.]/g;
 const NON_NUMERIC_REGEX = /[0-9.,]/g;
+
+const mockStats = [
+  {
+    id: "stat-1",
+    value: "15,000+",
+    label: "Active Learners",
+    description: "Professionals advancing their cybersecurity careers",
+  },
+  {
+    id: "stat-2",
+    value: "98%",
+    label: "Pass Rate",
+    description: "Certification exam pass rate for course completers",
+  },
+  {
+    id: "stat-3",
+    value: "200+",
+    label: "Lab Environments",
+    description: "Hands-on labs simulating real-world scenarios",
+  },
+  {
+    id: "stat-4",
+    value: "50+",
+    label: "Expert Courses",
+    description: "Covering every major cybersecurity domain",
+  },
+];
 
 function AnimatedNumber({ value }: { value: string }) {
   const ref = useRef<HTMLSpanElement>(null);

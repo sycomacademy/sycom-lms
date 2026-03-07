@@ -14,7 +14,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { mockCourses } from "@/packages/utils/mock-data";
+import { mockCourses } from "./mock-data";
 
 const difficultyColor = {
   beginner: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
