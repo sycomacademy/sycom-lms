@@ -197,3 +197,171 @@ export const signedUrlSchema = z.object({
     .default(300),
   download: z.boolean().default(false),
 });
+
+// ---------------------------------------------------------------------------
+// Course schemas
+// ---------------------------------------------------------------------------
+
+export const listCoursesSchema = z.object({
+  limit: z.number().min(1).max(100).default(10),
+  offset: z.number().min(0).default(0),
+  search: z.string().optional(),
+  sortBy: z
+    .enum(["title", "createdAt", "updatedAt", "status"])
+    .default("updatedAt"),
+  sortDirection: z.enum(["asc", "desc"]).default("desc"),
+  filterStatuses: z.array(z.enum(["draft", "published"])).optional(),
+  filterDifficulties: z
+    .array(z.enum(["beginner", "intermediate", "advanced", "expert"]))
+    .optional(),
+  filterCategoryIds: z.array(z.string()).optional(),
+});
+
+export const listLibrarySchema = z.object({
+  limit: z.number().min(1).max(100).default(12),
+  offset: z.number().min(0).default(0),
+  search: z.string().optional(),
+  sortBy: z.enum(["title", "createdAt", "updatedAt"]).default("updatedAt"),
+  sortDirection: z.enum(["asc", "desc"]).default("desc"),
+  filterDifficulties: z
+    .array(z.enum(["beginner", "intermediate", "advanced", "expert"]))
+    .optional(),
+});
+
+export const getEnrolledCourseSchema = z.object({
+  courseId: z.string(),
+});
+
+export const getEnrolledLessonSchema = z.object({
+  courseId: z.string(),
+  lessonId: z.string(),
+});
+
+export const markLessonCompleteSchema = z.object({
+  courseId: z.string(),
+  lessonId: z.string(),
+});
+
+export const createCourseSchema = z.object({
+  title: z.string().min(1, "Title is required").max(200),
+  description: z.string().max(2000).optional(),
+  summary: z.any().optional(),
+  slug: z
+    .string()
+    .min(1, "Slug is required")
+    .max(200)
+    .regex(
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      "Slug must be lowercase alphanumeric with hyphens"
+    ),
+  imageUrl: z.string().url().optional(),
+  difficulty: z
+    .enum(["beginner", "intermediate", "advanced", "expert"])
+    .default("beginner"),
+  estimatedDuration: z.number().int().positive().optional(),
+  status: z.enum(["draft", "published"]).default("draft"),
+  categoryIds: z.array(z.string()).optional(),
+});
+
+export const updateCourseSchema = z.object({
+  courseId: z.string(),
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(2000).optional(),
+  summary: z.any().optional(),
+  slug: z
+    .string()
+    .min(1)
+    .max(200)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+    .optional(),
+  imageUrl: z.string().url().nullish(),
+  difficulty: z
+    .enum(["beginner", "intermediate", "advanced", "expert"])
+    .optional(),
+  estimatedDuration: z.number().int().positive().nullish(),
+  status: z.enum(["draft", "published"]).optional(),
+  categoryIds: z.array(z.string()).optional(),
+});
+
+export const deleteCourseSchema = z.object({
+  courseId: z.string(),
+});
+
+export const createSectionSchema = z.object({
+  courseId: z.string(),
+  title: z.string().min(1, "Title is required").max(200),
+  description: z.string().max(1000).optional(),
+});
+
+export const updateSectionSchema = z.object({
+  sectionId: z.string(),
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(1000).optional(),
+  order: z.number().int().min(0).optional(),
+});
+
+export const deleteSectionSchema = z.object({
+  sectionId: z.string(),
+});
+
+export const createLessonSchema = z.object({
+  sectionId: z.string(),
+  title: z.string().min(1, "Title is required").max(200),
+  content: z.any().optional(),
+  type: z.enum(["text", "video", "quiz"]).default("text"),
+  isLocked: z.boolean().default(false),
+  estimatedDuration: z.number().int().positive().optional(),
+});
+
+export const updateLessonSchema = z.object({
+  lessonId: z.string(),
+  sectionId: z.string().optional(),
+  title: z.string().min(1).max(200).optional(),
+  content: z.any().optional(),
+  type: z.enum(["text", "video", "quiz"]).optional(),
+  order: z.number().int().min(0).optional(),
+  isLocked: z.boolean().optional(),
+  estimatedDuration: z.number().int().positive().nullish(),
+});
+
+export const deleteLessonSchema = z.object({
+  lessonId: z.string(),
+});
+
+export const reorderSectionsSchema = z.object({
+  courseId: z.string(),
+  sectionIds: z.array(z.string()),
+});
+
+export const reorderLessonsSchema = z.object({
+  sectionId: z.string(),
+  lessonIds: z.array(z.string()),
+});
+
+export const moveLessonSchema = z.object({
+  lessonId: z.string(),
+  targetSectionId: z.string(),
+  newOrder: z.number().int().min(0),
+});
+
+export const assignCourseToCohortSchema = z.object({
+  cohortId: z.string(),
+  courseId: z.string(),
+});
+
+export const unassignCourseFromCohortSchema = z.object({
+  cohortId: z.string(),
+  courseId: z.string(),
+});
+
+export const setSectionDueDateSchema = z.object({
+  cohortId: z.string(),
+  sectionId: z.string(),
+  dueDate: z.coerce.date(),
+});
+
+export const setLessonDueDateSchema = z.object({
+  cohortId: z.string(),
+  lessonId: z.string(),
+  dueDate: z.coerce.date(),
+});

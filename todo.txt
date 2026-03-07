@@ -1,4 +1,4 @@
-[ ] move course chema int schema in utils
+[x] move course chema int schema in utils
 [x] migrate to new animated icons
 [ ] migrate to cloudinary cdn media
 [ ] blog post schema & update course schema

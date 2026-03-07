@@ -54,7 +54,7 @@ import {
   updateCourseSchema,
   updateLessonSchema,
   updateSectionSchema,
-} from "@/packages/utils/course-schemas";
+} from "@/packages/utils/schema";
 import { protectedProcedure, publicProcedure, router, t } from "../init";
 import {
   extractCohortId,
