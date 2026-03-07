@@ -9,10 +9,13 @@ function renderHtml(title: string, message: string) {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600&display=swap" rel="stylesheet" />
     <style>
-      body { font-family: Arial, sans-serif; background: #f7f7f5; color: #111827; margin: 0; }
-      main { max-width: 32rem; margin: 10vh auto; background: #ffffff; padding: 2rem; border: 1px solid #e5e7eb; border-radius: 16px; }
-      h1 { font-size: 1.5rem; margin: 0 0 0.75rem; }
+      body { font-family: "Work Sans", sans-serif; background: #f7f7f5; color: #111827; margin: 0; }
+      main { max-width: 32rem; margin: 10vh auto; background: #ffffff; padding: 2rem; border: 1px solid #382e72; }
+      h1 { font-size: 1.5rem; margin: 0 0 0.75rem; font-weight: 600; }
       p { line-height: 1.6; margin: 0; }
     </style>
   </head>

@@ -292,7 +292,10 @@ export async function claimWelcomeEmailSend(
     ...(userRow.settings ?? {}),
   };
 
-  if (currentSettings.welcomeEmailSent) {
+  if (
+    currentSettings.welcomeEmailSent === true ||
+    currentSettings.marketingEmails === false
+  ) {
     return null;
   }
 

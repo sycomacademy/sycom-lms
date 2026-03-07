@@ -4,15 +4,19 @@ import type { Route } from "next";
 import { usePathname } from "next/navigation";
 import { Link } from "@/components/layout/foresight-link";
 import { Tabs, TabsList, TabsTab } from "@/components/ui/tabs";
+
 export interface SecondaryMenuItem {
   path: Route;
   label: string;
 }
 
-function getActivePath(pathname: string, items: SecondaryMenuItem[]): string {
-  const base = "/dashboard/settings";
+function getActivePath(
+  pathname: string,
+  base: Route,
+  items: SecondaryMenuItem[]
+): string {
   const active = items.find(({ path }) => {
-    const isBase = path === (base as Route);
+    const isBase = path === base;
     return isBase
       ? pathname === path
       : pathname === path || pathname.startsWith(`${path}/`);
@@ -20,23 +24,27 @@ function getActivePath(pathname: string, items: SecondaryMenuItem[]): string {
   return active?.path ?? pathname;
 }
 
-export function SecondaryMenu({ items }: { items: SecondaryMenuItem[] }) {
+export function SecondaryMenu({
+  label,
+  base,
+  items,
+}: {
+  label: string;
+  base: Route;
+  items: SecondaryMenuItem[];
+}) {
   const pathname = usePathname();
-  const activeValue = getActivePath(pathname, items);
+  const activeValue = getActivePath(pathname, base, items);
 
   return (
     <Tabs
-      aria-label="Account sections"
+      aria-label={label}
       className="-mx-4 border-border border-b pb-4 sm:mx-0"
       value={activeValue}
     >
-      <TabsList
-        className="h-auto min-h-10 scroll-pr-4 flex-nowrap gap-x-6 overflow-x-auto px-4 py-0 [-webkit-overflow-scrolling:touch] sm:px-0"
-        variant="underline"
-      >
+      <TabsList variant="underline">
         {items.map(({ path, label }) => (
           <TabsTab
-            className="shrink-0 py-2 data-active:hover:text-accent-foreground"
             key={path}
             nativeButton={false}
             render={<Link href={path} />}

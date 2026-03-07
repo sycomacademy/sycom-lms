@@ -125,10 +125,11 @@ function OAuthButton({
 }
 
 interface OAuthButtonsProps {
+  type: "sign-in" | "sign-up";
   callbackUrl?: string;
 }
 
-export function OAuthButtons({ callbackUrl }: OAuthButtonsProps) {
+export function OAuthButtons({ type, callbackUrl }: OAuthButtonsProps) {
   const router = useRouter();
   const [loadingProvider, setLoadingProvider] = useState<
     OAuthProvider | "passkey" | null
@@ -219,24 +220,26 @@ export function OAuthButtons({ callbackUrl }: OAuthButtonsProps) {
     >
       <AccordionItem className="border-none data-open:bg-transparent" value="0">
         <AccordionTrigger className="justify-center gap-2 hover:no-underline">
-          More ways to sign in
+          More ways to {type === "sign-in" ? "sign in" : "sign up"}
         </AccordionTrigger>
         <AccordionContent>
           <div className="space-y-3 pt-2">
-            <Button
-              className="w-full gap-3"
-              disabled={!!loadingProvider}
-              onClick={handlePasskeySignIn}
-              type="button"
-              variant="outline"
-            >
-              {loadingProvider === "passkey" ? (
-                <Loader2Icon className="h-5 w-5 animate-spin" />
-              ) : (
-                <FingerprintIcon className="h-5 w-5 shrink-0" />
-              )}
-              <span>Continue with passkey</span>
-            </Button>
+            {type === "sign-in" && (
+              <Button
+                className="w-full gap-3"
+                disabled={!!loadingProvider}
+                onClick={handlePasskeySignIn}
+                type="button"
+                variant="outline"
+              >
+                {loadingProvider === "passkey" ? (
+                  <Loader2Icon className="h-5 w-5 animate-spin" />
+                ) : (
+                  <FingerprintIcon className="h-5 w-5 shrink-0" />
+                )}
+                <span>Continue with passkey</span>
+              </Button>
+            )}
             {Object.values(providerConfig).map((provider) => (
               <OAuthButton
                 isLastUsed={lastMethod === provider.name}

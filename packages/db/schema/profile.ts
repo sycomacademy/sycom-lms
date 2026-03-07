@@ -26,7 +26,7 @@ export const profile = pgTable("profile", {
   settings: jsonb("settings")
     .$type<ProfileSettings>()
     .default(
-      sql`'{"useDeviceTimezone":true,"enableFacehash":true,"marketingEmails":true}'::jsonb`
+      sql`'{"useDeviceTimezone":true,"enableFacehash":true,"marketingEmails":true,"welcomeEmailSent":false}'::jsonb`
     ),
   createdAt,
   updatedAt,

@@ -251,7 +251,7 @@ export function SignUpForm() {
         </form>
       </Form>
 
-      <OAuthButtons />
+      <OAuthButtons type="sign-up" />
 
       <p className="text-center text-muted-foreground text-sm">
         Already have an account?{" "}
