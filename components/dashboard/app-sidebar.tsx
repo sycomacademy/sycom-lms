@@ -1,77 +1,66 @@
 "use client";
 
-import type { LucideIcon } from "lucide-react";
-import {
-  BookOpenIcon,
-  BuildingIcon,
-  GraduationCapIcon,
-  HeadphonesIcon,
-  LayoutDashboardIcon,
-  LibraryIcon,
-  SettingsIcon,
-  UsersIcon,
-} from "lucide-react";
+import type { Route } from "next";
 import { usePathname } from "next/navigation";
+import type { ComponentType } from "react";
+import { Blocks } from "@/components/icons/animated/blocks";
+import { Layers } from "@/components/icons/animated/layers";
+import { LayoutDashboard } from "@/components/icons/animated/layout-dashboard";
+import { MessageCircleQuestion } from "@/components/icons/animated/message-circle-question";
+import { Settings } from "@/components/icons/animated/settings";
+import { Users } from "@/components/icons/animated/users";
 import { Link } from "@/components/layout/foresight-link";
 import {
   Sidebar,
+  SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import type { UserRole } from "@/packages/db/schema/auth";
 import { useDelayedValue } from "@/packages/hooks/use-delayed-value";
 import { useIsMobile } from "@/packages/hooks/use-mobile";
 import { useUserQuery } from "@/packages/hooks/use-user";
-
-// import { useDashboardOrg } from "./dashboard-org-context";
-
-// import { OrgSwitcher } from "./org-switcher";
+import { cn } from "@/packages/utils/cn";
+import { capitalize } from "@/packages/utils/string";
 
 interface NavItem {
-  href: string;
+  href: Route;
   label: string;
-  icon: LucideIcon;
+  icon: ComponentType<{ size?: number; animateOnHover?: boolean }>;
 }
 
-// ── Shared item groups ─────────────────────────────────────────────────────
-
 const GENERAL: NavItem[] = [
-  { href: "/dashboard/support", label: "Support", icon: HeadphonesIcon },
-  { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
+  { href: "/dashboard/support", label: "Support", icon: MessageCircleQuestion },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
-
-// ── Nav config keyed by effective role ────────────────────────────────────
-
-type NavRole =
-  | "platform_admin"
-  | "content_creator"
-  | "platform_student"
-  | "org_owner"
-  | "org_admin"
-  | "org_teacher"
-  | "org_auditor"
-  | "org_student";
 
 /**
  * Groups displayed in the sidebar per effective role.
  * Keys become the section labels (capitalized with spaces).
  */
-const NAV: Record<NavRole, Record<string, NavItem[]>> = {
+const NAV: Record<UserRole, Record<string, NavItem[]>> = {
   // ── Platform roles ──────────────────────────────────────────────────────
   platform_admin: {
     Main: [
       {
         href: "/dashboard/admin",
         label: "Overview",
-        icon: LayoutDashboardIcon,
+        icon: LayoutDashboard,
       },
-      { href: "/dashboard/admin/users", label: "Users", icon: UsersIcon },
+      { href: "/dashboard/admin/users", label: "Users", icon: Users },
     ],
     courses: [
       {
         href: "/dashboard/courses",
         label: "All Courses",
-        icon: GraduationCapIcon,
+        icon: Layers,
       },
     ],
     general: GENERAL,
@@ -79,11 +68,11 @@ const NAV: Record<NavRole, Record<string, NavItem[]>> = {
 
   content_creator: {
     workspace: [
-      { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
+      { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
       {
         href: "/dashboard/courses",
         label: "My Courses",
-        icon: GraduationCapIcon,
+        icon: Layers,
       },
     ],
     general: GENERAL,
@@ -91,89 +80,12 @@ const NAV: Record<NavRole, Record<string, NavItem[]>> = {
 
   platform_student: {
     learning: [
-      { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
-      { href: "/dashboard/library", label: "Library", icon: LibraryIcon },
+      { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+      { href: "/dashboard/library", label: "Library", icon: Blocks },
       {
         href: "/dashboard/journey",
         label: "My Courses",
-        icon: BookOpenIcon,
-      },
-    ],
-    general: GENERAL,
-  },
-
-  // ── Org roles ────────────────────────────────────────────────────────────
-  org_owner: {
-    main: [
-      { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
-    ],
-    org: [
-      {
-        href: "/dashboard/org/people",
-        label: "Organization",
-        icon: BuildingIcon,
-      },
-    ],
-    general: GENERAL,
-  },
-
-  org_admin: {
-    main: [
-      { href: "/dashboard", label: "Overview", icon: LayoutDashboardIcon },
-    ],
-    org: [
-      {
-        href: "/dashboard/org/people",
-        label: "Organization",
-        icon: BuildingIcon,
-      },
-    ],
-    general: GENERAL,
-  },
-
-  org_teacher: {
-    teaching: [
-      {
-        href: "/dashboard/org/courses",
-        label: "My Courses",
-        icon: BookOpenIcon,
-      },
-      {
-        href: "/dashboard/org/cohorts",
-        label: "My Cohorts",
-        icon: BuildingIcon,
-      },
-    ],
-    general: GENERAL,
-  },
-
-  org_auditor: {
-    auditing: [
-      {
-        href: "/dashboard/org/courses",
-        label: "My Courses",
-        icon: BookOpenIcon,
-      },
-      {
-        href: "/dashboard/org/cohorts",
-        label: "My Cohorts",
-        icon: BuildingIcon,
-      },
-    ],
-    general: GENERAL,
-  },
-
-  org_student: {
-    learning: [
-      {
-        href: "/dashboard/org/courses",
-        label: "My Courses",
-        icon: BookOpenIcon,
-      },
-      {
-        href: "/dashboard/org/cohorts",
-        label: "My Cohorts",
-        icon: BuildingIcon,
+        icon: Layers,
       },
     ],
     general: GENERAL,
@@ -190,23 +102,6 @@ const menuButtonCollapseClass =
 const groupLabelCollapseClass =
   "group-data-[collapsible=icon]:mt-0 group-data-[collapsible=icon]:opacity-100";
 
-// ── Component ─────────────────────────────────────────────────────────────
-
-const PUBLIC_ORG_SLUG = "platform";
-
-const ORG_HREF_RE = /^\/dashboard\/org\/(people|cohorts|courses|settings)$/;
-
-function resolveOrgHref(href: string, orgSlug: string | undefined): string {
-  if (!orgSlug) {
-    return href;
-  }
-  if (href === "/dashboard") {
-    return `/dashboard/org/${orgSlug}`;
-  }
-  const m = href.match(ORG_HREF_RE);
-  return m ? `/dashboard/org/${orgSlug}/${m[1]}` : href;
-}
-
 export function AppSidebar() {
   const { user } = useUserQuery();
   const { open } = useSidebar();
@@ -214,17 +109,7 @@ export function AppSidebar() {
   const isMobile = useIsMobile();
   const isOpen = useDelayedValue(open, 195);
 
-  // const { activeMember, orgs } = useDashboardOrg();
-
-  // const activeOrg = orgs?.find((o) => o.id === activeMember?.organizationId);
-  // const orgSlug = (activeOrg as { slug?: string })?.slug;
-  // const isPublicOrg = !activeOrg || orgSlug === PUBLIC_ORG_SLUG;
-
-  // const effectiveRole: NavRole = isPublicOrg
-  //   ? ((user?.role as NavRole | undefined) ?? "platform_student")
-  //   : ((activeMember?.role as NavRole | undefined) ?? "org_student");
-
-  // const navGroups = NAV[effectiveRole];
+  const navGroups = NAV[user?.role as UserRole];
 
   return (
     <Sidebar
@@ -243,7 +128,7 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
 
-      {/* <SidebarContent>
+      <SidebarContent>
         {Object.entries(navGroups).map(([groupLabel, items]) => (
           <SidebarGroup key={groupLabel}>
             <SidebarGroupLabel
@@ -257,15 +142,8 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {items.map(({ href, label, icon: Icon }) => {
-                  const resolvedHref = isPublicOrg
-                    ? href
-                    : resolveOrgHref(href, orgSlug);
-                  const isOverviewHref =
-                    resolvedHref === "/dashboard" ||
-                    resolvedHref === "/dashboard/admin" ||
-                    (!!orgSlug && resolvedHref === `/dashboard/org/${orgSlug}`);
                   return (
-                    <SidebarMenuItem key={resolvedHref}>
+                    <SidebarMenuItem key={href}>
                       <SidebarMenuButton
                         className={cn(
                           "text-sm",
@@ -273,24 +151,12 @@ export function AppSidebar() {
                           menuButtonCollapseClass,
                           isOpen || isMobile ? "" : "justify-center"
                         )}
-                        isActive={
-                          pathname === resolvedHref ||
-                          (!isOverviewHref &&
-                            pathname.startsWith(`${resolvedHref}/`))
-                        }
-                        render={
-                          <Link
-                            href={
-                              resolvedHref as ComponentProps<
-                                typeof Link
-                              >["href"]
-                            }
-                          />
-                        }
+                        isActive={pathname === href}
+                        render={<Link href={href} />}
                         size="lg"
                         tooltip={label}
                       >
-                        <Icon />
+                        <Icon animateOnHover size={20} />
                         <span>{label}</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -300,7 +166,7 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
-      </SidebarContent> */}
+      </SidebarContent>
 
       <SidebarFooter>{/* <OrgSwitcher /> */}</SidebarFooter>
     </Sidebar>

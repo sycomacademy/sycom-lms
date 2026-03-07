@@ -94,6 +94,34 @@ export const submitFeedbackSchema = z.object({
 });
 export type SubmitFeedbackInput = z.infer<typeof submitFeedbackSchema>;
 
+export const reportTypeEnum = z.enum(["bug", "feature", "complaint", "other"]);
+export type ReportType = z.infer<typeof reportTypeEnum>;
+
+export const REPORT_TYPE_OPTIONS: Array<{
+  value: ReportType;
+  label: string;
+}> = [
+  { value: "bug", label: "Bug Report" },
+  { value: "feature", label: "Feature Request" },
+  { value: "complaint", label: "Complaint" },
+  { value: "other", label: "Other" },
+];
+
+export const submitReportSchema = z.object({
+  type: reportTypeEnum,
+  subject: z
+    .string()
+    .min(1, "Subject is required")
+    .max(200, "Subject must be less than 200 characters"),
+  description: z
+    .string()
+    .min(1, "Description is required")
+    .max(2000, "Description must be less than 2000 characters"),
+  imageBase64: z.string().optional().nullable(),
+  imageMimeType: z.string().optional().nullable(),
+});
+export type SubmitReportInput = z.infer<typeof submitReportSchema>;
+
 /**
  * Storage schema.
  */

@@ -80,3 +80,52 @@ export async function getSignedUrl(
     expires_at: Math.round(Date.now() / 1000) + expireIn,
   });
 }
+
+export async function uploadBase64(
+  base64Data: string,
+  folder: StorageFolder,
+  ownerId: string
+): Promise<{
+  publicId: string;
+  secureUrl: string;
+  folder: StorageFolder;
+  resourceType: StorageResourceType;
+  format: string;
+  bytes: number;
+  width: number;
+  height: number;
+}> {
+  const result = await cld.uploader.upload(base64Data, {
+    public_id: buildPublicId(folder, ownerId),
+    resource_type: "auto",
+    folder: `${CLOUD_ROOT}/${folder}/${ownerId}`,
+  });
+
+  const resourceType = mapCloudinaryResourceType(result.resource_type);
+
+  return {
+    publicId: result.public_id,
+    secureUrl: result.secure_url,
+    folder,
+    resourceType,
+    format: result.format,
+    bytes: result.bytes,
+    width: result.width,
+    height: result.height,
+  };
+}
+
+function mapCloudinaryResourceType(
+  type: string
+): StorageResourceType {
+  switch (type) {
+    case "image":
+      return "image";
+    case "video":
+      return "video";
+    case "audio":
+      return "audio";
+    default:
+      return "file";
+  }
+}
