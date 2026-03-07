@@ -1,5 +1,9 @@
 import { auth } from "@/packages/auth/auth";
+import { PUBLIC_ORG_SLUG } from "@/packages/db/helper";
 import {
+  getCurrentCohort,
+  getCurrentOrganization,
+  getMemberRole,
   getProfileByUserId,
   updateProfileByUserId,
 } from "@/packages/db/queries";
@@ -12,10 +16,27 @@ export const userRouter = router({
     const profile = await getProfileByUserId(ctx.db, {
       userId: ctx.session.user.id,
     });
+    const organization = await getCurrentOrganization(ctx.db, {
+      sessionId: ctx.session.session.id,
+      userId: ctx.session.user.id,
+    });
+    const cohort = await getCurrentCohort(ctx.db, {
+      sessionId: ctx.session.session.id,
+      userId: ctx.session.user.id,
+    });
+    const memberRole = await getMemberRole(ctx.db, {
+      userId: ctx.session.user.id,
+      organizationId: organization.id,
+    });
+
     return {
       session: ctx.session.session,
       user: ctx.session.user,
       profile,
+      organization,
+      cohort,
+      memberRole,
+      isPublicOrg: organization?.slug === PUBLIC_ORG_SLUG,
     };
   }),
 

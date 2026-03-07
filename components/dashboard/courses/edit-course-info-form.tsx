@@ -18,7 +18,7 @@ import {
   persistCourseThumbnail,
 } from "@/app/dashboard/courses/actions";
 import { Editor } from "@/components/editor/editor";
-import { FileUploader } from "@/components/layout/file-uploader";
+import { FileUploader } from "@/components/elements/file-uploader";
 import { Button } from "@/components/ui/button";
 import {
   Combobox,

@@ -15,7 +15,7 @@ import {
   getCourseThumbnailSignedParams,
   persistCourseThumbnail,
 } from "@/app/dashboard/courses/actions";
-import { FileUploader } from "@/components/layout/file-uploader";
+import { FileUploader } from "@/components/elements/file-uploader";
 import { Button } from "@/components/ui/button";
 import {
   Combobox,

@@ -34,7 +34,10 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Editor } from "@/components/editor/editor";
-import { SortableItem, SortableItemHandle } from "@/components/layout/sortable";
+import {
+  SortableItem,
+  SortableItemHandle,
+} from "@/components/elements/sortable";
 import {
   AlertDialog,
   AlertDialogAction,

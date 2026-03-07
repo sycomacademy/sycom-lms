@@ -10,6 +10,7 @@ import {
   PUBLIC_ORG_SLUG,
 } from "./helper";
 import { schema } from "./schema";
+import type { OrganizationRole } from "./schema/auth";
 import {
   category,
   cohortCourse,
@@ -659,4 +660,91 @@ export async function canEnrollInCohortCourse(
     reason: "ok" as const,
     context,
   };
+}
+
+/**
+ * Get the current organization for a session.
+ * Returns null if no active organization is set.
+ */
+export async function getCurrentOrganization(
+  database: Database,
+  params: { sessionId: string; userId: string }
+) {
+  const [result] = await database
+    .select({
+      id: organization.id,
+      name: organization.name,
+      slug: organization.slug,
+      logo: organization.logo,
+      metadata: organization.metadata,
+      createdAt: organization.createdAt,
+    })
+    .from(sessionTable)
+    .innerJoin(
+      organization,
+      eq(organization.id, sessionTable.activeOrganizationId)
+    )
+    .where(
+      and(
+        eq(sessionTable.id, params.sessionId),
+        eq(sessionTable.userId, params.userId)
+      )
+    )
+    .limit(1);
+
+  return result ?? null;
+}
+
+/**
+ * Get the current cohort for a session.
+ * Returns null if no active cohort is set.
+ */
+export async function getCurrentCohort(
+  database: Database,
+  params: { sessionId: string; userId: string }
+) {
+  const [result] = await database
+    .select({
+      id: cohort.id,
+      name: cohort.name,
+      image: cohort.image,
+      organizationId: cohort.organizationId,
+      createdAt: cohort.createdAt,
+      updatedAt: cohort.updatedAt,
+    })
+    .from(sessionTable)
+    .innerJoin(cohort, eq(cohort.id, sessionTable.activeTeamId))
+    .where(
+      and(
+        eq(sessionTable.id, params.sessionId),
+        eq(sessionTable.userId, params.userId)
+      )
+    )
+    .limit(1);
+
+  return result ?? null;
+}
+
+/**
+ * Get the member role for a user in an organization.
+ * Returns null if the user is not a member of the organization.
+ */
+export async function getMemberRole(
+  database: Database,
+  params: { userId: string; organizationId: string }
+): Promise<OrganizationRole | null> {
+  const [result] = await database
+    .select({
+      role: member.role,
+    })
+    .from(member)
+    .where(
+      and(
+        eq(member.userId, params.userId),
+        eq(member.organizationId, params.organizationId)
+      )
+    )
+    .limit(1);
+
+  return result?.role ?? null;
 }

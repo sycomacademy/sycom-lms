@@ -1,6 +1,7 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/packages/utils/cn";
 import { DashboardUserMenu } from "./dashboard-user-menu";
+import { DebugInfo } from "./debug-panel";
 import { FeedbackPopover } from "./feedback-popover";
 export function DashboardHeader() {
   return (
@@ -11,6 +12,7 @@ export function DashboardHeader() {
     >
       <SidebarTrigger />
       <div className="flex items-center gap-2 md:px-2">
+        <DebugInfo />
         <FeedbackPopover />
         <DashboardUserMenu />
       </div>

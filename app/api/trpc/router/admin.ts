@@ -178,7 +178,7 @@ export const adminRouter = router({
     .input(
       z.object({
         name: z.string().min(1),
-        email: z.string().email(),
+        email: z.email(),
         role: z.enum(["platform_admin", "content_creator", "platform_student"]),
         sendInvite: z.boolean(),
         password: z.string().min(8).optional(),
