@@ -24,6 +24,7 @@ import {
 } from "./helper";
 import { schema } from "./schema";
 import type { OrganizationRole, UserRole } from "./schema/auth";
+import { type BlogPostStatus, blogPost } from "./schema/blog";
 import {
   type CourseStatus,
   category,
@@ -405,6 +406,341 @@ export async function submitReport(
     imageUrl: params.imageUrl ?? null,
   });
   return { success: true };
+}
+
+export async function hasBlogAccessForEditing(
+  database: Database,
+  params: { postId: string; userId: string; userRole: string | null }
+): Promise<{ accessRole: "owner" | "admin" } | null> {
+  if (params.userRole === "platform_admin") {
+    return { accessRole: "admin" };
+  }
+
+  const [row] = await database
+    .select({ id: blogPost.id })
+    .from(blogPost)
+    .where(
+      and(eq(blogPost.id, params.postId), eq(blogPost.createdBy, params.userId))
+    )
+    .limit(1);
+
+  if (!row) {
+    return null;
+  }
+
+  return { accessRole: "owner" };
+}
+
+export async function listPublicBlogPosts(
+  database: Database,
+  params: { limit: number; offset: number }
+) {
+  const rows = await database
+    .select({
+      id: blogPost.id,
+      title: blogPost.title,
+      slug: blogPost.slug,
+      excerpt: blogPost.excerpt,
+      imageUrl: blogPost.imageUrl,
+      publishedAt: blogPost.publishedAt,
+      updatedAt: blogPost.updatedAt,
+      author: {
+        id: user.id,
+        name: user.name,
+        image: user.image,
+        role: user.role,
+      },
+      _total: sql<number>`count(*) OVER()`.mapWith(Number).as("_total"),
+    })
+    .from(blogPost)
+    .innerJoin(user, eq(user.id, blogPost.createdBy))
+    .where(eq(blogPost.status, "published"))
+    .orderBy(desc(blogPost.publishedAt), desc(blogPost.updatedAt))
+    .limit(params.limit)
+    .offset(params.offset);
+
+  const total = rows[0]?._total ?? 0;
+  const posts = rows.map(({ _total, ...rest }) => rest);
+
+  return { posts, total };
+}
+
+export async function getPublicBlogPostBySlug(
+  database: Database,
+  params: { slug: string }
+) {
+  const [post] = await database
+    .select({
+      id: blogPost.id,
+      title: blogPost.title,
+      slug: blogPost.slug,
+      excerpt: blogPost.excerpt,
+      content: blogPost.content,
+      imageUrl: blogPost.imageUrl,
+      status: blogPost.status,
+      publishedAt: blogPost.publishedAt,
+      updatedAt: blogPost.updatedAt,
+      author: {
+        id: user.id,
+        name: user.name,
+        image: user.image,
+        role: user.role,
+      },
+    })
+    .from(blogPost)
+    .innerJoin(user, eq(user.id, blogPost.createdBy))
+    .where(
+      and(eq(blogPost.slug, params.slug), eq(blogPost.status, "published"))
+    )
+    .limit(1);
+
+  if (!post) {
+    return null;
+  }
+
+  const relatedPosts = await database
+    .select({
+      id: blogPost.id,
+      title: blogPost.title,
+      slug: blogPost.slug,
+      excerpt: blogPost.excerpt,
+      imageUrl: blogPost.imageUrl,
+      publishedAt: blogPost.publishedAt,
+    })
+    .from(blogPost)
+    .where(and(eq(blogPost.status, "published"), ne(blogPost.id, post.id)))
+    .orderBy(desc(blogPost.publishedAt), desc(blogPost.updatedAt))
+    .limit(2);
+
+  return { ...post, relatedPosts };
+}
+
+export async function listInstructorBlogPosts(
+  database: Database,
+  params: {
+    limit: number;
+    offset: number;
+    search?: string;
+    sortBy: "title" | "createdAt" | "updatedAt" | "publishedAt" | "status";
+    sortDirection: "asc" | "desc";
+    filterStatuses?: BlogPostStatus[];
+    userId: string;
+    isAdmin: boolean;
+  }
+) {
+  const conditions: Parameters<typeof and>[0][] = [];
+
+  if (!params.isAdmin) {
+    conditions.push(eq(blogPost.createdBy, params.userId));
+  }
+
+  if (params.filterStatuses?.length) {
+    conditions.push(inArray(blogPost.status, params.filterStatuses));
+  }
+
+  if (params.search) {
+    conditions.push(
+      or(
+        ilike(blogPost.title, `%${params.search}%`),
+        ilike(blogPost.excerpt, `%${params.search}%`)
+      )
+    );
+  }
+
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const ORDER_COLUMNS = {
+    title: blogPost.title,
+    createdAt: blogPost.createdAt,
+    updatedAt: blogPost.updatedAt,
+    publishedAt: blogPost.publishedAt,
+    status: blogPost.status,
+  } as const;
+
+  const orderColumn = ORDER_COLUMNS[params.sortBy];
+  const orderBy =
+    params.sortDirection === "asc" ? asc(orderColumn) : desc(orderColumn);
+
+  const rows = await database
+    .select({
+      id: blogPost.id,
+      title: blogPost.title,
+      slug: blogPost.slug,
+      excerpt: blogPost.excerpt,
+      imageUrl: blogPost.imageUrl,
+      status: blogPost.status,
+      publishedAt: blogPost.publishedAt,
+      createdBy: blogPost.createdBy,
+      createdAt: blogPost.createdAt,
+      updatedAt: blogPost.updatedAt,
+      author: {
+        id: user.id,
+        name: user.name,
+        image: user.image,
+      },
+      _total: sql<number>`count(*) OVER()`.mapWith(Number).as("_total"),
+    })
+    .from(blogPost)
+    .innerJoin(user, eq(user.id, blogPost.createdBy))
+    .where(where)
+    .orderBy(orderBy, desc(blogPost.updatedAt))
+    .limit(params.limit)
+    .offset(params.offset);
+
+  const total = rows[0]?._total ?? 0;
+  const posts = rows.map(({ _total, ...rest }) => rest);
+
+  return { posts, total };
+}
+
+export async function getBlogPostById(
+  database: Database,
+  params: { postId: string }
+) {
+  const [post] = await database
+    .select({
+      id: blogPost.id,
+      title: blogPost.title,
+      slug: blogPost.slug,
+      excerpt: blogPost.excerpt,
+      content: blogPost.content,
+      imageUrl: blogPost.imageUrl,
+      status: blogPost.status,
+      publishedAt: blogPost.publishedAt,
+      createdBy: blogPost.createdBy,
+      createdAt: blogPost.createdAt,
+      updatedAt: blogPost.updatedAt,
+      author: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+      },
+    })
+    .from(blogPost)
+    .innerJoin(user, eq(user.id, blogPost.createdBy))
+    .where(eq(blogPost.id, params.postId))
+    .limit(1);
+
+  return post ?? null;
+}
+
+export async function createBlogPost(
+  database: Database,
+  params: {
+    id?: string;
+    title: string;
+    slug: string;
+    excerpt: string;
+    content?: unknown;
+    imageUrl?: string;
+    status: BlogPostStatus;
+    createdBy: string;
+  }
+) {
+  const [existing] = await database
+    .select({ id: blogPost.id })
+    .from(blogPost)
+    .where(eq(blogPost.slug, params.slug))
+    .limit(1);
+
+  if (existing) {
+    return { post: null, conflict: true as const };
+  }
+
+  const [post] = await database
+    .insert(blogPost)
+    .values({
+      id: params.id,
+      title: params.title,
+      slug: params.slug,
+      excerpt: params.excerpt,
+      content: params.content,
+      imageUrl: params.imageUrl,
+      status: params.status,
+      publishedAt: params.status === "published" ? new Date() : null,
+      createdBy: params.createdBy,
+    })
+    .returning();
+
+  return { post, conflict: false as const };
+}
+
+export async function updateBlogPost(
+  database: Database,
+  params: {
+    postId: string;
+    data: Partial<typeof blogPost.$inferInsert>;
+  }
+) {
+  const { postId, data } = params;
+
+  if (data.slug) {
+    const [existing] = await database
+      .select({ id: blogPost.id })
+      .from(blogPost)
+      .where(
+        and(eq(blogPost.slug, data.slug), sql`${blogPost.id} != ${postId}`)
+      )
+      .limit(1);
+
+    if (existing) {
+      return { post: null, conflict: true as const };
+    }
+  }
+
+  const [current] = await database
+    .select({ id: blogPost.id, publishedAt: blogPost.publishedAt })
+    .from(blogPost)
+    .where(eq(blogPost.id, postId))
+    .limit(1);
+
+  if (!current) {
+    return { post: null, conflict: false as const, notFound: true as const };
+  }
+
+  const updateData: Record<string, unknown> = {};
+  for (const key of Object.keys(data)) {
+    if (data[key as keyof typeof data] !== undefined) {
+      updateData[key] = data[key as keyof typeof data];
+    }
+  }
+
+  if (
+    data.status === "published" &&
+    current.publishedAt == null &&
+    updateData.publishedAt === undefined
+  ) {
+    updateData.publishedAt = new Date();
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return { post: null, conflict: false as const, noFields: true as const };
+  }
+
+  const [post] = await database
+    .update(blogPost)
+    .set(updateData)
+    .where(eq(blogPost.id, postId))
+    .returning();
+
+  if (!post) {
+    return { post: null, conflict: false as const, notFound: true as const };
+  }
+
+  return { post, conflict: false as const };
+}
+
+export async function deleteBlogPost(
+  database: Database,
+  params: { postId: string }
+) {
+  const [deleted] = await database
+    .delete(blogPost)
+    .where(eq(blogPost.id, params.postId))
+    .returning({ id: blogPost.id });
+
+  return deleted ?? null;
 }
 
 export async function hasCourseAccessForEditing(

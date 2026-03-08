@@ -308,6 +308,80 @@ export const STATUS_OPTIONS = [
   { value: "published", label: "Published" },
 ] as const;
 
+export const BLOG_STATUS_OPTIONS = [
+  { value: "draft", label: "Draft" },
+  { value: "published", label: "Published" },
+] as const;
+
+export const listPublicBlogPostsSchema = z.object({
+  limit: z.number().min(1).max(100).default(12),
+  offset: z.number().min(0).default(0),
+});
+
+export const listBlogPostsSchema = z.object({
+  limit: z.number().min(1).max(100).default(10),
+  offset: z.number().min(0).default(0),
+  search: z.string().optional(),
+  sortBy: z
+    .enum(["title", "createdAt", "updatedAt", "publishedAt", "status"])
+    .default("updatedAt"),
+  sortDirection: z.enum(["asc", "desc"]).default("desc"),
+  filterStatuses: z.array(z.enum(["draft", "published"])).optional(),
+});
+
+export const createBlogPostSchema = z.object({
+  id: z.string().startsWith("blg_").optional(),
+  title: z.string().min(1, "Title is required").max(200),
+  slug: z
+    .string()
+    .min(1, "Slug is required")
+    .max(200)
+    .regex(
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      "Slug must be lowercase alphanumeric with hyphens"
+    ),
+  excerpt: z.string().min(1, "Excerpt is required").max(500),
+  content: z.any().optional(),
+  imageUrl: z.string().url().optional(),
+  status: z.enum(["draft", "published"]).default("draft"),
+});
+
+export const updateBlogPostSchema = z.object({
+  postId: z.string(),
+  title: z.string().min(1).max(200).optional(),
+  slug: z
+    .string()
+    .min(1)
+    .max(200)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+    .optional(),
+  excerpt: z.string().min(1).max(500).optional(),
+  content: z.any().optional(),
+  imageUrl: z.string().url().nullish(),
+  status: z.enum(["draft", "published"]).optional(),
+});
+
+export const deleteBlogPostSchema = z.object({
+  postId: z.string(),
+});
+
+export const blogPostFormSchema = z.object({
+  title: z.string().min(1, "Title is required").max(200),
+  slug: z
+    .string()
+    .min(1, "Slug is required")
+    .max(200)
+    .regex(
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      "Must be lowercase letters, numbers, and hyphens only"
+    ),
+  excerpt: z.string().min(1, "Excerpt is required").max(500),
+  status: z.enum(["draft", "published"]),
+  thumbnail: z.instanceof(File).nullable().optional(),
+});
+
+export type BlogPostFormInput = z.infer<typeof blogPostFormSchema>;
+
 export const listPublicCoursesSchema = z.object({
   limit: z.number().min(1).max(100).default(12),
   offset: z.number().min(0).default(0),

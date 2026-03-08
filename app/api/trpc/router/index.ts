@@ -2,6 +2,7 @@ import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { checkHealth } from "@/packages/db/queries";
 import { publicProcedure, router } from "../init";
 import { adminRouter } from "./admin";
+import { blogRouter } from "./blog";
 import { categoryRouter } from "./category";
 import { courseRouter } from "./course";
 import { feedbackRouter } from "./feedback";
@@ -19,6 +20,7 @@ export const appRouter = router({
   feedback: feedbackRouter,
   invite: inviteRouter,
   admin: adminRouter,
+  blog: blogRouter,
   category: categoryRouter,
   course: courseRouter,
   org: orgRouter,

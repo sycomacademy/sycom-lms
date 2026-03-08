@@ -27,7 +27,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { StorageFolder } from "@/packages/db/schema/storage";
+import type {
+  StorageEntityType,
+  StorageFolder,
+} from "@/packages/db/schema/storage";
 import { uploadFile } from "@/packages/storage/upload";
 import { useTRPC } from "@/packages/trpc/client";
 
@@ -36,6 +39,7 @@ const CONTENT_FOLDER = "course-content" satisfies StorageFolder;
 interface MediaGroupProps {
   editor: Editor;
   mediaUploadOwnerId?: string;
+  mediaUploadEntityType?: StorageEntityType;
 }
 
 function formatFileSize(bytes: number): string {
@@ -64,7 +68,11 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-export function MediaGroup({ editor, mediaUploadOwnerId }: MediaGroupProps) {
+export function MediaGroup({
+  editor,
+  mediaUploadOwnerId,
+  mediaUploadEntityType = "lesson",
+}: MediaGroupProps) {
   const trpc = useTRPC();
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [uploadingType, setUploadingType] = useState<
@@ -83,10 +91,10 @@ export function MediaGroup({ editor, mediaUploadOwnerId }: MediaGroupProps) {
   );
 
   const uploadToCloudinary = useCallback(
-    async (file: File, lessonId: string): Promise<string> => {
+    async (file: File, ownerId: string): Promise<string> => {
       const signedParams = await signUploadMutation.mutateAsync({
         folder: CONTENT_FOLDER,
-        entityId: lessonId,
+        entityId: ownerId,
       });
       const result = await uploadFile({ file, signedParams });
       await saveAssetMutation.mutateAsync({
@@ -98,12 +106,12 @@ export function MediaGroup({ editor, mediaUploadOwnerId }: MediaGroupProps) {
         bytes: result.bytes,
         width: result.width,
         height: result.height,
-        entityId: lessonId,
-        entityType: "lesson",
+        entityId: ownerId,
+        entityType: mediaUploadEntityType,
       });
       return result.secureUrl;
     },
-    [signUploadMutation, saveAssetMutation]
+    [mediaUploadEntityType, signUploadMutation, saveAssetMutation]
   );
 
   const getSrc = useCallback(

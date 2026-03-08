@@ -27,6 +27,7 @@ import {
   userRoleEnum,
   verification,
 } from "./auth";
+import { blogPost, blogPostRelations } from "./blog";
 import {
   category,
   categoryRelations,
@@ -116,6 +117,10 @@ const schema = {
   storageEntityTypeEnum,
   storageFolderEnum,
   storageResourceTypeEnum,
+
+  // blog
+  blogPost,
+  blogPostRelations,
 
   // course
   category,

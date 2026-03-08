@@ -7,6 +7,7 @@ import { Blocks } from "@/components/icons/animated/blocks";
 import { Layers } from "@/components/icons/animated/layers";
 import { LayoutDashboard } from "@/components/icons/animated/layout-dashboard";
 import { MessageCircleQuestion } from "@/components/icons/animated/message-circle-question";
+import { MessageSquareCode } from "@/components/icons/animated/message-square-code";
 import { Settings } from "@/components/icons/animated/settings";
 import { Users } from "@/components/icons/animated/users";
 import { AnimateIcon } from "@/components/icons/core/icon";
@@ -64,6 +65,11 @@ const NAV: Record<UserRole, Record<string, NavItem[]>> = {
         label: "All Courses",
         icon: Layers,
       },
+      {
+        href: "/dashboard/blog" as Route,
+        label: "All Posts",
+        icon: MessageSquareCode,
+      },
     ],
     general: GENERAL,
   },
@@ -75,6 +81,11 @@ const NAV: Record<UserRole, Record<string, NavItem[]>> = {
         href: "/dashboard/courses",
         label: "My Courses",
         icon: Layers,
+      },
+      {
+        href: "/dashboard/blog" as Route,
+        label: "My Posts",
+        icon: MessageSquareCode,
       },
     ],
     general: GENERAL,
