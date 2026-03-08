@@ -3,7 +3,6 @@
 import { InfoIcon, PencilIcon, Trash2Icon } from "lucide-react";
 import type { Route } from "next";
 import Image from "next/image";
-import type { ReactElement } from "react";
 import type { RouterOutputs } from "@/app/api/trpc/router";
 import { Link } from "@/components/layout/foresight-link";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
@@ -24,43 +23,10 @@ import {
 
 type Course = RouterOutputs["course"]["list"]["courses"][number];
 
-const DIFFICULTY_BADGE_VARIANT: Record<
-  string,
-  "default" | "secondary" | "outline"
-> = {
-  beginner: "outline",
-  intermediate: "secondary",
-  advanced: "default",
-  expert: "default",
-};
-
-const STATUS_BADGE_VARIANT: Record<
-  string,
-  "default" | "secondary" | "outline"
-> = {
-  draft: "outline",
-  published: "default",
-};
-
 interface CourseCardProps {
   course: Course;
   onDelete?: (courseId: string) => void;
   onViewPeople?: () => void;
-}
-
-function IconAction({
-  tooltip,
-  trigger,
-}: {
-  tooltip: string;
-  trigger: ReactElement;
-}) {
-  return (
-    <Tooltip>
-      <TooltipTrigger render={trigger} />
-      <TooltipContent>{tooltip}</TooltipContent>
-    </Tooltip>
-  );
 }
 
 export function CourseCard({
@@ -75,10 +41,7 @@ export function CourseCard({
   const editHref = `/dashboard/courses/${course.id}/edit` as Route;
 
   return (
-    <Card
-      className="overflow-hidden border border-border/70 bg-card pt-0 shadow-sm"
-      size="default"
-    >
+    <Card size="default">
       <Link
         className="outline-none focus-visible:ring-2 focus-visible:ring-ring"
         href={editHref}
@@ -101,41 +64,24 @@ export function CourseCard({
       </Link>
 
       <CardHeader className="gap-3 pb-0">
+        <CardTitle className="line-clamp-1 font-semibold text-base">
+          <Link href={editHref}>{course.title}</Link>
+        </CardTitle>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge className="capitalize">{course.difficulty}</Badge>
+          <Badge className="capitalize" variant="outline">
+            {course.status}
+          </Badge>
+        </div>
         {categoriesLabel ? (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <p className="truncate text-[11px] text-muted-foreground uppercase tracking-[0.18em]">
-                  {categoriesLabel}
-                </p>
-              }
-            />
-            <TooltipContent>{categoriesLabel}</TooltipContent>
-          </Tooltip>
+          <p className="truncate text-[11px] text-muted-foreground uppercase tracking-[0.18em]">
+            {categoriesLabel}
+          </p>
         ) : (
           <p className="text-[11px] text-muted-foreground uppercase tracking-[0.18em]">
             Uncategorized
           </p>
         )}
-
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Badge
-            className="capitalize"
-            variant={DIFFICULTY_BADGE_VARIANT[course.difficulty] ?? "outline"}
-          >
-            {course.difficulty}
-          </Badge>
-          <Badge
-            className="capitalize"
-            variant={STATUS_BADGE_VARIANT[course.status] ?? "outline"}
-          >
-            {course.status}
-          </Badge>
-        </div>
-
-        <CardTitle className="line-clamp-1 font-semibold text-base">
-          <Link href={editHref}>{course.title}</Link>
-        </CardTitle>
       </CardHeader>
 
       <CardContent className="flex-1 pt-0">
@@ -147,45 +93,55 @@ export function CourseCard({
       <CardFooter className="items-center justify-between gap-3 border-t bg-muted/20">
         <div className="flex items-center gap-2">
           {onViewPeople ? (
-            <IconAction
-              tooltip="Instructor & students"
-              trigger={
-                <Button onClick={onViewPeople} size="icon-sm" variant="outline">
-                  <InfoIcon className="size-4" />
-                </Button>
-              }
-            />
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    onClick={onViewPeople}
+                    size="icon-sm"
+                    variant="outline"
+                  >
+                    <InfoIcon className="size-4" />
+                  </Button>
+                }
+              />
+              <TooltipContent>Instructor & students</TooltipContent>
+            </Tooltip>
           ) : (
             <span />
           )}
         </div>
 
         <div className="flex items-center gap-2">
-          <IconAction
-            tooltip="Delete course"
-            trigger={
-              <Button
-                onClick={() => onDelete?.(course.id)}
-                size="icon-sm"
-                variant="destructive"
-              >
-                <Trash2Icon className="size-4" />
-              </Button>
-            }
-          />
-          <IconAction
-            tooltip="Edit course"
-            trigger={
-              <Button
-                nativeButton={false}
-                render={<Link href={editHref} />}
-                size="icon-sm"
-                variant="outline"
-              >
-                <PencilIcon className="size-4" />
-              </Button>
-            }
-          />
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  onClick={() => onDelete?.(course.id)}
+                  size="icon-sm"
+                  variant="destructive"
+                >
+                  <Trash2Icon className="size-4" />
+                </Button>
+              }
+            />
+            <TooltipContent>Delete course</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  nativeButton={false}
+                  render={<Link href={editHref} />}
+                  size="icon-sm"
+                  variant="outline"
+                >
+                  <PencilIcon className="size-4" />
+                </Button>
+              }
+            />
+            <TooltipContent>Edit course</TooltipContent>
+          </Tooltip>
         </div>
       </CardFooter>
     </Card>

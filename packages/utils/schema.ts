@@ -308,7 +308,7 @@ export const createLessonSchema = z.object({
   sectionId: z.string(),
   title: z.string().min(1, "Title is required").max(200),
   content: z.any().optional(),
-  type: z.enum(["text", "video", "quiz"]).default("text"),
+  type: z.enum(["article", "test"]).default("article"),
   isLocked: z.boolean().default(false),
   estimatedDuration: z.number().int().positive().optional(),
 });
@@ -318,7 +318,7 @@ export const updateLessonSchema = z.object({
   sectionId: z.string().optional(),
   title: z.string().min(1).max(200).optional(),
   content: z.any().optional(),
-  type: z.enum(["text", "video", "quiz"]).optional(),
+  type: z.enum(["article", "test"]).optional(),
   order: z.number().int().min(0).optional(),
   isLocked: z.boolean().optional(),
   estimatedDuration: z.number().int().positive().nullish(),

@@ -3,9 +3,9 @@
 import { BookOpenIcon, InfoIcon } from "lucide-react";
 import { parseAsInteger, useQueryState } from "nuqs";
 
-import { CoCreatorsModal } from "@/components/dashboard/courses/co-creators-modal";
-import { EditCourseInfoForm } from "@/components/dashboard/courses/edit-course-info-form";
-import { EditCurriculumForm } from "@/components/dashboard/courses/edit-curriculum-form";
+import { CoCreatorsModal } from "@/components/dashboard/courses/edit/co-creators-modal";
+import { EditCourseInfoForm } from "@/components/dashboard/courses/edit/edit-course-info-form";
+import { EditCurriculumForm } from "@/components/dashboard/courses/edit/edit-curriculum-form";
 import { BackButton } from "@/components/layout/back-button";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 

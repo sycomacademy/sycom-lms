@@ -752,7 +752,6 @@ export const courseRouter = router({
           title: lesson.title,
           content: lesson.content,
           type: lesson.type,
-          isLocked: lesson.isLocked,
           estimatedDuration: lesson.estimatedDuration,
           sectionId: lesson.sectionId,
         })
@@ -769,12 +768,6 @@ export const courseRouter = router({
       if (!lessonRow) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Lesson not found" });
       }
-      if (lessonRow.isLocked) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "This lesson is locked",
-        });
-      }
 
       const [isCompletedRow, orderedLessons] = await Promise.all([
         db
@@ -788,7 +781,7 @@ export const courseRouter = router({
           )
           .limit(1),
         db
-          .select({ id: lesson.id, isLocked: lesson.isLocked })
+          .select({ id: lesson.id })
           .from(lesson)
           .innerJoin(section, eq(section.id, lesson.sectionId))
           .where(eq(section.courseId, input.courseId))
@@ -796,7 +789,7 @@ export const courseRouter = router({
       ]);
 
       const isCompleted = !!isCompletedRow[0];
-      const unlockedLessons = orderedLessons.filter((l) => !l.isLocked);
+      const unlockedLessons = orderedLessons.filter((l) => !l);
       const idx = unlockedLessons.findIndex((l) => l.id === lessonRow.id);
       const prevLessonId =
         idx > 0 ? (unlockedLessons[idx - 1]?.id ?? null) : null;
@@ -843,7 +836,7 @@ export const courseRouter = router({
       }
 
       const [lessonRow] = await db
-        .select({ id: lesson.id, isLocked: lesson.isLocked })
+        .select({ id: lesson.id })
         .from(lesson)
         .innerJoin(section, eq(section.id, lesson.sectionId))
         .where(
@@ -856,12 +849,6 @@ export const courseRouter = router({
 
       if (!lessonRow) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Lesson not found" });
-      }
-      if (lessonRow.isLocked) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "This lesson is locked",
-        });
       }
 
       await db
@@ -1482,9 +1469,8 @@ export const courseRouter = router({
           sectionId: input.sectionId,
           title: input.title,
           content: input.content,
-          type: input.type ?? "text",
+          type: input.type ?? "article",
           order: nextOrder,
-          isLocked: input.isLocked ?? false,
           estimatedDuration: input.estimatedDuration,
         })
         .returning();

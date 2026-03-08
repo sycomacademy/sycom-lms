@@ -20,6 +20,15 @@ export const coursesListParsers = {
   statuses: parseAsArrayOf(
     parseAsStringLiteral(["draft", "published"] as const)
   ).withDefault([]),
+  sortBy: parseAsStringLiteral([
+    "title",
+    "createdAt",
+    "updatedAt",
+    "status",
+  ] as const).withDefault("updatedAt"),
+  sortDirection: parseAsStringLiteral(["asc", "desc"] as const).withDefault(
+    "desc"
+  ),
   page: parseAsInteger.withDefault(1),
   pageSize: parseAsInteger.withDefault(12),
 } as const;

@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { EditCoursePage } from "@/components/dashboard/courses/edit-course-page";
+import { EditCoursePage } from "@/components/dashboard/courses/edit/edit-course-page";
 import { instructorGuard, withAuthRedirect } from "@/packages/auth/helper";
 import {
   getCaller,
