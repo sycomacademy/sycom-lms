@@ -49,7 +49,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           <div className="container mx-auto px-4">
             <div className="mx-auto max-w-3xl">
               <Button
-                className="mb-8 gap-2"
+                className="mb-8 gap-2 px-1"
                 nativeButton={false}
                 render={
                   <Link href={"/blog" as Route}>
@@ -57,13 +57,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                     Back to blog
                   </Link>
                 }
-                size="sm"
-                variant="ghost"
+                variant="link"
               />
-
-              <Badge className="mb-4" variant="secondary">
-                {post.category}
-              </Badge>
 
               <h1 className="mb-6 font-bold text-3xl text-foreground leading-tight md:text-4xl">
                 {post.title}
@@ -102,6 +97,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                     {post.readTime}
                   </span>
                 </div>
+                <Badge variant="secondary">{post.category}</Badge>
               </div>
 
               <div className="mb-8 aspect-video w-full bg-muted">

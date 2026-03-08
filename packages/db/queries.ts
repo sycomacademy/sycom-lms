@@ -1849,6 +1849,7 @@ export async function getCourseInstructors(
 export async function createCourse(
   database: Database,
   params: {
+    id?: string;
     title: string;
     description?: string;
     summary?: unknown;
@@ -1872,6 +1873,7 @@ export async function createCourse(
   }
 
   const insertValues: typeof course.$inferInsert = {
+    id: params.id,
     title: params.title,
     slug: params.slug,
     difficulty: params.difficulty as DifficultyLevel,

@@ -8,7 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { FileUploader } from "@/components/elements/file-uploader";
 import { Button } from "@/components/ui/button";
@@ -81,6 +81,7 @@ export function CreateCourseForm({
   const { data: categories = [] } = useSuspenseQuery(
     trpc.category.list.queryOptions()
   );
+  const courseId = useMemo(() => `crs_${crypto.randomUUID()}`, []);
 
   const [files, setFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -181,7 +182,7 @@ export function CreateCourseForm({
     try {
       const signedParams = await signUploadMutation.mutateAsync({
         folder: THUMBNAILS_FOLDER,
-        entityId: "new",
+        entityId: courseId,
       });
 
       const uploadResult = await uploadFile({
@@ -198,7 +199,7 @@ export function CreateCourseForm({
         bytes: uploadResult.bytes,
         width: uploadResult.width,
         height: uploadResult.height,
-        entityId: "new",
+        entityId: courseId,
         entityType: "course",
       });
 
@@ -213,6 +214,7 @@ export function CreateCourseForm({
     }
 
     createMutation.mutate({
+      id: courseId,
       title: data.title.trim(),
       slug: data.slug.trim(),
       description: data.description?.trim() || undefined,
