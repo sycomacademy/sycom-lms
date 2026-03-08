@@ -208,6 +208,28 @@ export const signedUrlSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
+// Admin schemas
+// ---------------------------------------------------------------------------
+
+export const listAdminUsersSchema = z.object({
+  limit: z.number().int().min(1).max(100).default(10),
+  offset: z.number().int().min(0).default(0),
+  search: z.string().optional(),
+  filterRole: z
+    .enum(["platform_admin", "content_creator", "platform_student"])
+    .optional(),
+  filterStatus: z.enum(["active", "banned", "unverified"]).optional(),
+  filterRoles: z
+    .array(z.enum(["platform_admin", "content_creator", "platform_student"]))
+    .optional(),
+  filterStatuses: z
+    .array(z.enum(["active", "banned", "unverified"]))
+    .optional(),
+  sortBy: z.enum(["name", "email", "createdAt"]).default("createdAt"),
+  sortDirection: z.enum(["asc", "desc"]).default("desc"),
+});
+
+// ---------------------------------------------------------------------------
 // Course schemas
 // ---------------------------------------------------------------------------
 

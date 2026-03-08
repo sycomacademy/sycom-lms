@@ -14,12 +14,13 @@ import {
 import { z } from "zod";
 import { auth } from "@/packages/auth/auth";
 import { baseURL } from "@/packages/auth/config";
+import { listAdminUsers } from "@/packages/db/queries";
 import { schema } from "@/packages/db/schema";
+import { listAdminUsersSchema } from "@/packages/utils/schema";
 import { protectedProcedure, router } from "../init";
+import { PUBLIC_ORG_SLUG } from "@/packages/db/helper";
 
 const { user, organization, member, cohort, feedback, report } = schema;
-
-const PUBLIC_ORG_SLUG = "platform";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.session.user.role !== "platform_admin") {
@@ -31,204 +32,13 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
-interface ListUsersFilters {
-  search?: string;
-  filterRole?: "platform_admin" | "content_creator" | "platform_student";
-  filterStatus?: "active" | "banned" | "unverified";
-  filterRoles?: ("platform_admin" | "content_creator" | "platform_student")[];
-  filterStatuses?: ("active" | "banned" | "unverified")[];
-}
-
-function buildListUsersWhere(input: ListUsersFilters) {
-  let roleCondition:
-    | ReturnType<typeof inArray>
-    | ReturnType<typeof eq>
-    | undefined;
-  if (input.filterRoles && input.filterRoles.length > 0) {
-    roleCondition = inArray(user.role, input.filterRoles);
-  } else if (input.filterRole) {
-    roleCondition = eq(user.role, input.filterRole);
-  }
-
-  const statusConditions: Parameters<typeof or>[0][] = [];
-  let statuses: ("active" | "banned" | "unverified")[] = [];
-  if (input.filterStatuses?.length) {
-    statuses = input.filterStatuses;
-  } else if (input.filterStatus) {
-    statuses = [input.filterStatus];
-  }
-
-  for (const s of statuses) {
-    if (s === "banned") {
-      statusConditions.push(sql`${user.banned} IS TRUE`);
-    } else if (s === "unverified") {
-      statusConditions.push(
-        and(eq(user.emailVerified, false), sql`${user.banned} IS NOT TRUE`)
-      );
-    } else {
-      statusConditions.push(
-        and(eq(user.emailVerified, true), sql`${user.banned} IS NOT TRUE`)
-      );
-    }
-  }
-
-  const statusCondition =
-    statusConditions.length > 0 ? or(...statusConditions) : undefined;
-
-  return and(
-    input.search
-      ? or(
-          ilike(user.name, `%${input.search}%`),
-          ilike(user.email, `%${input.search}%`)
-        )
-      : undefined,
-    roleCondition,
-    statusCondition
-  );
-}
-
 export const adminRouter = router({
   // ── Users ────────────────────────────────────────────────────────────────
 
   listUsers: adminProcedure
-    .input(
-      z.object({
-        limit: z.number().int().min(1).max(100).default(10),
-        offset: z.number().int().min(0).default(0),
-        search: z.string().optional(),
-        filterRole: z
-          .enum(["platform_admin", "content_creator", "platform_student"])
-          .optional(),
-        filterStatus: z.enum(["active", "banned", "unverified"]).optional(),
-        filterRoles: z
-          .array(
-            z.enum(["platform_admin", "content_creator", "platform_student"])
-          )
-          .optional(),
-        filterStatuses: z
-          .array(z.enum(["active", "banned", "unverified"]))
-          .optional(),
-        sortBy: z.enum(["name", "email", "createdAt"]).default("createdAt"),
-        sortDirection: z.enum(["asc", "desc"]).default("desc"),
-      })
-    )
+    .input(listAdminUsersSchema)
     .query(async ({ ctx, input }) => {
-      const {
-        limit,
-        offset,
-        search,
-        filterRole,
-        filterStatus,
-        filterRoles,
-        filterStatuses,
-        sortBy,
-        sortDirection,
-      } = input;
-
-      const where = buildListUsersWhere({
-        filterRole,
-        filterRoles,
-        filterStatus,
-        filterStatuses,
-        search,
-      });
-
-      const orderCol =
-        sortBy === "name"
-          ? user.name
-          : // biome-ignore lint/style/noNestedTernary: fix later
-            sortBy === "email"
-            ? user.email
-            : user.createdAt;
-      const order = sortDirection === "asc" ? asc(orderCol) : desc(orderCol);
-
-      const [users, [totRow]] = await Promise.all([
-        ctx.db
-          .select({
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            image: user.image,
-            emailVerified: user.emailVerified,
-            role: user.role,
-            banned: user.banned,
-            banReason: user.banReason,
-            createdAt: user.createdAt,
-          })
-          .from(user)
-          .where(where)
-          .orderBy(order)
-          .limit(limit)
-          .offset(offset),
-        ctx.db.select({ total: count() }).from(user).where(where),
-      ]);
-
-      if (users.length === 0) {
-        return { users: [], total: totRow?.total ?? 0 };
-      }
-
-      const userIds = users.map((u) => u.id);
-      const membershipRows = await ctx.db
-        .select({
-          userId: member.userId,
-          orgId: organization.id,
-          orgName: organization.name,
-          orgSlug: organization.slug,
-          role: member.role,
-        })
-        .from(member)
-        .innerJoin(organization, eq(organization.id, member.organizationId))
-        .where(
-          and(
-            inArray(member.userId, userIds),
-            ne(organization.slug, "platform")
-          )
-        );
-
-      const membershipsByUser = new Map<
-        string,
-        {
-          orgs: {
-            id: string;
-            name: string;
-            slug: string;
-            role:
-              | "org_owner"
-              | "org_admin"
-              | "org_auditor"
-              | "org_teacher"
-              | "org_student";
-          }[];
-          orgCount: number;
-        }
-      >();
-
-      for (const row of membershipRows) {
-        const existing = membershipsByUser.get(row.userId) ?? {
-          orgs: [],
-          orgCount: 0,
-        };
-        existing.orgs.push({
-          id: row.orgId,
-          name: row.orgName,
-          slug: row.orgSlug,
-          role: row.role,
-        });
-        existing.orgCount += 1;
-        membershipsByUser.set(row.userId, existing);
-      }
-
-      return {
-        users: users.map((u) => {
-          const memberships = membershipsByUser.get(u.id);
-          return {
-            ...u,
-            orgs: memberships?.orgs ?? [],
-            orgCount: memberships?.orgCount ?? 0,
-          };
-        }),
-        total: totRow?.total ?? 0,
-      };
+      return listAdminUsers(ctx.db, input);
     }),
 
   createUser: adminProcedure

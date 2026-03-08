@@ -224,34 +224,33 @@ export async function setSessionActiveOrgIfNull(
     return;
   }
 
-  const [publicIds, preferredRow] = await Promise.all([
-    getPublicOrgAndCohortIds(database),
-    database
-      .select({
-        organizationId: member.organizationId,
-        cohortId: cohort.id,
-      })
-      .from(member)
-      .innerJoin(organization, eq(organization.id, member.organizationId))
-      .leftJoin(cohort, eq(cohort.organizationId, member.organizationId))
-      .where(
-        and(
-          eq(member.userId, sessionRow.userId),
-          ne(organization.slug, PUBLIC_ORG_SLUG)
-        )
-      )
-      .orderBy(asc(member.createdAt), asc(cohort.createdAt))
-      .limit(1)
-      .then((rows) => rows[0] ?? null),
-  ]);
+  const publicIds = await getPublicOrgAndCohortIds(database);
 
-  const activeOrganizationId =
-    preferredRow?.organizationId ?? publicIds?.orgId ?? null;
+  // Temporarily disable preferred non-public org selection.
+  // const preferredRow = await database
+  //   .select({
+  //     organizationId: member.organizationId,
+  //     cohortId: cohort.id,
+  //   })
+  //   .from(member)
+  //   .innerJoin(organization, eq(organization.id, member.organizationId))
+  //   .leftJoin(cohort, eq(cohort.organizationId, member.organizationId))
+  //   .where(
+  //     and(
+  //       eq(member.userId, sessionRow.userId),
+  //       ne(organization.slug, PUBLIC_ORG_SLUG)
+  //     )
+  //   )
+  //   .orderBy(asc(member.createdAt), asc(cohort.createdAt))
+  //   .limit(1)
+  //   .then((rows) => rows[0] ?? null);
+
+  const activeOrganizationId = publicIds?.orgId ?? null;
   if (!activeOrganizationId) {
     return;
   }
 
-  const activeCohortId = preferredRow?.cohortId ?? publicIds?.cohortId ?? null;
+  const activeCohortId = publicIds?.cohortId ?? null;
 
   await database
     .update(sessionTable)
@@ -764,6 +763,178 @@ export async function getMemberRole(
     .limit(1);
 
   return result?.role ?? null;
+}
+
+type AdminUserStatus = "active" | "banned" | "unverified";
+interface ListAdminUsersParams {
+  limit: number;
+  offset: number;
+  search?: string;
+  filterRole?: "platform_admin" | "content_creator" | "platform_student";
+  filterStatus?: AdminUserStatus;
+  filterRoles?: ("platform_admin" | "content_creator" | "platform_student")[];
+  filterStatuses?: AdminUserStatus[];
+  sortBy: "name" | "email" | "createdAt";
+  sortDirection: "asc" | "desc";
+}
+
+function buildListAdminUsersWhere(
+  input: Omit<
+    ListAdminUsersParams,
+    "limit" | "offset" | "sortBy" | "sortDirection"
+  >
+) {
+  let roleCondition:
+    | ReturnType<typeof inArray>
+    | ReturnType<typeof eq>
+    | undefined;
+
+  if (input.filterRoles && input.filterRoles.length > 0) {
+    roleCondition = inArray(user.role, input.filterRoles);
+  } else if (input.filterRole) {
+    roleCondition = eq(user.role, input.filterRole);
+  }
+
+  const statusConditions: Parameters<typeof or>[0][] = [];
+  let statuses: AdminUserStatus[] = [];
+
+  if (input.filterStatuses?.length) {
+    statuses = input.filterStatuses;
+  } else if (input.filterStatus) {
+    statuses = [input.filterStatus];
+  }
+
+  for (const status of statuses) {
+    if (status === "banned") {
+      statusConditions.push(sql`${user.banned} IS TRUE`);
+      continue;
+    }
+
+    if (status === "unverified") {
+      statusConditions.push(
+        and(eq(user.emailVerified, false), sql`${user.banned} IS NOT TRUE`)
+      );
+      continue;
+    }
+
+    statusConditions.push(
+      and(eq(user.emailVerified, true), sql`${user.banned} IS NOT TRUE`)
+    );
+  }
+
+  const statusCondition =
+    statusConditions.length > 0 ? or(...statusConditions) : undefined;
+
+  return and(
+    input.search
+      ? or(
+          ilike(user.name, `%${input.search}%`),
+          ilike(user.email, `%${input.search}%`)
+        )
+      : undefined,
+    roleCondition,
+    statusCondition
+  );
+}
+
+export async function listAdminUsers(
+  database: Database,
+  params: ListAdminUsersParams
+) {
+  const where = buildListAdminUsersWhere(params);
+  const ORDER_COLUMNS = {
+    name: user.name,
+    email: user.email,
+    createdAt: user.createdAt,
+  } as const;
+  const orderColumn = ORDER_COLUMNS[params.sortBy];
+  const orderBy =
+    params.sortDirection === "asc" ? asc(orderColumn) : desc(orderColumn);
+
+  const rows = await database
+    .select({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+      emailVerified: user.emailVerified,
+      role: user.role,
+      banned: user.banned,
+      banReason: user.banReason,
+      createdAt: user.createdAt,
+      _total: sql<number>`count(*) OVER()`.mapWith(Number).as("_total"),
+    })
+    .from(user)
+    .where(where)
+    .orderBy(orderBy)
+    .limit(params.limit)
+    .offset(params.offset);
+
+  const total = rows[0]?._total ?? 0;
+  const users = rows.map(({ _total, ...rest }) => rest);
+
+  if (users.length === 0) {
+    return { users: [], total };
+  }
+
+  const userIds = users.map((row) => row.id);
+  const membershipRows = await database
+    .select({
+      userId: member.userId,
+      orgId: organization.id,
+      orgName: organization.name,
+      orgSlug: organization.slug,
+      role: member.role,
+    })
+    .from(member)
+    .innerJoin(organization, eq(organization.id, member.organizationId))
+    .where(
+      and(
+        inArray(member.userId, userIds),
+        ne(organization.slug, PUBLIC_ORG_SLUG)
+      )
+    );
+
+  const membershipsByUser = new Map<
+    string,
+    {
+      orgs: {
+        id: string;
+        name: string;
+        slug: string;
+        role: OrganizationRole;
+      }[];
+      orgCount: number;
+    }
+  >();
+
+  for (const row of membershipRows) {
+    const existing = membershipsByUser.get(row.userId) ?? {
+      orgs: [],
+      orgCount: 0,
+    };
+
+    existing.orgs.push({
+      id: row.orgId,
+      name: row.orgName,
+      slug: row.orgSlug,
+      role: row.role,
+    });
+    existing.orgCount += 1;
+    membershipsByUser.set(row.userId, existing);
+  }
+
+  return {
+    users: users.map((row) => {
+      const memberships = membershipsByUser.get(row.id);
+      return {
+        ...row,
+        orgs: memberships?.orgs ?? [],
+        orgCount: memberships?.orgCount ?? 0,
+      };
+    }),
+    total,
+  };
 }
 
 // ---------------------------------------------------------------------------
