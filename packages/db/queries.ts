@@ -7,6 +7,7 @@ import {
   exists,
   ilike,
   inArray,
+  max,
   ne,
   or,
   sql,
@@ -1104,35 +1105,21 @@ export async function getCourseByIdForInstructor(
   };
 }
 
-export async function getCourseInstructorsAndEnrollments(
+export async function getCourseInstructors(
   database: Database,
   params: { courseId: string }
 ) {
-  const [instructorRows, enrolledRows] = await Promise.all([
-    database
-      .select({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        image: user.image,
-        role: courseInstructor.role,
-      })
-      .from(courseInstructor)
-      .innerJoin(user, eq(user.id, courseInstructor.userId))
-      .where(eq(courseInstructor.courseId, params.courseId)),
-    database
-      .select({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        image: user.image,
-        enrolledAt: enrollment.enrolledAt,
-      })
-      .from(enrollment)
-      .innerJoin(user, eq(user.id, enrollment.userId))
-      .where(eq(enrollment.courseId, params.courseId))
-      .orderBy(asc(enrollment.enrolledAt)),
-  ]);
+  const instructorRows = await database
+    .select({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+      role: courseInstructor.role,
+    })
+    .from(courseInstructor)
+    .innerJoin(user, eq(user.id, courseInstructor.userId))
+    .where(eq(courseInstructor.courseId, params.courseId));
 
   const mainRow = instructorRows.find((r) => r.role === "main");
   const mainInstructor = mainRow
@@ -1147,7 +1134,7 @@ export async function getCourseInstructorsAndEnrollments(
     .filter((r) => r.role === "secondary")
     .map(({ role: _, ...rest }) => rest);
 
-  return { mainInstructor, coCreators, enrolledStudents: enrolledRows };
+  return { mainInstructor, coCreators };
 }
 
 export async function createCourse(
@@ -1310,4 +1297,301 @@ export async function deleteCourse(
     .returning({ id: course.id });
 
   return deleted ?? null;
+}
+
+export async function getSectionById(
+  database: Database,
+  params: { sectionId: string }
+) {
+  const [sectionRow] = await database
+    .select()
+    .from(section)
+    .where(eq(section.id, params.sectionId))
+    .limit(1);
+
+  return sectionRow ?? null;
+}
+
+export async function createSection(
+  database: Database,
+  params: {
+    courseId: string;
+    title: string;
+    description?: string;
+  }
+) {
+  const [maxRow] = await database
+    .select({ order: max(section.order) })
+    .from(section)
+    .where(eq(section.courseId, params.courseId));
+
+  const [created] = await database
+    .insert(section)
+    .values({
+      courseId: params.courseId,
+      title: params.title,
+      description: params.description,
+      order: (maxRow?.order ?? -1) + 1,
+    })
+    .returning();
+
+  return created;
+}
+
+export async function updateSection(
+  database: Database,
+  params: {
+    sectionId: string;
+    data: Partial<typeof section.$inferInsert>;
+  }
+) {
+  const updateData: Record<string, unknown> = {};
+  for (const key of Object.keys(params.data)) {
+    if (params.data[key as keyof typeof params.data] !== undefined) {
+      updateData[key] = params.data[key as keyof typeof params.data];
+    }
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return { section: null, noFields: true as const, notFound: false as const };
+  }
+
+  const [updated] = await database
+    .update(section)
+    .set(updateData)
+    .where(eq(section.id, params.sectionId))
+    .returning();
+
+  if (!updated) {
+    return { section: null, noFields: false as const, notFound: true as const };
+  }
+
+  return {
+    section: updated,
+    noFields: false as const,
+    notFound: false as const,
+  };
+}
+
+export async function deleteSection(
+  database: Database,
+  params: { sectionId: string }
+) {
+  const [deleted] = await database
+    .delete(section)
+    .where(eq(section.id, params.sectionId))
+    .returning({ id: section.id });
+
+  return deleted ?? null;
+}
+
+export async function getLessonById(
+  database: Database,
+  params: { lessonId: string }
+) {
+  const [lessonRow] = await database
+    .select({
+      id: lesson.id,
+      sectionId: lesson.sectionId,
+      courseId: section.courseId,
+    })
+    .from(lesson)
+    .innerJoin(section, eq(section.id, lesson.sectionId))
+    .where(eq(lesson.id, params.lessonId))
+    .limit(1);
+
+  return lessonRow ?? null;
+}
+
+export async function createLesson(
+  database: Database,
+  params: {
+    sectionId: string;
+    title: string;
+    content?: unknown;
+    type?: "article" | "test";
+    estimatedDuration?: number;
+  }
+) {
+  const [maxRow] = await database
+    .select({ order: max(lesson.order) })
+    .from(lesson)
+    .where(eq(lesson.sectionId, params.sectionId));
+
+  const [created] = await database
+    .insert(lesson)
+    .values({
+      sectionId: params.sectionId,
+      title: params.title,
+      content: params.content,
+      type: params.type ?? "article",
+      order: (maxRow?.order ?? -1) + 1,
+      estimatedDuration: params.estimatedDuration,
+    })
+    .returning();
+
+  return created;
+}
+
+export async function updateLesson(
+  database: Database,
+  params: {
+    lessonId: string;
+    data: Partial<typeof lesson.$inferInsert>;
+  }
+) {
+  const updateData: Record<string, unknown> = {};
+  for (const key of Object.keys(params.data)) {
+    if (params.data[key as keyof typeof params.data] !== undefined) {
+      updateData[key] = params.data[key as keyof typeof params.data];
+    }
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return { lesson: null, noFields: true as const, notFound: false as const };
+  }
+
+  const [updated] = await database
+    .update(lesson)
+    .set(updateData)
+    .where(eq(lesson.id, params.lessonId))
+    .returning();
+
+  if (!updated) {
+    return { lesson: null, noFields: false as const, notFound: true as const };
+  }
+
+  return {
+    lesson: updated,
+    noFields: false as const,
+    notFound: false as const,
+  };
+}
+
+export async function deleteLesson(
+  database: Database,
+  params: { lessonId: string }
+) {
+  const [deleted] = await database
+    .delete(lesson)
+    .where(eq(lesson.id, params.lessonId))
+    .returning({ id: lesson.id });
+
+  return deleted ?? null;
+}
+
+export async function reorderSections(
+  database: Database,
+  params: { courseId: string; sectionIds: string[] }
+) {
+  await Promise.all(
+    params.sectionIds.map((sectionId, index) =>
+      database
+        .update(section)
+        .set({ order: index })
+        .where(
+          and(eq(section.id, sectionId), eq(section.courseId, params.courseId))
+        )
+    )
+  );
+}
+
+export async function reorderLessons(
+  database: Database,
+  params: { sectionId: string; lessonIds: string[] }
+) {
+  await Promise.all(
+    params.lessonIds.map((lessonId, index) =>
+      database
+        .update(lesson)
+        .set({ order: index })
+        .where(
+          and(eq(lesson.id, lessonId), eq(lesson.sectionId, params.sectionId))
+        )
+    )
+  );
+}
+
+export async function moveLesson(
+  database: Database,
+  params: {
+    lessonId: string;
+    targetSectionId: string;
+    newOrder: number;
+  }
+) {
+  const [updated] = await database
+    .update(lesson)
+    .set({
+      sectionId: params.targetSectionId,
+      order: params.newOrder,
+    })
+    .where(eq(lesson.id, params.lessonId))
+    .returning();
+
+  return updated ?? null;
+}
+
+export async function searchCourseCoLeadCandidates(
+  database: Database,
+  params: { courseId: string; search: string }
+) {
+  return database
+    .select({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+    })
+    .from(user)
+    .leftJoin(
+      courseInstructor,
+      and(
+        eq(courseInstructor.userId, user.id),
+        eq(courseInstructor.courseId, params.courseId)
+      )
+    )
+    .where(
+      and(
+        eq(user.role, "content_creator"),
+        params.search
+          ? or(
+              ilike(user.name, `%${params.search}%`),
+              ilike(user.email, `%${params.search}%`)
+            )
+          : undefined,
+        sql`${courseInstructor.userId} is null`
+      )
+    )
+    .limit(20);
+}
+
+export async function addCourseCoLead(
+  database: Database,
+  params: { courseId: string; userId: string; addedBy: string }
+) {
+  await database
+    .insert(courseInstructor)
+    .values({
+      courseId: params.courseId,
+      userId: params.userId,
+      role: "secondary",
+      addedBy: params.addedBy,
+    })
+    .onConflictDoNothing();
+}
+
+export async function removeCourseCoLead(
+  database: Database,
+  params: { courseId: string; userId: string }
+) {
+  await database
+    .delete(courseInstructor)
+    .where(
+      and(
+        eq(courseInstructor.courseId, params.courseId),
+        eq(courseInstructor.userId, params.userId),
+        eq(courseInstructor.role, "secondary")
+      )
+    );
 }

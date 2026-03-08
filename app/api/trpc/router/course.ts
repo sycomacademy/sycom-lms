@@ -1,19 +1,30 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, ilike, max, or } from "drizzle-orm";
 import { z } from "zod";
 import {
+  addCourseCoLead,
   createCourse,
+  createLesson,
+  createSection,
   deleteCourse,
+  deleteLesson,
+  deleteSection,
   getCourseByIdForInstructor,
-  getCourseInstructorsAndEnrollments,
+  getCourseInstructors,
+  getLessonById,
   getPublicCourseBySlugOrId,
+  getSectionById,
   hasCourseAccessForEditing,
   listInstructorCourses,
   listPublicCourses,
+  moveLesson,
+  removeCourseCoLead,
+  reorderLessons,
+  reorderSections,
+  searchCourseCoLeadCandidates,
   updateCourse,
+  updateLesson,
+  updateSection,
 } from "@/packages/db/queries";
-import { user } from "@/packages/db/schema/auth";
-import { courseInstructor, lesson, section } from "@/packages/db/schema/course";
 import {
   createCourseSchema,
   createLessonSchema,
@@ -139,7 +150,7 @@ export const courseRouter = router({
         session.user.id,
         session.user.role ?? null
       );
-      return getCourseInstructorsAndEnrollments(db, input);
+      return getCourseInstructors(db, input);
     }),
 
   create: instructorProcedure
@@ -222,39 +233,21 @@ export const courseRouter = router({
   createSection: instructorProcedure
     .input(createSectionSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
       await assertInstructorCourseAccess(
         db,
         input.courseId,
-        ctx.session.user.id,
-        ctx.session.user.role ?? null
+        session.user.id,
+        session.user.role ?? null
       );
-      const [maxRow] = await db
-        .select({ order: max(section.order) })
-        .from(section)
-        .where(eq(section.courseId, input.courseId));
-      const nextOrder = (maxRow?.order ?? -1) + 1;
-      const [created] = await db
-        .insert(section)
-        .values({
-          courseId: input.courseId,
-          title: input.title,
-          description: input.description,
-          order: nextOrder,
-        })
-        .returning();
-      return created;
+      return createSection(db, input);
     }),
 
   updateSection: instructorProcedure
     .input(updateSectionSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
-      const [sec] = await db
-        .select({ courseId: section.courseId })
-        .from(section)
-        .where(eq(section.id, input.sectionId))
-        .limit(1);
+      const { db, session } = ctx;
+      const sec = await getSectionById(db, { sectionId: input.sectionId });
       if (!sec) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -264,42 +257,37 @@ export const courseRouter = router({
       await assertInstructorCourseAccess(
         db,
         sec.courseId,
-        ctx.session.user.id,
-        ctx.session.user.role ?? null
+        session.user.id,
+        session.user.role ?? null
       );
-      const updateData: Record<string, unknown> = {};
-      if (input.title !== undefined) {
-        updateData.title = input.title;
-      }
-      if (input.description !== undefined) {
-        updateData.description = input.description;
-      }
-      if (input.order !== undefined) {
-        updateData.order = input.order;
-      }
-      if (Object.keys(updateData).length === 0) {
+      const result = await updateSection(db, {
+        sectionId: input.sectionId,
+        data: {
+          title: input.title,
+          description: input.description,
+          order: input.order,
+        },
+      });
+      if (result.noFields) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "No fields to update",
         });
       }
-      const [updated] = await db
-        .update(section)
-        .set(updateData)
-        .where(eq(section.id, input.sectionId))
-        .returning();
-      return updated;
+      if (result.notFound) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Section not found",
+        });
+      }
+      return result.section;
     }),
 
   deleteSection: instructorProcedure
     .input(deleteSectionSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
-      const [sec] = await db
-        .select({ courseId: section.courseId })
-        .from(section)
-        .where(eq(section.id, input.sectionId))
-        .limit(1);
+      const { db, session } = ctx;
+      const sec = await getSectionById(db, { sectionId: input.sectionId });
       if (!sec) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -309,22 +297,18 @@ export const courseRouter = router({
       await assertInstructorCourseAccess(
         db,
         sec.courseId,
-        ctx.session.user.id,
-        ctx.session.user.role ?? null
+        session.user.id,
+        session.user.role ?? null
       );
-      await db.delete(section).where(eq(section.id, input.sectionId));
+      await deleteSection(db, input);
       return { success: true };
     }),
 
   createLesson: instructorProcedure
     .input(createLessonSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
-      const [sec] = await db
-        .select({ id: section.id, courseId: section.courseId })
-        .from(section)
-        .where(eq(section.id, input.sectionId))
-        .limit(1);
+      const { db, session } = ctx;
+      const sec = await getSectionById(db, { sectionId: input.sectionId });
       if (!sec) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -334,67 +318,34 @@ export const courseRouter = router({
       await assertInstructorCourseAccess(
         db,
         sec.courseId,
-        ctx.session.user.id,
-        ctx.session.user.role ?? null
+        session.user.id,
+        session.user.role ?? null
       );
-      const [maxRow] = await db
-        .select({ order: max(lesson.order) })
-        .from(lesson)
-        .where(eq(lesson.sectionId, input.sectionId));
-      const nextOrder = (maxRow?.order ?? -1) + 1;
-      const [created] = await db
-        .insert(lesson)
-        .values({
-          sectionId: input.sectionId,
-          title: input.title,
-          content: input.content,
-          type: input.type ?? "article",
-          order: nextOrder,
-          estimatedDuration: input.estimatedDuration,
-        })
-        .returning();
-      return created;
+      return createLesson(db, input);
     }),
 
   updateLesson: instructorProcedure
     .input(updateLessonSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
-      const [les] = await db
-        .select({ sectionId: lesson.sectionId })
-        .from(lesson)
-        .where(eq(lesson.id, input.lessonId))
-        .limit(1);
+      const { db, session } = ctx;
+      const les = await getLessonById(db, { lessonId: input.lessonId });
       if (!les) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Lesson not found",
         });
       }
-      const [sec] = await db
-        .select({ courseId: section.courseId })
-        .from(section)
-        .where(eq(section.id, les.sectionId))
-        .limit(1);
-      if (!sec) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Section not found",
-        });
-      }
       await assertInstructorCourseAccess(
         db,
-        sec.courseId,
-        ctx.session.user.id,
-        ctx.session.user.role ?? null
+        les.courseId,
+        session.user.id,
+        session.user.role ?? null
       );
       if (input.sectionId !== undefined && input.sectionId !== les.sectionId) {
-        const [targetSec] = await db
-          .select({ courseId: section.courseId })
-          .from(section)
-          .where(eq(section.id, input.sectionId))
-          .limit(1);
-        if (!targetSec || targetSec.courseId !== sec.courseId) {
+        const targetSec = await getSectionById(db, {
+          sectionId: input.sectionId,
+        });
+        if (!targetSec || targetSec.courseId !== les.courseId) {
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Cannot move lesson to a section in a different course",
@@ -402,113 +353,72 @@ export const courseRouter = router({
         }
       }
 
-      const updateData: Record<string, unknown> = {};
-      if (input.sectionId !== undefined) {
-        updateData.sectionId = input.sectionId;
-      }
-      if (input.title !== undefined) {
-        updateData.title = input.title;
-      }
-      if (input.content !== undefined) {
-        updateData.content = input.content;
-      }
-      if (input.type !== undefined) {
-        updateData.type = input.type;
-      }
-      if (input.order !== undefined) {
-        updateData.order = input.order;
-      }
-      if (input.isLocked !== undefined) {
-        updateData.isLocked = input.isLocked;
-      }
-      if (input.estimatedDuration !== undefined) {
-        updateData.estimatedDuration = input.estimatedDuration;
-      }
-      if (Object.keys(updateData).length === 0) {
+      const result = await updateLesson(db, {
+        lessonId: input.lessonId,
+        data: {
+          sectionId: input.sectionId,
+          title: input.title,
+          content: input.content,
+          type: input.type,
+          order: input.order,
+          estimatedDuration: input.estimatedDuration,
+        },
+      });
+      if (result.noFields) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "No fields to update",
         });
       }
-      const [updated] = await db
-        .update(lesson)
-        .set(updateData)
-        .where(eq(lesson.id, input.lessonId))
-        .returning();
-      return updated;
+      if (result.notFound) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Lesson not found",
+        });
+      }
+      return result.lesson;
     }),
 
   deleteLesson: instructorProcedure
     .input(deleteLessonSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
-      const [les] = await db
-        .select({ sectionId: lesson.sectionId })
-        .from(lesson)
-        .where(eq(lesson.id, input.lessonId))
-        .limit(1);
+      const { db, session } = ctx;
+      const les = await getLessonById(db, { lessonId: input.lessonId });
       if (!les) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Lesson not found",
         });
       }
-      const [sec] = await db
-        .select({ courseId: section.courseId })
-        .from(section)
-        .where(eq(section.id, les.sectionId))
-        .limit(1);
-      if (!sec) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Section not found",
-        });
-      }
       await assertInstructorCourseAccess(
         db,
-        sec.courseId,
-        ctx.session.user.id,
-        ctx.session.user.role ?? null
+        les.courseId,
+        session.user.id,
+        session.user.role ?? null
       );
-      await db.delete(lesson).where(eq(lesson.id, input.lessonId));
+      await deleteLesson(db, input);
       return { success: true };
     }),
 
   reorderSections: instructorProcedure
     .input(reorderSectionsSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
       await assertInstructorCourseAccess(
         db,
         input.courseId,
-        ctx.session.user.id,
-        ctx.session.user.role ?? null
+        session.user.id,
+        session.user.role ?? null
       );
-      await Promise.all(
-        input.sectionIds.map((sectionId, index) =>
-          db
-            .update(section)
-            .set({ order: index })
-            .where(
-              and(
-                eq(section.id, sectionId),
-                eq(section.courseId, input.courseId)
-              )
-            )
-        )
-      );
+      await reorderSections(db, input);
       return { success: true };
     }),
 
   reorderLessons: instructorProcedure
     .input(reorderLessonsSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
-      const [sec] = await db
-        .select({ courseId: section.courseId })
-        .from(section)
-        .where(eq(section.id, input.sectionId))
-        .limit(1);
+      const { db, session } = ctx;
+      const sec = await getSectionById(db, { sectionId: input.sectionId });
       if (!sec) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -518,63 +428,34 @@ export const courseRouter = router({
       await assertInstructorCourseAccess(
         db,
         sec.courseId,
-        ctx.session.user.id,
-        ctx.session.user.role ?? null
+        session.user.id,
+        session.user.role ?? null
       );
-      await Promise.all(
-        input.lessonIds.map((lessonId, index) =>
-          db
-            .update(lesson)
-            .set({ order: index })
-            .where(
-              and(
-                eq(lesson.id, lessonId),
-                eq(lesson.sectionId, input.sectionId)
-              )
-            )
-        )
-      );
+      await reorderLessons(db, input);
       return { success: true };
     }),
 
   moveLesson: instructorProcedure
     .input(moveLessonSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
-      const [les] = await db
-        .select({ sectionId: lesson.sectionId })
-        .from(lesson)
-        .where(eq(lesson.id, input.lessonId))
-        .limit(1);
+      const { db, session } = ctx;
+      const les = await getLessonById(db, { lessonId: input.lessonId });
       if (!les) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Lesson not found",
         });
       }
-      const [sourceSec] = await db
-        .select({ courseId: section.courseId })
-        .from(section)
-        .where(eq(section.id, les.sectionId))
-        .limit(1);
-      if (!sourceSec) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Source section not found",
-        });
-      }
-      const [targetSec] = await db
-        .select({ courseId: section.courseId })
-        .from(section)
-        .where(eq(section.id, input.targetSectionId))
-        .limit(1);
+      const targetSec = await getSectionById(db, {
+        sectionId: input.targetSectionId,
+      });
       if (!targetSec) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Target section not found",
         });
       }
-      if (sourceSec.courseId !== targetSec.courseId) {
+      if (les.courseId !== targetSec.courseId) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Cannot move lesson to a section in a different course",
@@ -582,80 +463,18 @@ export const courseRouter = router({
       }
       await assertInstructorCourseAccess(
         db,
-        sourceSec.courseId,
-        ctx.session.user.id,
-        ctx.session.user.role ?? null
+        les.courseId,
+        session.user.id,
+        session.user.role ?? null
       );
-      const [updated] = await db
-        .update(lesson)
-        .set({
-          sectionId: input.targetSectionId,
-          order: input.newOrder,
-        })
-        .where(eq(lesson.id, input.lessonId))
-        .returning();
+      const updated = await moveLesson(db, input);
       return updated;
-    }),
-
-  listCoLeads: instructorProcedure
-    .input(z.object({ courseId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      const { db } = ctx;
-      const rows = await db
-        .select({
-          userId: courseInstructor.userId,
-          role: courseInstructor.role,
-          createdAt: courseInstructor.createdAt,
-          name: user.name,
-          email: user.email,
-          image: user.image,
-        })
-        .from(courseInstructor)
-        .innerJoin(user, eq(user.id, courseInstructor.userId))
-        .where(
-          and(
-            eq(courseInstructor.courseId, input.courseId),
-            eq(courseInstructor.role, "secondary")
-          )
-        );
-      return rows;
     }),
 
   searchCoLeadCandidates: instructorProcedure
     .input(z.object({ courseId: z.string(), search: z.string().default("") }))
     .query(async ({ ctx, input }) => {
-      const { db } = ctx;
-      // Find existing co-leads so we can exclude them
-      const existing = await db
-        .select({ userId: courseInstructor.userId })
-        .from(courseInstructor)
-        .where(eq(courseInstructor.courseId, input.courseId));
-      const existingIds = existing.map((r) => r.userId);
-
-      const query = db
-        .select({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          image: user.image,
-        })
-        .from(user)
-        .where(
-          and(
-            eq(user.role, "content_creator"),
-            input.search
-              ? or(
-                  ilike(user.name, `%${input.search}%`),
-                  ilike(user.email, `%${input.search}%`)
-                )
-              : undefined
-          )
-        )
-        .limit(20);
-
-      const candidates = await query;
-      // Exclude users already on the course (main or secondary)
-      return candidates.filter((c) => !existingIds.includes(c.id));
+      return searchCourseCoLeadCandidates(ctx.db, input);
     }),
 
   addCoLead: instructorProcedure
@@ -674,15 +493,11 @@ export const courseRouter = router({
           message: "Only the creator or platform admin can add co-leads",
         });
       }
-      await db
-        .insert(courseInstructor)
-        .values({
-          courseId: input.courseId,
-          userId: input.userId,
-          role: "secondary",
-          addedBy: session.user.id,
-        })
-        .onConflictDoNothing();
+      await addCourseCoLead(db, {
+        courseId: input.courseId,
+        userId: input.userId,
+        addedBy: session.user.id,
+      });
       return { success: true };
     }),
 
@@ -702,19 +517,7 @@ export const courseRouter = router({
           message: "Only the creator or platform admin can remove co-leads",
         });
       }
-      await db
-        .delete(courseInstructor)
-        .where(
-          and(
-            eq(courseInstructor.courseId, input.courseId),
-            eq(courseInstructor.userId, input.userId),
-            eq(courseInstructor.role, "secondary")
-          )
-        );
+      await removeCourseCoLead(db, input);
       return { success: true };
     }),
-
-  // -------------------------------------------------------------------------
-  // Org: assign/unassign courses to cohorts, set due dates
-  // -------------------------------------------------------------------------
 });

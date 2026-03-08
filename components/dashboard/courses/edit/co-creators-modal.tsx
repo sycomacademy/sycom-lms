@@ -53,8 +53,8 @@ function CoCreatorsContent({ courseId }: { courseId: string }) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
 
-  const { data: coLeads, isLoading: isLoadingCoLeads } = useQuery(
-    trpc.course.listCoLeads.queryOptions({ courseId })
+  const { data: instructors, isLoading: isLoadingCoLeads } = useQuery(
+    trpc.course.getInstructors.queryOptions({ courseId })
   );
 
   const { data: candidates, isLoading: isLoadingCandidates } = useQuery(
@@ -63,7 +63,7 @@ function CoCreatorsContent({ courseId }: { courseId: string }) {
 
   const invalidate = () => {
     queryClient.invalidateQueries({
-      queryKey: trpc.course.listCoLeads.queryKey({ courseId }),
+      queryKey: trpc.course.getInstructors.queryKey({ courseId }),
     });
     queryClient.invalidateQueries({
       queryKey: trpc.course.searchCoLeadCandidates.queryKey({
@@ -109,7 +109,7 @@ function CoCreatorsContent({ courseId }: { courseId: string }) {
     if (isLoadingCoLeads) {
       return <ListSkeleton count={2} />;
     }
-    if (!coLeads || coLeads.length === 0) {
+    if (!instructors || instructors.coCreators.length === 0) {
       return (
         <p className="text-muted-foreground text-sm">
           No co-creators yet. Search below to add some.
@@ -118,10 +118,10 @@ function CoCreatorsContent({ courseId }: { courseId: string }) {
     }
     return (
       <ul className="flex flex-col gap-2">
-        {coLeads.map((co) => (
+        {instructors.coCreators.map((co) => (
           <li
             className="flex items-center gap-3 rounded-md border px-3 py-2"
-            key={co.userId}
+            key={co.id}
           >
             <Avatar size="sm">
               {co.image && <AvatarImage src={co.image} />}
@@ -135,9 +135,7 @@ function CoCreatorsContent({ courseId }: { courseId: string }) {
             </div>
             <Button
               disabled={removeMutation.isPending}
-              onClick={() =>
-                removeMutation.mutate({ courseId, userId: co.userId })
-              }
+              onClick={() => removeMutation.mutate({ courseId, userId: co.id })}
               size="sm"
               title="Remove co-creator"
               type="button"
@@ -213,7 +211,8 @@ function CoCreatorsContent({ courseId }: { courseId: string }) {
     <div className="flex flex-col gap-4">
       <div>
         <p className="mb-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">
-          Current co-creators{coLeads ? ` (${coLeads.length})` : ""}
+          Current co-creators
+          {instructors ? ` (${instructors.coCreators.length})` : ""}
         </p>
         {renderCoLeads()}
       </div>
