@@ -32,7 +32,7 @@ export const publicInvite = pgTable(
     }),
     createdBy: text("created_by")
       .notNull()
-      .references(() => user.id, { onDelete: "restrict" }),
+      .references(() => user.id, { onDelete: "cascade" }),
     createdAt,
     updatedAt,
   },

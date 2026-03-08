@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { UserRole } from "@/packages/db/schema/auth";
 import { useTRPC } from "@/packages/trpc/client";
 import { ROLE_LABELS } from "@/packages/utils/schema";
 import { getInitials } from "@/packages/utils/string";
@@ -151,7 +152,7 @@ function getColumns(): ColumnDef<User, unknown>[] {
             className="capitalize"
             variant={ROLE_BADGE_VARIANT[role] ?? "outline"}
           >
-            {ROLE_LABELS[role] ?? role}
+            {ROLE_LABELS[role as UserRole] ?? role}
           </Badge>
         );
       },

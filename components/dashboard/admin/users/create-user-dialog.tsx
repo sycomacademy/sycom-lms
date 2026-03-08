@@ -36,8 +36,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
 import { useTRPC } from "@/packages/trpc/client";
-import { createPublicInviteSchema } from "@/packages/utils/schema";
-import { ROLE_LABELS } from "@/packages/utils/schema";
+import { createPublicInviteSchema, ROLE_LABELS } from "@/packages/utils/schema";
 
 type CreateInviteInput = z.infer<typeof createPublicInviteSchema>;
 
@@ -168,6 +167,9 @@ export function CreateUserDialog() {
                             </SelectItem>
                             <SelectItem value="platform_admin">
                               Platform Admin
+                            </SelectItem>
+                            <SelectItem value="platform_student">
+                              Student
                             </SelectItem>
                           </SelectContent>
                         </Select>

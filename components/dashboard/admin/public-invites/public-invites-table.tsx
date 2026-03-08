@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import { Loader2Icon, MailIcon, SearchIcon, Trash2Icon } from "lucide-react";
-import { type ReactNode, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { RouterOutputs } from "@/app/api/trpc/router";
 import { CreateUserDialog } from "@/components/dashboard/admin/users/create-user-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -24,9 +24,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toastManager } from "@/components/ui/toast";
 import { useTRPC } from "@/packages/trpc/client";
 import { ROLE_LABELS } from "@/packages/utils/schema";
+import { capitalize } from "@/packages/utils/string";
 
 type Invite = RouterOutputs["admin"]["listPublicInvites"]["invites"][number];
 
@@ -61,6 +63,47 @@ function PublicInvitesEmptyState() {
         </EmptyDescription>
       </EmptyHeader>
     </Empty>
+  );
+}
+
+function PublicInvitesTableSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="overflow-hidden rounded-md border">
+        <div className="border-b bg-muted/30 px-4 py-3">
+          <div className="grid grid-cols-[1fr_1.2fr_0.8fr_0.8fr_0.9fr_0.8fr_0.8fr_60px] gap-4">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-14" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="ml-auto h-4 w-10" />
+          </div>
+        </div>
+
+        <div className="divide-y">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              className="grid grid-cols-[1fr_1.2fr_0.8fr_0.8fr_0.9fr_0.8fr_0.8fr_60px] items-center gap-4 px-4 py-4"
+              key={index}
+            >
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-4/5" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-6 w-20 rounded-full" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-16" />
+              <div className="ml-auto flex gap-2">
+                <Skeleton className="size-8 rounded-md" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -135,7 +178,7 @@ export function PublicInvitesTable() {
         size: 120,
         cell: ({ row }) => (
           <Badge variant={STATUS_BADGE_VARIANTS[row.original.status]}>
-            {row.original.status}
+            {capitalize(row.original.status)}
           </Badge>
         ),
       },
@@ -203,24 +246,7 @@ export function PublicInvitesTable() {
 
   const invites = query.data?.invites ?? [];
   const total = query.data?.total ?? 0;
-  const showEmptyState = !query.isPending && invites.length === 0;
-  let tableContent: ReactNode = null;
-
-  if (showEmptyState) {
-    tableContent = <PublicInvitesEmptyState />;
-  } else if (!query.isPending || invites.length > 0) {
-    tableContent = (
-      <DataTable
-        columns={columns}
-        data={invites}
-        manualPagination
-        onPaginationChange={setPagination}
-        pageIndex={pagination.pageIndex}
-        pageSize={pagination.pageSize}
-        total={total}
-      />
-    );
-  }
+  const dataLoaded = Boolean(query.data) || !query.isPending;
 
   return (
     <div className="space-y-4">
@@ -253,7 +279,7 @@ export function PublicInvitesTable() {
           value={status}
         >
           <SelectTrigger className="w-44">
-            <SelectValue />
+            <SelectValue>{capitalize(status)}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {STATUS_OPTIONS.map((option) => (
@@ -265,7 +291,19 @@ export function PublicInvitesTable() {
         </Select>
       </div>
 
-      {tableContent}
+      {!dataLoaded && <PublicInvitesTableSkeleton />}
+      {dataLoaded && invites.length === 0 && <PublicInvitesEmptyState />}
+      {dataLoaded && invites.length > 0 && (
+        <DataTable
+          columns={columns}
+          data={invites}
+          manualPagination
+          onPaginationChange={setPagination}
+          pageIndex={pagination.pageIndex}
+          pageSize={pagination.pageSize}
+          total={total}
+        />
+      )}
     </div>
   );
 }

@@ -48,7 +48,9 @@ export const mediaAsset = storageSchema.table(
     bytes: integer("bytes"),
     width: integer("width"),
     height: integer("height"),
-    uploadedBy: text("uploaded_by").references(() => user.id),
+    uploadedBy: text("uploaded_by").references(() => user.id, {
+      onDelete: "set null",
+    }),
     entityId: text("entity_id"), // polymorphic resource reference, e.g. user / cohort / course / lesson / report
     entityType: storageEntityTypeEnum("entity_type"),
     createdAt,

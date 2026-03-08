@@ -1,11 +1,12 @@
 "use client";
 
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import {
   AlertCircleIcon,
   EyeIcon,
   LightbulbIcon,
+  Loader2Icon,
   MessageSquareIcon,
 } from "lucide-react";
 import { useState, useTransition } from "react";
@@ -15,12 +16,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTRPC } from "@/packages/trpc/client";
 
 type ReportItem = RouterOutputs["admin"]["listReports"]["items"][number];
@@ -177,6 +186,61 @@ function makeColumns(
   ];
 }
 
+function ReportsTableSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="overflow-hidden rounded-md border">
+        <div className="border-b bg-muted/30 px-4 py-3">
+          <div className="grid grid-cols-[0.7fr_1fr_1.5fr_0.8fr_0.8fr_0.7fr_50px] gap-4">
+            <Skeleton className="h-4 w-12" />
+            <Skeleton className="h-4 w-12" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-14" />
+            <Skeleton className="h-4 w-12" />
+            <Skeleton className="ml-auto h-4 w-10" />
+          </div>
+        </div>
+
+        <div className="divide-y">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              className="grid grid-cols-[0.7fr_1fr_1.5fr_0.8fr_0.8fr_0.7fr_50px] items-center gap-4 px-4 py-4"
+              key={index}
+            >
+              <Skeleton className="h-6 w-20 rounded-full" />
+              <Skeleton className="h-4 w-4/5" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-6 w-24 rounded-full" />
+              <Skeleton className="h-4 w-16" />
+              <div className="ml-auto flex gap-2">
+                <Skeleton className="size-7 rounded-md" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReportsEmptyState() {
+  return (
+    <Empty className="border">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <MessageSquareIcon />
+        </EmptyMedia>
+        <EmptyTitle>No reports found</EmptyTitle>
+        <EmptyDescription>
+          Try adjusting your filters to find reports or feedback.
+        </EmptyDescription>
+      </EmptyHeader>
+    </Empty>
+  );
+}
+
 export function ReportsTable() {
   const trpc = useTRPC();
   const [, startTransition] = useTransition();
@@ -205,7 +269,7 @@ export function ReportsTable() {
       | "all",
   });
 
-  const { data } = useSuspenseQuery(queryOptions);
+  const { data, isFetching, isPending } = useQuery(queryOptions);
 
   const openDetail = (id: string, type: "report" | "feedback") => {
     setDetailId(id);
@@ -214,6 +278,9 @@ export function ReportsTable() {
   };
 
   const columns = makeColumns(openDetail);
+  const items = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const dataLoaded = Boolean(data) || !isPending;
 
   const handleFilterTypeChange = (value: string) => {
     startTransition(() => {
@@ -246,59 +313,67 @@ export function ReportsTable() {
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <Select
-          onValueChange={(v) => {
-            if (v) {
-              handleFilterTypeChange(v);
-            }
-          }}
-          value={filterType}
-        >
-          <SelectTrigger className="w-fit" size="sm">
-            <SelectValue>
-              {TYPE_FILTER_LABELS[filterType] ?? "All types"}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            <SelectItem value="report">Reports</SelectItem>
-            <SelectItem value="feedback">Feedback</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
-          onValueChange={(v) => {
-            if (v) {
-              handleFilterStatusChange(v);
-            }
-          }}
-          value={filterStatus}
-        >
-          <SelectTrigger className="w-fit" size="sm">
-            <SelectValue>
-              {STATUS_FILTER_LABELS[filterStatus] ?? "All statuses"}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="in_progress">In Progress</SelectItem>
-            <SelectItem value="resolved">Resolved</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Select
+            onValueChange={(v) => {
+              if (v) {
+                handleFilterTypeChange(v);
+              }
+            }}
+            value={filterType}
+          >
+            <SelectTrigger className="w-fit" size="sm">
+              <SelectValue>
+                {TYPE_FILTER_LABELS[filterType] ?? "All types"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="report">Reports</SelectItem>
+              <SelectItem value="feedback">Feedback</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            onValueChange={(v) => {
+              if (v) {
+                handleFilterStatusChange(v);
+              }
+            }}
+            value={filterStatus}
+          >
+            <SelectTrigger className="w-fit" size="sm">
+              <SelectValue>
+                {STATUS_FILTER_LABELS[filterStatus] ?? "All statuses"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="in_progress">In Progress</SelectItem>
+              <SelectItem value="resolved">Resolved</SelectItem>
+              <SelectItem value="closed">Closed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {isFetching && (
+          <Loader2Icon className="size-4 animate-spin text-muted-foreground" />
+        )}
       </div>
 
-      {/* Table */}
-      <DataTable
-        columns={columns}
-        data={data?.items ?? []}
-        manualPagination
-        onPaginationChange={handlePaginationChange}
-        pageIndex={pagination.pageIndex}
-        pageSize={pagination.pageSize}
-        total={data?.total ?? 0}
-      />
+      {!dataLoaded && <ReportsTableSkeleton />}
+      {dataLoaded && items.length === 0 && <ReportsEmptyState />}
+      {dataLoaded && items.length > 0 && (
+        <DataTable
+          columns={columns}
+          data={items}
+          manualPagination
+          onPaginationChange={handlePaginationChange}
+          pageIndex={pagination.pageIndex}
+          pageSize={pagination.pageSize}
+          total={total}
+        />
+      )}
 
       {/* Detail dialog */}
       <ReportDetailDialog

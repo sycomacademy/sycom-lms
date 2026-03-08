@@ -976,6 +976,19 @@ export async function findUserByEmail(
   return userRow ?? null;
 }
 
+export async function getUserRoleById(
+  database: Database,
+  params: { userId: string }
+): Promise<UserRole | null> {
+  const [userRow] = await database
+    .select({ role: user.role })
+    .from(user)
+    .where(eq(user.id, params.userId))
+    .limit(1);
+
+  return userRow?.role ?? null;
+}
+
 export async function createPublicInviteRecord(
   database: Database,
   params: {
@@ -1091,6 +1104,284 @@ export async function listPublicInvites(
       status: getPublicInviteDisplayStatus({ status, expiresAt }),
     })),
     total,
+  };
+}
+
+type AdminReportFilterStatus =
+  | "all"
+  | (typeof report.status.enumValues)[number];
+type AdminReportListType = "all" | "report" | "feedback";
+
+interface ListAdminReportsParams {
+  limit: number;
+  offset: number;
+  type: AdminReportListType;
+  status: AdminReportFilterStatus;
+}
+
+export async function listAdminReports(
+  database: Database,
+  params: ListAdminReportsParams
+) {
+  const reportWhere =
+    params.status !== "all" ? eq(report.status, params.status) : undefined;
+
+  if (params.type === "report") {
+    const rows = await database
+      .select({
+        id: report.id,
+        type: sql<"report">`'report'`,
+        email: report.email,
+        subject: report.subject,
+        message: sql<string | null>`null`,
+        category: report.type,
+        status: report.status,
+        createdAt: report.createdAt,
+        _total: sql<number>`count(*) OVER()`.mapWith(Number).as("_total"),
+      })
+      .from(report)
+      .where(reportWhere)
+      .orderBy(desc(report.createdAt))
+      .limit(params.limit)
+      .offset(params.offset);
+
+    const total = rows[0]?._total ?? 0;
+    return {
+      items: rows.map(({ _total, ...item }) => item),
+      total,
+    };
+  }
+
+  if (params.type === "feedback") {
+    const rows = await database
+      .select({
+        id: feedback.id,
+        type: sql<"feedback">`'feedback'`,
+        email: feedback.email,
+        subject: sql<string | null>`null`,
+        message: feedback.message,
+        category: sql<string | null>`null`,
+        status: sql<string | null>`null`,
+        createdAt: feedback.createdAt,
+        _total: sql<number>`count(*) OVER()`.mapWith(Number).as("_total"),
+      })
+      .from(feedback)
+      .orderBy(desc(feedback.createdAt))
+      .limit(params.limit)
+      .offset(params.offset);
+
+    const total = rows[0]?._total ?? 0;
+    return {
+      items: rows.map(({ _total, ...item }) => item),
+      total,
+    };
+  }
+
+  const [reportItems, feedbackItems, [reportTotalRow], [feedbackTotalRow]] =
+    await Promise.all([
+      database
+        .select({
+          id: report.id,
+          type: sql<"report">`'report'`,
+          email: report.email,
+          subject: report.subject,
+          message: sql<string | null>`null`,
+          category: report.type,
+          status: report.status,
+          createdAt: report.createdAt,
+        })
+        .from(report)
+        .orderBy(desc(report.createdAt))
+        .limit(300),
+      database
+        .select({
+          id: feedback.id,
+          type: sql<"feedback">`'feedback'`,
+          email: feedback.email,
+          subject: sql<string | null>`null`,
+          message: feedback.message,
+          category: sql<string | null>`null`,
+          status: sql<string | null>`null`,
+          createdAt: feedback.createdAt,
+        })
+        .from(feedback)
+        .orderBy(desc(feedback.createdAt))
+        .limit(300),
+      database.select({ total: count() }).from(report),
+      database.select({ total: count() }).from(feedback),
+    ]);
+
+  const items = [...reportItems, ...feedbackItems]
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
+    .slice(params.offset, params.offset + params.limit);
+
+  return {
+    items,
+    total: (reportTotalRow?.total ?? 0) + (feedbackTotalRow?.total ?? 0),
+  };
+}
+
+export async function getAdminReportById(
+  database: Database,
+  params: { id: string }
+) {
+  const [[reportItem], [feedbackItem]] = await Promise.all([
+    database.select().from(report).where(eq(report.id, params.id)).limit(1),
+    database.select().from(feedback).where(eq(feedback.id, params.id)).limit(1),
+  ]);
+
+  if (reportItem) {
+    return { ...reportItem, type: "report" as const };
+  }
+
+  if (feedbackItem) {
+    return { ...feedbackItem, type: "feedback" as const };
+  }
+
+  return null;
+}
+
+export async function updateAdminReportStatus(
+  database: Database,
+  params: { id: string; status: (typeof report.status.enumValues)[number] }
+) {
+  const [updated] = await database
+    .update(report)
+    .set({ status: params.status })
+    .where(eq(report.id, params.id))
+    .returning({ id: report.id, status: report.status });
+
+  return updated ?? null;
+}
+
+interface ListAdminOrganizationsParams {
+  limit: number;
+  offset: number;
+  search?: string;
+}
+
+export async function listAdminOrganizations(
+  database: Database,
+  params: ListAdminOrganizationsParams
+) {
+  const where = and(
+    ne(organization.slug, PUBLIC_ORG_SLUG),
+    params.search
+      ? or(
+          ilike(organization.name, `%${params.search}%`),
+          ilike(organization.slug, `%${params.search}%`)
+        )
+      : undefined
+  );
+
+  const rows = await database
+    .select({
+      id: organization.id,
+      name: organization.name,
+      slug: organization.slug,
+      logo: organization.logo,
+      createdAt: organization.createdAt,
+      cohortCount: sql<number>`(
+        SELECT COUNT(*)::int FROM auth.cohort c
+        WHERE c.organization_id = ${sql.raw('"auth"."organization"."id"')}
+      )`,
+      memberCount: sql<number>`(
+        SELECT COUNT(*)::int FROM auth.member m
+        WHERE m.organization_id = ${sql.raw('"auth"."organization"."id"')}
+      )`,
+      ownerName: sql<string | null>`(
+        SELECT u.name FROM auth.user u
+        INNER JOIN auth.member m ON m.user_id = u.id
+        WHERE m.organization_id = ${sql.raw('"auth"."organization"."id"')}
+          AND m.role = 'org_owner'
+        LIMIT 1
+      )`,
+      ownerEmail: sql<string | null>`(
+        SELECT u.email FROM auth.user u
+        INNER JOIN auth.member m ON m.user_id = u.id
+        WHERE m.organization_id = ${sql.raw('"auth"."organization"."id"')}
+          AND m.role = 'org_owner'
+        LIMIT 1
+      )`,
+      _total: sql<number>`count(*) OVER()`.mapWith(Number).as("_total"),
+    })
+    .from(organization)
+    .where(where)
+    .orderBy(desc(organization.createdAt))
+    .limit(params.limit)
+    .offset(params.offset);
+
+  const total = rows[0]?._total ?? 0;
+  const orgs = rows.map(({ _total, ...org }) => org);
+
+  return {
+    orgs,
+    total,
+  };
+}
+
+export async function createAdminOrganization(
+  database: Database,
+  params: {
+    name: string;
+    slug: string;
+    ownerEmail: string;
+  }
+) {
+  const [[ownerUser], [existingOrganization]] = await Promise.all([
+    database
+      .select({ id: user.id, name: user.name })
+      .from(user)
+      .where(eq(user.email, params.ownerEmail))
+      .limit(1),
+    database
+      .select({ id: organization.id })
+      .from(organization)
+      .where(eq(organization.slug, params.slug))
+      .limit(1),
+  ]);
+
+  if (!ownerUser) {
+    return { ownerNotFound: true as const, conflict: false as const };
+  }
+
+  if (existingOrganization) {
+    return { ownerNotFound: false as const, conflict: true as const };
+  }
+
+  const orgId = crypto.randomUUID();
+
+  await database.insert(organization).values({
+    id: orgId,
+    name: params.name,
+    slug: params.slug,
+  });
+
+  await Promise.all([
+    database.insert(member).values({
+      id: crypto.randomUUID(),
+      organizationId: orgId,
+      userId: ownerUser.id,
+      role: "org_owner",
+    }),
+    database.insert(cohort).values({
+      id: crypto.randomUUID(),
+      name: "General",
+      organizationId: orgId,
+    }),
+  ]);
+
+  return {
+    ownerNotFound: false as const,
+    conflict: false as const,
+    organization: {
+      id: orgId,
+      name: params.name,
+      slug: params.slug,
+    },
   };
 }
 

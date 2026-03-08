@@ -239,7 +239,7 @@ export const listAdminUsersSchema = z.object({
 export const createPublicInviteSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   email: z.email("Please enter a valid email address"),
-  role: z.enum(["platform_admin", "content_creator"]),
+  role: z.enum(["platform_admin", "content_creator", "platform_student"]),
 });
 
 export const listPublicInvitesSchema = z.object({
@@ -249,6 +249,39 @@ export const listPublicInvitesSchema = z.object({
   statuses: z
     .array(z.enum(["pending", "accepted", "expired", "revoked"]))
     .optional(),
+});
+
+export const listAdminReportsSchema = z.object({
+  limit: z.number().int().min(1).max(100).default(10),
+  offset: z.number().int().min(0).default(0),
+  type: z.enum(["all", "report", "feedback"]).default("all"),
+  status: z
+    .enum(["all", "pending", "in_progress", "resolved", "closed"])
+    .default("all"),
+});
+
+export const getAdminReportSchema = z.object({
+  id: z.string(),
+});
+
+export const updateAdminReportStatusSchema = z.object({
+  id: z.string(),
+  status: z.enum(["pending", "in_progress", "resolved", "closed"]),
+});
+
+export const listOrganizationsSchema = z.object({
+  limit: z.number().int().min(1).max(100).default(10),
+  offset: z.number().int().min(0).default(0),
+  search: z.string().optional(),
+});
+
+export const createOrganizationSchema = z.object({
+  name: z.string().min(1),
+  slug: z
+    .string()
+    .min(1)
+    .regex(/^[a-z0-9-]+$/, "Lowercase letters, numbers, and hyphens only"),
+  ownerEmail: z.email(),
 });
 
 export const publicInviteTokenSchema = z.object({

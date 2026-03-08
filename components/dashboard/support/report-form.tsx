@@ -25,6 +25,7 @@ import {
   type SubmitReportFormInput,
   submitReportFormSchema,
 } from "@/packages/utils/schema";
+import { capitalize } from "@/packages/utils/string";
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -126,7 +127,9 @@ export function ReportForm() {
                           value={field.value}
                         >
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select a report type" />
+                            <SelectValue placeholder="Select a report type">
+                              {capitalize(field.value)}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {REPORT_TYPE_OPTIONS.map(({ value, label }) => (
