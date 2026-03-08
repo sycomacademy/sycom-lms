@@ -5,6 +5,7 @@ import {
   desc,
   eq,
   exists,
+  gte,
   ilike,
   inArray,
   max,
@@ -1172,6 +1173,265 @@ function buildListAdminUsersWhere(
     roleCondition,
     statusCondition
   );
+}
+
+export async function getAdminOverview(database: Database = db) {
+  const startOfToday = new Date();
+  startOfToday.setUTCHours(0, 0, 0, 0);
+
+  const signupsStart = new Date(startOfToday);
+  signupsStart.setUTCDate(signupsStart.getUTCDate() - 6);
+
+  const [
+    [userCountRow],
+    [organizationCountRow],
+    [activeInviteCountRow],
+    [pendingReportCountRow],
+    roleRows,
+    signupsByDayRows,
+    recentUsers,
+    recentInbox,
+  ] = await Promise.all([
+    database.select({ total: count() }).from(user),
+    database
+      .select({ total: count() })
+      .from(organization)
+      .where(ne(organization.slug, PUBLIC_ORG_SLUG)),
+    database
+      .select({ total: count() })
+      .from(publicInvite)
+      .where(
+        and(
+          eq(publicInvite.status, "pending"),
+          sql`${publicInvite.expiresAt} >= now()`
+        )
+      ),
+    database
+      .select({ total: count() })
+      .from(report)
+      .where(eq(report.status, "pending")),
+    database
+      .select({ role: user.role, total: count() })
+      .from(user)
+      .groupBy(user.role),
+    database
+      .select({
+        day: sql<string>`to_char(date_trunc('day', ${user.createdAt}), 'YYYY-MM-DD')`.as(
+          "day"
+        ),
+        total: count(user.id).mapWith(Number).as("total"),
+      })
+      .from(user)
+      .where(gte(user.createdAt, signupsStart))
+      .groupBy(sql`date_trunc('day', ${user.createdAt})`)
+      .orderBy(sql`date_trunc('day', ${user.createdAt})`),
+    database
+      .select({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+      })
+      .from(user)
+      .orderBy(desc(user.createdAt))
+      .limit(5),
+    listAdminReports(database, {
+      limit: 5,
+      offset: 0,
+      type: "all",
+      status: "all",
+    }),
+  ]);
+
+  const roleCountMap = new Map<string, number>();
+
+  for (const row of roleRows) {
+    if (row.role) {
+      roleCountMap.set(row.role, Number(row.total));
+    }
+  }
+
+  const signupsByDayMap = new Map(
+    signupsByDayRows.map((row) => [row.day, Number(row.total)])
+  );
+
+  const signupsByDay = Array.from({ length: 7 }, (_, index) => {
+    const bucketDate = new Date(signupsStart);
+    bucketDate.setUTCDate(signupsStart.getUTCDate() + index);
+
+    const dayKey = bucketDate.toISOString().slice(0, 10);
+
+    return {
+      date: dayKey,
+      label: new Intl.DateTimeFormat("en-US", {
+        weekday: "short",
+      }).format(bucketDate),
+      total: signupsByDayMap.get(dayKey) ?? 0,
+    };
+  });
+
+  return {
+    totals: {
+      users: Number(userCountRow?.total ?? 0),
+      organizations: Number(organizationCountRow?.total ?? 0),
+      activeInvites: Number(activeInviteCountRow?.total ?? 0),
+      pendingReports: Number(pendingReportCountRow?.total ?? 0),
+    },
+    roleCounts: [
+      {
+        role: "platform_admin" as const,
+        label: "Admins",
+        total: roleCountMap.get("platform_admin") ?? 0,
+      },
+      {
+        role: "content_creator" as const,
+        label: "Creators",
+        total: roleCountMap.get("content_creator") ?? 0,
+      },
+      {
+        role: "platform_student" as const,
+        label: "Students",
+        total: roleCountMap.get("platform_student") ?? 0,
+      },
+    ],
+    signupsByDay,
+    recentUsers,
+    recentInbox: recentInbox.items,
+  };
+}
+
+export async function getInstructorOverview(
+  params: {
+    userId: string;
+    isAdmin?: boolean;
+  },
+  database: Database = db
+) {
+  const courseScope = params.isAdmin
+    ? undefined
+    : exists(
+        database
+          .select({ one: sql`1` })
+          .from(courseInstructor)
+          .where(
+            and(
+              eq(courseInstructor.courseId, course.id),
+              eq(courseInstructor.userId, params.userId)
+            )
+          )
+      );
+
+  const postScope = params.isAdmin
+    ? undefined
+    : eq(blogPost.createdBy, params.userId);
+
+  const [[courseTotalsRow], [postTotalsRow], recentCourses, recentPosts] =
+    await Promise.all([
+      database
+        .select({
+          totalCourses: count(course.id),
+          publishedCourses:
+            sql<number>`coalesce(sum(case when ${course.status} = 'published' then 1 else 0 end), 0)`
+              .mapWith(Number)
+              .as("published_courses"),
+          draftCourses:
+            sql<number>`coalesce(sum(case when ${course.status} = 'draft' then 1 else 0 end), 0)`
+              .mapWith(Number)
+              .as("draft_courses"),
+          totalEnrollments:
+            sql<number>`coalesce(sum((SELECT count(*)::int FROM "enrollment" WHERE "enrollment"."course_id" = "course"."id")), 0)`
+              .mapWith(Number)
+              .as("total_enrollments"),
+          totalLessons:
+            sql<number>`coalesce(sum((SELECT count(*)::int FROM "lesson" l JOIN "section" s ON l."section_id" = s."id" WHERE s."course_id" = "course"."id")), 0)`
+              .mapWith(Number)
+              .as("total_lessons"),
+        })
+        .from(course)
+        .where(courseScope),
+      database
+        .select({
+          totalPosts: count(blogPost.id),
+          publishedPosts:
+            sql<number>`coalesce(sum(case when ${blogPost.status} = 'published' then 1 else 0 end), 0)`
+              .mapWith(Number)
+              .as("published_posts"),
+          draftPosts:
+            sql<number>`coalesce(sum(case when ${blogPost.status} = 'draft' then 1 else 0 end), 0)`
+              .mapWith(Number)
+              .as("draft_posts"),
+        })
+        .from(blogPost)
+        .where(postScope),
+      database
+        .select({
+          id: course.id,
+          title: course.title,
+          status: course.status,
+          updatedAt: course.updatedAt,
+          enrollmentCount:
+            sql<number>`(SELECT count(*)::int FROM "enrollment" WHERE "enrollment"."course_id" = "course"."id")`.as(
+              "enrollment_count"
+            ),
+          lessonCount:
+            sql<number>`(SELECT count(*)::int FROM "lesson" l JOIN "section" s ON l."section_id" = s."id" WHERE s."course_id" = "course"."id")`.as(
+              "lesson_count"
+            ),
+        })
+        .from(course)
+        .where(courseScope)
+        .orderBy(desc(course.updatedAt))
+        .limit(4),
+      database
+        .select({
+          id: blogPost.id,
+          title: blogPost.title,
+          status: blogPost.status,
+          updatedAt: blogPost.updatedAt,
+          publishedAt: blogPost.publishedAt,
+        })
+        .from(blogPost)
+        .where(postScope)
+        .orderBy(desc(blogPost.updatedAt))
+        .limit(4),
+    ]);
+
+  const totalCourses = Number(courseTotalsRow?.totalCourses ?? 0);
+  const publishedCourses = Number(courseTotalsRow?.publishedCourses ?? 0);
+  const draftCourses = Number(courseTotalsRow?.draftCourses ?? 0);
+  const totalEnrollments = Number(courseTotalsRow?.totalEnrollments ?? 0);
+  const totalLessons = Number(courseTotalsRow?.totalLessons ?? 0);
+  const totalPosts = Number(postTotalsRow?.totalPosts ?? 0);
+  const publishedPosts = Number(postTotalsRow?.publishedPosts ?? 0);
+  const draftPosts = Number(postTotalsRow?.draftPosts ?? 0);
+
+  return {
+    totals: {
+      totalCourses,
+      publishedCourses,
+      draftCourses,
+      totalEnrollments,
+      totalLessons,
+      totalPosts,
+      publishedPosts,
+      draftPosts,
+    },
+    contentStatus: [
+      {
+        label: "Draft",
+        courses: draftCourses,
+        posts: draftPosts,
+      },
+      {
+        label: "Published",
+        courses: publishedCourses,
+        posts: publishedPosts,
+      },
+    ],
+    recentCourses,
+    recentPosts,
+  };
 }
 
 export async function listAdminUsers(

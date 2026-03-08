@@ -1,18 +1,10 @@
-import { Suspense } from "react";
-import { Spinner } from "@/components/ui/spinner";
+import { AdminOverview } from "@/components/dashboard/overview/admin-overview";
 import { adminGuard } from "@/packages/auth/helper";
+import { prefetch, trpc } from "@/packages/trpc/server";
 
 export default async function AdminOverviewPage() {
   await adminGuard();
-  return (
-    <Suspense
-      fallback={
-        <div className="flex justify-center py-12">
-          <Spinner className="size-5" />
-        </div>
-      }
-    >
-      {/* <AdminOverviewClient /> */}
-    </Suspense>
-  );
+  await prefetch(trpc.overview.admin.queryOptions());
+
+  return <AdminOverview />;
 }

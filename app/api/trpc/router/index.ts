@@ -8,6 +8,7 @@ import { courseRouter } from "./course";
 import { feedbackRouter } from "./feedback";
 import { inviteRouter } from "./invite";
 import { orgRouter } from "./org";
+import { overviewRouter } from "./overview";
 import { storageRouter } from "./storage";
 import { userRouter } from "./user";
 
@@ -24,6 +25,7 @@ export const appRouter = router({
   category: categoryRouter,
   course: courseRouter,
   org: orgRouter,
+  overview: overviewRouter,
   storage: storageRouter,
 });
 
