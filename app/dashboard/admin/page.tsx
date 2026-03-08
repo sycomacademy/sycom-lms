@@ -1,8 +1,9 @@
 import { Suspense } from "react";
-import { AdminOverviewClient } from "@/components/dashboard/admin-overview-client";
 import { Spinner } from "@/components/ui/spinner";
+import { adminGuard } from "@/packages/auth/helper";
 
 export default async function AdminOverviewPage() {
+  await adminGuard();
   return (
     <Suspense
       fallback={
@@ -11,7 +12,7 @@ export default async function AdminOverviewPage() {
         </div>
       }
     >
-      <AdminOverviewClient />
+      {/* <AdminOverviewClient /> */}
     </Suspense>
   );
 }
