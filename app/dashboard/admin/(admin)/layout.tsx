@@ -8,7 +8,7 @@ export default async function AdminLayout({
 }) {
   await adminGuard();
   return (
-    <div className="mb-10 max-w-3xl md:ml-12">
+    <div className="mb-10 md:ml-12">
       <SecondaryMenu
         base="/dashboard/admin/users"
         items={[
