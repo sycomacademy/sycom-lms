@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { CreateCourseForm } from "@/components/dashboard/courses/create-course-form";
+import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import { BackButton } from "@/components/layout/back-button";
-import { Spinner } from "@/components/ui/spinner";
 import { instructorGuard } from "@/packages/auth/helper";
 
 export default async function NewCoursePage() {
@@ -18,13 +18,7 @@ export default async function NewCoursePage() {
           creation.
         </p>
       </div>
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center py-12">
-            <Spinner className="size-5" />
-          </div>
-        }
-      >
+      <Suspense fallback={<DashboardSkeleton />}>
         <CreateCourseForm />
       </Suspense>
     </div>

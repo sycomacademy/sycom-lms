@@ -9,6 +9,7 @@ import { LayoutDashboard } from "@/components/icons/animated/layout-dashboard";
 import { MessageCircleQuestion } from "@/components/icons/animated/message-circle-question";
 import { Settings } from "@/components/icons/animated/settings";
 import { Users } from "@/components/icons/animated/users";
+import { AnimateIcon } from "@/components/icons/core/icon";
 import { Link } from "@/components/layout/foresight-link";
 import {
   Sidebar,
@@ -204,21 +205,23 @@ function AppSidebarContent() {
                 {items.map(({ href, label, icon: Icon }) => {
                   return (
                     <SidebarMenuItem key={href}>
-                      <SidebarMenuButton
-                        className={cn(
-                          "text-sm",
-                          menuButtonIconClass,
-                          menuButtonCollapseClass,
-                          isOpen || isMobile ? "" : "justify-center"
-                        )}
-                        isActive={pathname === href}
-                        render={<Link href={href} />}
-                        size="lg"
-                        tooltip={label}
-                      >
-                        <Icon animateOnHover size={20} />
-                        <span>{label}</span>
-                      </SidebarMenuButton>
+                      <AnimateIcon animateOnHover>
+                        <SidebarMenuButton
+                          className={cn(
+                            "text-sm",
+                            menuButtonIconClass,
+                            menuButtonCollapseClass,
+                            isOpen || isMobile ? "" : "justify-center"
+                          )}
+                          isActive={pathname === href}
+                          render={<Link href={href} />}
+                          size="lg"
+                          tooltip={label}
+                        >
+                          <Icon size={20} />
+                          <span>{label}</span>
+                        </SidebarMenuButton>
+                      </AnimateIcon>
                     </SidebarMenuItem>
                   );
                 })}
