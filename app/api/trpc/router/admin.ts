@@ -13,12 +13,22 @@ import {
 } from "drizzle-orm";
 import { z } from "zod";
 import { auth } from "@/packages/auth/auth";
-import { baseURL } from "@/packages/auth/config";
-import { listAdminUsers } from "@/packages/db/queries";
-import { schema } from "@/packages/db/schema";
-import { listAdminUsersSchema } from "@/packages/utils/schema";
-import { protectedProcedure, router } from "../init";
+import {
+  createPublicInvite,
+  revokePublicInvite,
+} from "@/packages/auth/public-invites";
 import { PUBLIC_ORG_SLUG } from "@/packages/db/helper";
+import {
+  listAdminUsers,
+  listPublicInvites as listPublicInviteRecords,
+} from "@/packages/db/queries";
+import { schema } from "@/packages/db/schema";
+import {
+  createPublicInviteSchema,
+  listAdminUsersSchema,
+  listPublicInvitesSchema,
+} from "@/packages/utils/schema";
+import { protectedProcedure, router } from "../init";
 
 const { user, organization, member, cohort, feedback, report } = schema;
 
@@ -42,55 +52,50 @@ export const adminRouter = router({
     }),
 
   createUser: adminProcedure
-    .input(
-      z.object({
-        name: z.string().min(1),
-        email: z.email(),
-        role: z.enum(["platform_admin", "content_creator", "platform_student"]),
-        sendInvite: z.boolean(),
-        password: z.string().min(8).optional(),
-      })
-    )
+    .input(createPublicInviteSchema)
     .mutation(async ({ ctx, input }) => {
-      const password =
-        !input.sendInvite && input.password
-          ? input.password
-          : `${crypto.randomUUID()}${crypto.randomUUID()}`;
-
-      await auth.api.createUser({
-        body: {
-          name: input.name,
-          email: input.email,
-          password,
-          role: input.role,
-          data: {},
+      const result = await createPublicInvite(
+        {
+          ...input,
+          createdBy: ctx.session.user.id,
+          inviterName: ctx.session.user.name,
         },
-        headers: ctx.headers,
-      });
+        ctx.db
+      );
 
-      if (input.sendInvite) {
-        try {
-          await auth.api.requestPasswordReset({
-            body: {
-              email: input.email,
-              redirectTo: `${baseURL}/reset-password?invite=true`,
-            },
-            headers: ctx.headers,
-          });
-        } catch {
-          // best-effort — user is created even if email fails
-        }
-      } else {
-        try {
-          await auth.api.sendVerificationEmail({
-            body: { email: input.email, callbackURL: "/dashboard" },
-            headers: ctx.headers,
-          });
-        } catch {
-          // best-effort
-        }
+      if (result.conflict === "user_exists") {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "A user with this email already exists",
+        });
       }
 
+      if (result.conflict === "invite_exists") {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "An active invite already exists for this email",
+        });
+      }
+
+      return { success: true, emailSent: result.emailSent };
+    }),
+
+  listPublicInvites: adminProcedure
+    .input(listPublicInvitesSchema)
+    .query(async ({ ctx, input }) => {
+      return listPublicInviteRecords(ctx.db, input);
+    }),
+
+  revokePublicInvite: adminProcedure
+    .input(z.object({ inviteId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const revoked = await revokePublicInvite(input, ctx.db);
+      if (!revoked) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Invite not found",
+        });
+      }
       return { success: true };
     }),
 

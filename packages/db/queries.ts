@@ -23,7 +23,7 @@ import {
   PUBLIC_ORG_SLUG,
 } from "./helper";
 import { schema } from "./schema";
-import type { OrganizationRole } from "./schema/auth";
+import type { OrganizationRole, UserRole } from "./schema/auth";
 import {
   type CourseStatus,
   category,
@@ -40,6 +40,7 @@ import {
 } from "./schema/course";
 import { feedback, report } from "./schema/feedback";
 import { profile, profileSettingsDefault } from "./schema/profile";
+import { publicInvite } from "./schema/public-invite";
 
 const logger = createLoggerWithContext("db:queries");
 
@@ -770,9 +771,9 @@ interface ListAdminUsersParams {
   limit: number;
   offset: number;
   search?: string;
-  filterRole?: "platform_admin" | "content_creator" | "platform_student";
+  filterRole?: UserRole;
   filterStatus?: AdminUserStatus;
-  filterRoles?: ("platform_admin" | "content_creator" | "platform_student")[];
+  filterRoles?: UserRole[];
   filterStatuses?: AdminUserStatus[];
   sortBy: "name" | "email" | "createdAt";
   sortDirection: "asc" | "desc";
@@ -935,6 +936,252 @@ export async function listAdminUsers(
     }),
     total,
   };
+}
+
+type PublicInviteDisplayStatus = "pending" | "accepted" | "expired" | "revoked";
+
+interface ListPublicInvitesParams {
+  limit: number;
+  offset: number;
+  search?: string;
+  statuses?: PublicInviteDisplayStatus[];
+}
+
+function getPublicInviteDisplayStatus(
+  invite: Pick<typeof publicInvite.$inferSelect, "status" | "expiresAt">
+): PublicInviteDisplayStatus {
+  if (invite.status === "pending" && invite.expiresAt.getTime() < Date.now()) {
+    return "expired";
+  }
+
+  return invite.status;
+}
+
+export async function findUserByEmail(
+  database: Database,
+  params: { email: string }
+) {
+  const [userRow] = await database
+    .select({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      emailVerified: user.emailVerified,
+    })
+    .from(user)
+    .where(eq(user.email, params.email))
+    .limit(1);
+
+  return userRow ?? null;
+}
+
+export async function createPublicInviteRecord(
+  database: Database,
+  params: {
+    email: string;
+    name: string;
+    role: UserRole;
+    tokenHash: string;
+    expiresAt: Date;
+    createdBy: string;
+  }
+) {
+  const [invite] = await database
+    .insert(publicInvite)
+    .values(params)
+    .returning();
+
+  return invite;
+}
+
+export async function findActivePublicInviteByEmail(
+  database: Database,
+  params: { email: string }
+) {
+  const [invite] = await database
+    .select()
+    .from(publicInvite)
+    .where(
+      and(
+        eq(publicInvite.email, params.email),
+        eq(publicInvite.status, "pending"),
+        sql`${publicInvite.expiresAt} >= now()`
+      )
+    )
+    .orderBy(desc(publicInvite.createdAt))
+    .limit(1);
+
+  return invite ?? null;
+}
+
+export async function listPublicInvites(
+  database: Database,
+  params: ListPublicInvitesParams
+) {
+  const conditions: Parameters<typeof and>[0][] = [];
+
+  if (params.search) {
+    conditions.push(
+      or(
+        ilike(publicInvite.email, `%${params.search}%`),
+        ilike(publicInvite.name, `%${params.search}%`)
+      )
+    );
+  }
+
+  if (params.statuses?.length) {
+    const statusConditions: Parameters<typeof or>[0][] = [];
+
+    for (const status of params.statuses) {
+      if (status === "expired") {
+        statusConditions.push(
+          and(
+            eq(publicInvite.status, "pending"),
+            sql`${publicInvite.expiresAt} < now()`
+          )
+        );
+        continue;
+      }
+
+      if (status === "pending") {
+        statusConditions.push(
+          and(
+            eq(publicInvite.status, "pending"),
+            sql`${publicInvite.expiresAt} >= now()`
+          )
+        );
+        continue;
+      }
+
+      statusConditions.push(eq(publicInvite.status, status));
+    }
+
+    conditions.push(or(...statusConditions));
+  }
+
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+  const rows = await database
+    .select({
+      id: publicInvite.id,
+      email: publicInvite.email,
+      name: publicInvite.name,
+      role: publicInvite.role,
+      status: publicInvite.status,
+      expiresAt: publicInvite.expiresAt,
+      acceptedAt: publicInvite.acceptedAt,
+      revokedAt: publicInvite.revokedAt,
+      createdAt: publicInvite.createdAt,
+      inviterName: user.name,
+      _total: sql<number>`count(*) OVER()`.mapWith(Number).as("_total"),
+    })
+    .from(publicInvite)
+    .innerJoin(user, eq(user.id, publicInvite.createdBy))
+    .where(where)
+    .orderBy(desc(publicInvite.createdAt))
+    .limit(params.limit)
+    .offset(params.offset);
+
+  const total = rows[0]?._total ?? 0;
+
+  return {
+    invites: rows.map(({ _total, status, expiresAt, ...rest }) => ({
+      ...rest,
+      expiresAt,
+      status: getPublicInviteDisplayStatus({ status, expiresAt }),
+    })),
+    total,
+  };
+}
+
+export async function getPublicInviteByTokenHash(
+  database: Database,
+  params: { tokenHash: string }
+) {
+  const [invite] = await database
+    .select()
+    .from(publicInvite)
+    .where(eq(publicInvite.tokenHash, params.tokenHash))
+    .limit(1);
+
+  if (!invite) {
+    return null;
+  }
+
+  return {
+    ...invite,
+    displayStatus: getPublicInviteDisplayStatus(invite),
+  };
+}
+
+export async function markPublicInviteAccepted(
+  database: Database,
+  params: { inviteId: string; acceptedUserId: string }
+) {
+  const [invite] = await database
+    .update(publicInvite)
+    .set({
+      status: "accepted",
+      acceptedAt: new Date(),
+      acceptedUserId: params.acceptedUserId,
+    })
+    .where(eq(publicInvite.id, params.inviteId))
+    .returning();
+
+  return invite ?? null;
+}
+
+export async function markPublicInviteRejected(
+  database: Database,
+  params: { inviteId: string }
+) {
+  const [invite] = await database
+    .update(publicInvite)
+    .set({ status: "revoked" })
+    .where(eq(publicInvite.id, params.inviteId))
+    .returning({ id: publicInvite.id });
+
+  return invite ?? null;
+}
+
+export async function markPublicInviteRevoked(
+  database: Database,
+  params: { inviteId: string }
+) {
+  const [invite] = await database
+    .update(publicInvite)
+    .set({
+      status: "revoked",
+      revokedAt: new Date(),
+    })
+    .where(eq(publicInvite.id, params.inviteId))
+    .returning({ id: publicInvite.id });
+
+  return invite ?? null;
+}
+
+export async function updateUserInviteCompletion(
+  database: Database,
+  params: {
+    userId: string;
+    role: UserRole;
+  }
+) {
+  const [updatedUser] = await database
+    .update(user)
+    .set({
+      role: params.role,
+      emailVerified: true,
+    })
+    .where(eq(user.id, params.userId))
+    .returning({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      emailVerified: user.emailVerified,
+    });
+
+  return updatedUser ?? null;
 }
 
 // ---------------------------------------------------------------------------

@@ -85,6 +85,13 @@
       "when": 1772923401477,
       "tag": "0011_closed_madame_web",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1772993978356,
+      "tag": "0012_broken_old_lace",
+      "breakpoints": true
     }
   ]
 }

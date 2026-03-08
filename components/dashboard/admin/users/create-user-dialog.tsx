@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,7 +26,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -35,71 +34,46 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
-import { Switch } from "@/components/ui/switch";
 import { toastManager } from "@/components/ui/toast";
 import { useTRPC } from "@/packages/trpc/client";
+import { createPublicInviteSchema } from "@/packages/utils/schema";
+import { ROLE_LABELS } from "@/packages/utils/schema";
 
-const createUserSchema = z
-  .object({
-    name: z.string().min(1, "Name is required").max(100),
-    email: z.string().email("Invalid email address"),
-    password: z.string().optional(),
-    role: z.enum(["platform_admin", "content_creator", "platform_student"]),
-    sendInvite: z.boolean(),
-  })
-  .refine(
-    (data) => data.sendInvite || (data.password && data.password.length >= 8),
-    {
-      message: "Password must be at least 8 characters",
-      path: ["password"],
-    }
-  );
-
-type CreateUserInput = z.infer<typeof createUserSchema>;
-
-const ROLE_LABELS: Record<string, string> = {
-  platform_admin: "Platform Admin",
-  content_creator: "Content Creator",
-  platform_student: "Student",
-};
+type CreateInviteInput = z.infer<typeof createPublicInviteSchema>;
 
 export function CreateUserDialog() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
 
-  const form = useForm<CreateUserInput>({
-    resolver: zodResolver(createUserSchema),
+  const form = useForm<CreateInviteInput>({
+    resolver: zodResolver(createPublicInviteSchema),
     defaultValues: {
-      name: "",
       email: "",
-      password: "",
-      role: "platform_student",
-      sendInvite: true,
+      name: "",
+      role: "content_creator",
     },
   });
 
-  const sendInvite = form.watch("sendInvite") ?? true;
-
   const createMutation = useMutation(
     trpc.admin.createUser.mutationOptions({
-      onSuccess: (_data, variables) => {
+      onSuccess: (data) => {
         toastManager.add({
-          title: "User created",
-          description: variables.sendInvite
-            ? "A password-reset email has been sent so they can set their password."
-            : "The user has been created. A verification email has been sent.",
-          type: "success",
+          title: data.emailSent ? "Invite sent" : "Invite created",
+          description: data.emailSent
+            ? "The invite email has been sent."
+            : "The invite was saved, but the email could not be sent.",
+          type: data.emailSent ? "success" : "warning",
         });
         queryClient.invalidateQueries({
-          queryKey: trpc.admin.listUsers.queryKey(),
+          queryKey: trpc.admin.listPublicInvites.queryKey(),
         });
         form.reset();
         setOpen(false);
       },
       onError: (error) => {
         toastManager.add({
-          title: "Failed to create user",
+          title: "Failed to create invite",
           description: error.message,
           type: "error",
         });
@@ -107,14 +81,8 @@ export function CreateUserDialog() {
     })
   );
 
-  const onSubmit = (data: CreateUserInput) => {
-    createMutation.mutate({
-      name: data.name,
-      email: data.email,
-      role: data.role,
-      sendInvite: data.sendInvite,
-      ...(!data.sendInvite && { password: data.password }),
-    });
+  const onSubmit = (data: CreateInviteInput) => {
+    createMutation.mutate(data);
   };
 
   return (
@@ -129,12 +97,14 @@ export function CreateUserDialog() {
     >
       <DialogTrigger render={<Button size="sm" />}>
         <PlusIcon />
-        Add user
+        New invite
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create user</DialogTitle>
-          <DialogDescription>Add a new user to the platform.</DialogDescription>
+          <DialogTitle>Invite creator or admin</DialogTitle>
+          <DialogDescription>
+            Send a 24-hour invite to create a platform account.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -174,47 +144,6 @@ export function CreateUserDialog() {
                     </FormItem>
                   )}
                 />
-                <div className="flex items-center justify-between rounded-md border px-3 py-2.5">
-                  <Label className="text-xs" htmlFor="send-invite">
-                    Send invite link
-                    <span className="block font-normal text-muted-foreground">
-                      User sets their own password via email
-                    </span>
-                  </Label>
-                  <Switch
-                    checked={sendInvite}
-                    id="send-invite"
-                    onCheckedChange={(checked) => {
-                      form.setValue("sendInvite", checked);
-                      if (checked) {
-                        form.setValue("password", "");
-                        form.clearErrors("password");
-                      }
-                    }}
-                    size="sm"
-                  />
-                </div>
-                {!sendInvite && (
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Field>
-                          <FieldLabel className="text-xs">Password</FieldLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Min. 8 characters"
-                              type="password"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </Field>
-                      </FormItem>
-                    )}
-                  />
-                )}
                 <FormField
                   control={form.control}
                   name="role"
@@ -234,9 +163,6 @@ export function CreateUserDialog() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="platform_student">
-                              Student
-                            </SelectItem>
                             <SelectItem value="content_creator">
                               Content Creator
                             </SelectItem>
@@ -259,7 +185,7 @@ export function CreateUserDialog() {
                 type="submit"
               >
                 {createMutation.isPending ? <Spinner /> : null}
-                {sendInvite ? "Create & send invite" : "Create user"}
+                Send invite
               </Button>
             </DialogFooter>
           </form>

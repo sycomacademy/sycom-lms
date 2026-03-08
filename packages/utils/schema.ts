@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { UserRole } from "../db/schema/auth";
 import {
   storageEntityTypeEnum,
   storageFolderEnum,
@@ -211,6 +212,12 @@ export const signedUrlSchema = z.object({
 // Admin schemas
 // ---------------------------------------------------------------------------
 
+export const ROLE_LABELS: Record<UserRole, string> = {
+  platform_admin: "Platform Admin",
+  content_creator: "Content Creator",
+  platform_student: "Student",
+};
+
 export const listAdminUsersSchema = z.object({
   limit: z.number().int().min(1).max(100).default(10),
   offset: z.number().int().min(0).default(0),
@@ -227,6 +234,29 @@ export const listAdminUsersSchema = z.object({
     .optional(),
   sortBy: z.enum(["name", "email", "createdAt"]).default("createdAt"),
   sortDirection: z.enum(["asc", "desc"]).default("desc"),
+});
+
+export const createPublicInviteSchema = z.object({
+  name: z.string().min(1, "Name is required").max(100),
+  email: z.email("Please enter a valid email address"),
+  role: z.enum(["platform_admin", "content_creator"]),
+});
+
+export const listPublicInvitesSchema = z.object({
+  limit: z.number().int().min(1).max(100).default(10),
+  offset: z.number().int().min(0).default(0),
+  search: z.string().optional(),
+  statuses: z
+    .array(z.enum(["pending", "accepted", "expired", "revoked"]))
+    .optional(),
+});
+
+export const publicInviteTokenSchema = z.object({
+  token: z.string().min(1, "Invite token is required"),
+});
+
+export const acceptPublicInviteSchema = publicInviteTokenSchema.extend({
+  password: passwordSchema,
 });
 
 // ---------------------------------------------------------------------------

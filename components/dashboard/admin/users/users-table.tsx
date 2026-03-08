@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTRPC } from "@/packages/trpc/client";
+import { ROLE_LABELS } from "@/packages/utils/schema";
 import { getInitials } from "@/packages/utils/string";
 
 const ROLE_OPTIONS = [
@@ -101,12 +102,6 @@ const ROLE_BADGE_VARIANT: Record<string, "default" | "secondary" | "outline"> =
     content_creator: "secondary",
     platform_student: "outline",
   };
-
-const ROLE_LABELS: Record<string, string> = {
-  platform_admin: "Admin",
-  content_creator: "Creator",
-  platform_student: "Student",
-};
 
 const STATUS_FILTER_LABELS: Record<string, string> = {
   all: "All statuses",

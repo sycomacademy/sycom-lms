@@ -1,3 +1,4 @@
+import type { Route } from "next";
 import { SecondaryMenu } from "@/components/dashboard/secondary-menu";
 import { adminGuard } from "@/packages/auth/helper";
 
@@ -13,6 +14,10 @@ export default async function AdminLayout({
         base="/dashboard/admin/users"
         items={[
           { path: "/dashboard/admin/users", label: "Users" },
+          {
+            path: "/dashboard/admin/public-invites" as Route,
+            label: "Public Invites",
+          },
           { path: "/dashboard/admin/organizations", label: "Organizations" },
           { path: "/dashboard/admin/reports", label: "Reports & Feedback" },
         ]}

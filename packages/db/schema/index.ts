@@ -58,6 +58,7 @@ import {
   reportRelations,
 } from "./feedback";
 import { profile, profileRelations } from "./profile";
+import { publicInvite, publicInviteRelations } from "./public-invite";
 import {
   mediaAsset,
   storageEntityTypeEnum,
@@ -93,6 +94,10 @@ const schema = {
   user,
   userRelations,
   verification,
+
+  // public invites
+  publicInvite,
+  publicInviteRelations,
 
   // profile
   profile,

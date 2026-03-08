@@ -5,6 +5,7 @@ import { adminRouter } from "./admin";
 import { categoryRouter } from "./category";
 import { courseRouter } from "./course";
 import { feedbackRouter } from "./feedback";
+import { inviteRouter } from "./invite";
 import { orgRouter } from "./org";
 import { storageRouter } from "./storage";
 import { userRouter } from "./user";
@@ -16,6 +17,7 @@ export const appRouter = router({
   }),
   user: userRouter,
   feedback: feedbackRouter,
+  invite: inviteRouter,
   admin: adminRouter,
   category: categoryRouter,
   course: courseRouter,
