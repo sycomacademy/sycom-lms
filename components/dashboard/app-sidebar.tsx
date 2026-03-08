@@ -75,7 +75,7 @@ const NAV: Record<UserRole, Record<string, NavItem[]>> = {
   },
 
   content_creator: {
-    workspace: [
+    Main: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
       {
         href: "/dashboard/courses",

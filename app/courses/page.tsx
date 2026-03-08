@@ -126,8 +126,17 @@ export default function CoursesPage() {
   return (
     <main>
       <section className="relative bg-muted py-16 lg:py-24">
-        <div className="absolute inset-0 z-0 bg-linear-to-br from-primary/20 to-muted" />
-        <div className="absolute inset-0 z-0 bg-foreground/70" />
+        <div className="absolute inset-0 z-0">
+          <Image
+            alt=""
+            className="object-cover"
+            fill
+            priority
+            sizes="100vw"
+            src="/images/landscape.png"
+          />
+          <div className="absolute inset-0 bg-foreground/70" />
+        </div>
         <div className="container relative z-10 mx-auto px-4 [&_.text-muted-foreground]:text-background/90">
           <SectionLabel label="Courses" />
           <h1 className="mb-4 font-bold text-4xl text-background md:text-5xl">

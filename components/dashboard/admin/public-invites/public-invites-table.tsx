@@ -117,6 +117,7 @@ export function PublicInvitesTable() {
     pageIndex: 0,
     pageSize: 10,
   });
+  const [revokingId, setRevokingId] = useState<string | null>(null);
 
   const query = useQuery(
     trpc.admin.listPublicInvites.queryOptions({
@@ -129,6 +130,9 @@ export function PublicInvitesTable() {
 
   const revokeMutation = useMutation(
     trpc.admin.revokePublicInvite.mutationOptions({
+      onMutate: ({ inviteId }) => {
+        setRevokingId(inviteId);
+      },
       onSuccess: () => {
         toastManager.add({
           title: "Invite revoked",
@@ -145,6 +149,9 @@ export function PublicInvitesTable() {
           description: error.message,
           type: "error",
         });
+      },
+      onSettled: () => {
+        setRevokingId(null);
       },
     })
   );
@@ -221,17 +228,18 @@ export function PublicInvitesTable() {
         size: 60,
         cell: ({ row }) => {
           const isRevokable = row.original.status === "pending";
+          const isRevoking = revokingId === row.original.id;
 
           return (
             <Button
-              disabled={!isRevokable || revokeMutation.isPending}
+              disabled={!isRevokable || isRevoking}
               onClick={() =>
                 revokeMutation.mutate({ inviteId: row.original.id })
               }
               size="icon-sm"
               variant="ghost"
             >
-              {revokeMutation.isPending ? (
+              {isRevoking ? (
                 <Loader2Icon className="size-4 animate-spin" />
               ) : (
                 <Trash2Icon className="size-4" />
@@ -241,7 +249,7 @@ export function PublicInvitesTable() {
         },
       },
     ],
-    [revokeMutation.isPending, revokeMutation.mutate]
+    [revokingId, revokeMutation.mutate]
   );
 
   const invites = query.data?.invites ?? [];

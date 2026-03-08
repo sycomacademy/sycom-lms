@@ -4,8 +4,6 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CourseActions } from "@/components/course/course-actions";
-import { Footer } from "@/components/layout/footer";
-import { Header } from "@/components/layout/header";
 import {
   Accordion,
   AccordionContent,
@@ -235,14 +233,10 @@ export default async function CoursePage({ params }: CoursePageProps) {
   const { slug } = await params;
 
   return (
-    <>
-      <Header />
-      <main>
-        <Suspense fallback={<CourseDetailSkeleton />}>
-          <CourseDetail slug={slug} />
-        </Suspense>
-      </main>
-      <Footer />
-    </>
+    <main>
+      <Suspense fallback={<CourseDetailSkeleton />}>
+        <CourseDetail slug={slug} />
+      </Suspense>
+    </main>
   );
 }
