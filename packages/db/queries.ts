@@ -1,4 +1,16 @@
-import { and, asc, count, eq, ne, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  exists,
+  ilike,
+  inArray,
+  ne,
+  or,
+  sql,
+} from "drizzle-orm";
 import type { Database } from "@/packages/db";
 import { db } from "@/packages/db";
 import { createLoggerWithContext } from "@/packages/utils/logger";
@@ -12,9 +24,13 @@ import {
 import { schema } from "./schema";
 import type { OrganizationRole } from "./schema/auth";
 import {
+  type CourseStatus,
   category,
   cohortCourse,
+  course,
+  courseCategory,
   courseInstructor,
+  type DifficultyLevel,
   enrollment,
   type InstructorRole,
   lesson,
@@ -747,4 +763,551 @@ export async function getMemberRole(
     .limit(1);
 
   return result?.role ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Course listing queries
+// ---------------------------------------------------------------------------
+
+export async function listPublicCourses(
+  database: Database,
+  params: { limit: number; offset: number }
+) {
+  const rows = await database
+    .select({
+      id: course.id,
+      title: course.title,
+      slug: course.slug,
+      description: course.description,
+      summary: course.summary,
+      imageUrl: course.imageUrl,
+      difficulty: course.difficulty,
+      estimatedDuration: course.estimatedDuration,
+      enrollmentCount:
+        sql<number>`(SELECT count(*)::int FROM "enrollment" WHERE "enrollment"."course_id" = "course"."id")`.as(
+          "enrollment_count"
+        ),
+      lessonCount:
+        sql<number>`(SELECT count(*)::int FROM "lesson" l JOIN "section" s ON l."section_id" = s."id" WHERE s."course_id" = "course"."id")`.as(
+          "lesson_count"
+        ),
+      _total: sql<number>`count(*) OVER()`.mapWith(Number).as("_total"),
+    })
+    .from(course)
+    .where(eq(course.status, "published"))
+    .orderBy(desc(course.updatedAt))
+    .limit(params.limit)
+    .offset(params.offset);
+
+  const total = rows[0]?._total ?? 0;
+  const courses = rows.map(({ _total, ...rest }) => rest);
+
+  return { courses, total };
+}
+
+export async function listInstructorCourses(
+  database: Database,
+  params: {
+    limit: number;
+    offset: number;
+    search?: string;
+    sortBy: "title" | "createdAt" | "updatedAt" | "status";
+    sortDirection: "asc" | "desc";
+    filterStatuses?: ("draft" | "published")[];
+    filterDifficulties?: (
+      | "beginner"
+      | "intermediate"
+      | "advanced"
+      | "expert"
+    )[];
+    filterCategoryIds?: string[];
+    userId: string;
+    isAdmin: boolean;
+  }
+) {
+  const conditions: Parameters<typeof and>[0][] = [];
+
+  if (params.filterStatuses?.length) {
+    conditions.push(inArray(course.status, params.filterStatuses));
+  }
+  if (params.filterDifficulties?.length) {
+    conditions.push(inArray(course.difficulty, params.filterDifficulties));
+  }
+  if (params.filterCategoryIds?.length) {
+    conditions.push(
+      exists(
+        database
+          .select({ one: sql`1` })
+          .from(courseCategory)
+          .where(
+            and(
+              eq(courseCategory.courseId, course.id),
+              inArray(courseCategory.categoryId, params.filterCategoryIds)
+            )
+          )
+      )
+    );
+  }
+  if (!params.isAdmin) {
+    conditions.push(
+      exists(
+        database
+          .select({ one: sql`1` })
+          .from(courseInstructor)
+          .where(
+            and(
+              eq(courseInstructor.courseId, course.id),
+              eq(courseInstructor.userId, params.userId)
+            )
+          )
+      )
+    );
+  }
+  if (params.search) {
+    conditions.push(
+      or(
+        ilike(course.title, `%${params.search}%`),
+        ilike(course.description, `%${params.search}%`)
+      )
+    );
+  }
+
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const ORDER_COLUMNS = {
+    title: course.title,
+    createdAt: course.createdAt,
+    updatedAt: course.updatedAt,
+    status: course.status,
+  } as const;
+  const orderColumn = ORDER_COLUMNS[params.sortBy];
+  const orderBy =
+    params.sortDirection === "asc" ? asc(orderColumn) : desc(orderColumn);
+
+  const rows = await database
+    .select({
+      id: course.id,
+      title: course.title,
+      slug: course.slug,
+      description: course.description,
+      imageUrl: course.imageUrl,
+      difficulty: course.difficulty,
+      estimatedDuration: course.estimatedDuration,
+      status: course.status,
+      createdBy: course.createdBy,
+      createdAt: course.createdAt,
+      updatedAt: course.updatedAt,
+      sectionCount:
+        sql<number>`(SELECT count(*)::int FROM "section" WHERE "section"."course_id" = "course"."id")`.as(
+          "section_count"
+        ),
+      lessonCount:
+        sql<number>`(SELECT count(*)::int FROM "lesson" l JOIN "section" s ON l."section_id" = s."id" WHERE s."course_id" = "course"."id")`.as(
+          "lesson_count"
+        ),
+      enrollmentCount:
+        sql<number>`(SELECT count(*)::int FROM "enrollment" WHERE "enrollment"."course_id" = "course"."id")`.as(
+          "enrollment_count"
+        ),
+      _total: sql<number>`count(*) OVER()`.mapWith(Number).as("_total"),
+    })
+    .from(course)
+    .where(where)
+    .orderBy(orderBy)
+    .limit(params.limit)
+    .offset(params.offset);
+
+  const total = rows[0]?._total ?? 0;
+  const courses = rows.map(({ _total, ...rest }) => rest);
+
+  // Fetch categories only for the returned courses (not all)
+  const courseIds = courses.map((c) => c.id);
+  const categoryRows =
+    courseIds.length > 0
+      ? await database
+          .select({
+            courseId: courseCategory.courseId,
+            id: category.id,
+            name: category.name,
+            slug: category.slug,
+            order: category.order,
+          })
+          .from(courseCategory)
+          .innerJoin(category, eq(category.id, courseCategory.categoryId))
+          .where(inArray(courseCategory.courseId, courseIds))
+      : [];
+
+  const categoriesByCourse = new Map<
+    string,
+    { id: string; name: string; slug: string; order: number | null }[]
+  >();
+  for (const row of categoryRows) {
+    const arr = categoriesByCourse.get(row.courseId) ?? [];
+    arr.push({ id: row.id, name: row.name, slug: row.slug, order: row.order });
+    categoriesByCourse.set(row.courseId, arr);
+  }
+
+  return {
+    courses: courses.map((c) => ({
+      ...c,
+      categories: categoriesByCourse.get(c.id) ?? [],
+    })),
+    total,
+  };
+}
+
+export async function getPublicCourseBySlugOrId(
+  database: Database,
+  params: { slugOrId: string }
+) {
+  const [courseRow] = await database
+    .select({
+      id: course.id,
+      title: course.title,
+      slug: course.slug,
+      description: course.description,
+      imageUrl: course.imageUrl,
+      difficulty: course.difficulty,
+      estimatedDuration: course.estimatedDuration,
+      status: course.status,
+    })
+    .from(course)
+    .where(or(eq(course.id, params.slugOrId), eq(course.slug, params.slugOrId)))
+    .limit(1);
+
+  if (!courseRow || courseRow.status !== "published") {
+    return null;
+  }
+
+  const [sections, [enrollmentRow]] = await Promise.all([
+    database
+      .select({
+        id: section.id,
+        title: section.title,
+        description: section.description,
+        order: section.order,
+      })
+      .from(section)
+      .where(eq(section.courseId, courseRow.id))
+      .orderBy(asc(section.order)),
+    database
+      .select({ count: count() })
+      .from(enrollment)
+      .where(eq(enrollment.courseId, courseRow.id)),
+  ]);
+
+  const sectionIds = sections.map((s) => s.id);
+  const lessons =
+    sectionIds.length > 0
+      ? await database
+          .select({
+            id: lesson.id,
+            sectionId: lesson.sectionId,
+            title: lesson.title,
+            type: lesson.type,
+            order: lesson.order,
+            estimatedDuration: lesson.estimatedDuration,
+          })
+          .from(lesson)
+          .where(inArray(lesson.sectionId, sectionIds))
+          .orderBy(asc(lesson.order))
+      : [];
+
+  const lessonsBySection = new Map<string, typeof lessons>();
+  for (const l of lessons) {
+    const arr = lessonsBySection.get(l.sectionId) ?? [];
+    arr.push(l);
+    lessonsBySection.set(l.sectionId, arr);
+  }
+
+  return {
+    ...courseRow,
+    sections: sections.map((s) => ({
+      ...s,
+      lessons: lessonsBySection.get(s.id) ?? [],
+    })),
+    enrollmentCount: enrollmentRow?.count ?? 0,
+    lessonCount: lessons.length,
+  };
+}
+
+export async function getCourseByIdForInstructor(
+  database: Database,
+  params: { courseId: string }
+) {
+  const [courseRows, sections, instructors, categoryRows] = await Promise.all([
+    database
+      .select()
+      .from(course)
+      .where(eq(course.id, params.courseId))
+      .limit(1),
+    database
+      .select()
+      .from(section)
+      .where(eq(section.courseId, params.courseId))
+      .orderBy(asc(section.order)),
+    database
+      .select({
+        courseId: courseInstructor.courseId,
+        userId: courseInstructor.userId,
+        role: courseInstructor.role,
+        createdAt: courseInstructor.createdAt,
+        userName: user.name,
+        userEmail: user.email,
+        userImage: user.image,
+      })
+      .from(courseInstructor)
+      .innerJoin(user, eq(user.id, courseInstructor.userId))
+      .where(eq(courseInstructor.courseId, params.courseId)),
+    database
+      .select({
+        id: category.id,
+        name: category.name,
+        slug: category.slug,
+        order: category.order,
+      })
+      .from(courseCategory)
+      .innerJoin(category, eq(category.id, courseCategory.categoryId))
+      .where(eq(courseCategory.courseId, params.courseId)),
+  ]);
+
+  const courseRow = courseRows[0];
+  if (!courseRow) {
+    return null;
+  }
+
+  const sectionIds = sections.map((s) => s.id);
+  const lessons =
+    sectionIds.length > 0
+      ? await database
+          .select()
+          .from(lesson)
+          .where(inArray(lesson.sectionId, sectionIds))
+          .orderBy(asc(lesson.order))
+      : [];
+
+  const lessonsBySection = new Map<string, typeof lessons>();
+  for (const l of lessons) {
+    const arr = lessonsBySection.get(l.sectionId) ?? [];
+    arr.push(l);
+    lessonsBySection.set(l.sectionId, arr);
+  }
+
+  return {
+    ...courseRow,
+    sections: sections.map((s) => ({
+      ...s,
+      lessons: lessonsBySection.get(s.id) ?? [],
+    })),
+    instructors,
+    categories: categoryRows,
+  };
+}
+
+export async function getCourseInstructorsAndEnrollments(
+  database: Database,
+  params: { courseId: string }
+) {
+  const [instructorRows, enrolledRows] = await Promise.all([
+    database
+      .select({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+        role: courseInstructor.role,
+      })
+      .from(courseInstructor)
+      .innerJoin(user, eq(user.id, courseInstructor.userId))
+      .where(eq(courseInstructor.courseId, params.courseId)),
+    database
+      .select({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+        enrolledAt: enrollment.enrolledAt,
+      })
+      .from(enrollment)
+      .innerJoin(user, eq(user.id, enrollment.userId))
+      .where(eq(enrollment.courseId, params.courseId))
+      .orderBy(asc(enrollment.enrolledAt)),
+  ]);
+
+  const mainRow = instructorRows.find((r) => r.role === "main");
+  const mainInstructor = mainRow
+    ? {
+        id: mainRow.id,
+        name: mainRow.name,
+        email: mainRow.email,
+        image: mainRow.image,
+      }
+    : null;
+  const coCreators = instructorRows
+    .filter((r) => r.role === "secondary")
+    .map(({ role: _, ...rest }) => rest);
+
+  return { mainInstructor, coCreators, enrolledStudents: enrolledRows };
+}
+
+export async function createCourse(
+  database: Database,
+  params: {
+    title: string;
+    description?: string;
+    summary?: unknown;
+    slug: string;
+    imageUrl?: string;
+    difficulty: string;
+    estimatedDuration?: number;
+    status: string;
+    categoryIds?: string[];
+    userId: string;
+  }
+) {
+  const [existing] = await database
+    .select({ id: course.id })
+    .from(course)
+    .where(eq(course.slug, params.slug))
+    .limit(1);
+
+  if (existing) {
+    return { course: null, conflict: true as const };
+  }
+
+  const insertValues: typeof course.$inferInsert = {
+    title: params.title,
+    slug: params.slug,
+    difficulty: params.difficulty as DifficultyLevel,
+    status: params.status as CourseStatus,
+    createdBy: params.userId,
+  };
+  if (params.description !== undefined) {
+    insertValues.description = params.description;
+  }
+  if (params.summary !== undefined) {
+    insertValues.summary = params.summary;
+  }
+  if (params.imageUrl !== undefined) {
+    insertValues.imageUrl = params.imageUrl;
+  }
+  if (params.estimatedDuration !== undefined) {
+    insertValues.estimatedDuration = params.estimatedDuration;
+  }
+
+  const [newCourse] = await database
+    .insert(course)
+    .values(insertValues)
+    .returning();
+
+  const followUp: Promise<unknown>[] = [
+    database.insert(courseInstructor).values({
+      courseId: newCourse.id,
+      userId: params.userId,
+      role: "main",
+      addedBy: params.userId,
+    }),
+  ];
+  if (params.categoryIds?.length) {
+    followUp.push(
+      database.insert(courseCategory).values(
+        params.categoryIds.map((categoryId) => ({
+          courseId: newCourse.id,
+          categoryId,
+        }))
+      )
+    );
+  }
+  await Promise.all(followUp);
+
+  return { course: newCourse, conflict: false as const };
+}
+
+export async function updateCourse(
+  database: Database,
+  params: {
+    courseId: string;
+    data: Partial<typeof course.$inferInsert> & {
+      categoryIds?: string[];
+    };
+  }
+) {
+  const { courseId, data } = params;
+
+  if (data.slug) {
+    const [existing] = await database
+      .select({ id: course.id })
+      .from(course)
+      .where(
+        and(
+          eq(course.slug, data.slug as string),
+          sql`${course.id} != ${courseId}`
+        )
+      )
+      .limit(1);
+    if (existing) {
+      return { course: null, conflict: true as const };
+    }
+  }
+
+  const updateData: Record<string, unknown> = {};
+  for (const key of Object.keys(data)) {
+    if (data[key as keyof typeof data] !== undefined) {
+      updateData[key] = data[key as keyof typeof data];
+    }
+  }
+
+  const hasCategoryUpdate = data.categoryIds !== undefined;
+  if (Object.keys(updateData).length === 0 && !hasCategoryUpdate) {
+    return { course: null, conflict: false as const, noFields: true as const };
+  }
+
+  let updated: typeof course.$inferSelect | undefined;
+  if (Object.keys(updateData).length > 0) {
+    const [updatedRow] = await database
+      .update(course)
+      .set(updateData)
+      .where(eq(course.id, courseId))
+      .returning();
+    updated = updatedRow;
+  } else {
+    const [existingRow] = await database
+      .select()
+      .from(course)
+      .where(eq(course.id, courseId))
+      .limit(1);
+    updated = existingRow;
+  }
+
+  if (!updated) {
+    return { course: null, conflict: false as const, notFound: true as const };
+  }
+
+  if (data.categoryIds !== undefined) {
+    await database
+      .delete(courseCategory)
+      .where(eq(courseCategory.courseId, courseId));
+    if (data.categoryIds.length > 0) {
+      await database.insert(courseCategory).values(
+        data.categoryIds.map((categoryId) => ({
+          courseId,
+          categoryId,
+        }))
+      );
+    }
+  }
+
+  return { course: updated, conflict: false as const };
+}
+
+export async function deleteCourse(
+  database: Database,
+  params: { courseId: string }
+) {
+  const [deleted] = await database
+    .delete(course)
+    .where(eq(course.id, params.courseId))
+    .returning({ id: course.id });
+
+  return deleted ?? null;
 }

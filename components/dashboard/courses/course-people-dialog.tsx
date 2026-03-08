@@ -24,7 +24,7 @@ interface CoursePeopleDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type CoursePeople = RouterOutputs["course"]["getInstructorAndEnrollments"];
+type CoursePeople = RouterOutputs["course"]["getInstructors"];
 type CoCreator = CoursePeople["coCreators"][number];
 
 function PersonRow({
@@ -84,7 +84,7 @@ export function CoursePeopleDialog({
   const trpc = useTRPC();
 
   const { data, isPending } = useQuery({
-    ...trpc.course.getInstructorAndEnrollments.queryOptions({
+    ...trpc.course.getInstructors.queryOptions({
       courseId,
     }),
     enabled: open && courseId !== null,

@@ -81,11 +81,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  DIFFICULTY_OPTIONS,
-  STATUS_OPTIONS,
-} from "@/packages/db/schema/course";
 import { useTRPC } from "@/packages/trpc/client";
+import { DIFFICULTY_OPTIONS, STATUS_OPTIONS } from "@/packages/utils/schema";
 import { formatCourseDate } from "@/packages/utils/time";
 
 type Course = RouterOutputs["course"]["list"]["courses"][number];

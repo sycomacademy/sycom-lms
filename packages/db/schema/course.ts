@@ -33,18 +33,6 @@ export type InstructorRole = (typeof INSTRUCTOR_ROLES)[number];
 export const LESSON_TYPES = ["article", "test"] as const;
 export type LessonType = (typeof LESSON_TYPES)[number];
 
-export const DIFFICULTY_OPTIONS = [
-  { value: "beginner", label: "Beginner" },
-  { value: "intermediate", label: "Intermediate" },
-  { value: "advanced", label: "Advanced" },
-  { value: "expert", label: "Expert" },
-] as const;
-
-export const STATUS_OPTIONS = [
-  { value: "draft", label: "Draft" },
-  { value: "published", label: "Published" },
-] as const;
-
 // ---------------------------------------------------------------------------
 // Courses
 // ---------------------------------------------------------------------------

@@ -10,7 +10,6 @@ import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import {
   getCourseThumbnailSignedParams,
   persistCourseThumbnail,
@@ -50,6 +49,12 @@ import { toastManager } from "@/components/ui/toast";
 import { uploadFile } from "@/packages/storage/upload";
 import { useTRPC } from "@/packages/trpc/client";
 import { cn } from "@/packages/utils/cn";
+import {
+  type CreateCourseFormInput,
+  createCourseFormSchema,
+  DIFFICULTY_OPTIONS,
+} from "@/packages/utils/schema";
+import { slugify } from "@/packages/utils/string";
 
 interface CategoryItem {
   id: string;
@@ -57,22 +62,6 @@ interface CategoryItem {
   slug: string;
   order: number | null;
 }
-
-const createCourseFormSchema = z.object({
-  title: z.string().min(1, "Title is required").max(200),
-  slug: z
-    .string()
-    .min(1, "Slug is required")
-    .max(200)
-    .regex(
-      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-      "Must be lowercase letters, numbers, and hyphens only"
-    ),
-  description: z.string().max(2000).optional(),
-  difficulty: z.enum(["beginner", "intermediate", "advanced", "expert"]),
-});
-
-type CreateCourseFormInput = z.infer<typeof createCourseFormSchema>;
 
 interface CreateCourseFormProps {
   className?: string;
@@ -84,7 +73,7 @@ export function CreateCourseForm({
   className,
   onCreated,
   redirectOnSuccess = true,
-}: CreateCourseFormProps = {}) {
+}: CreateCourseFormProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -96,7 +85,6 @@ export function CreateCourseForm({
 
   const [files, setFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const uploadedImageUrl = useRef<string | null>(null);
@@ -169,7 +157,7 @@ export function CreateCourseForm({
     }
   };
 
-  const isSubmitting = isUploading || createMutation.isPending;
+  const isSubmitting = createMutation.isPending;
 
   const onSubmit = async (data: CreateCourseFormInput) => {
     if (files.length === 0) {
@@ -185,7 +173,6 @@ export function CreateCourseForm({
     let imageUrl = uploadedImageUrl.current;
 
     if (!imageUrl) {
-      setIsUploading(true);
       try {
         const signedParams = await getCourseThumbnailSignedParams("new");
         const result = await uploadFile({ file: files[0], signedParams });
@@ -198,10 +185,8 @@ export function CreateCourseForm({
           description: err instanceof Error ? err.message : "Upload failed",
           type: "error",
         });
-        setIsUploading(false);
         return;
       }
-      setIsUploading(false);
     }
 
     createMutation.mutate({
@@ -348,7 +333,11 @@ export function CreateCourseForm({
                   <FormControl>
                     <SelectTrigger className="w-full">
                       <SelectValue>
-                        {DIFFICULTY_LABELS[field.value]}
+                        {
+                          DIFFICULTY_OPTIONS.find(
+                            (option) => option.value === field.value
+                          )?.label
+                        }
                       </SelectValue>
                     </SelectTrigger>
                   </FormControl>
@@ -364,12 +353,8 @@ export function CreateCourseForm({
             </FormItem>
           )}
         />
-        <Button
-          className="mb-8"
-          disabled={isSubmitting || isUploading}
-          type="submit"
-        >
-          {isSubmitting || isUploading ? (
+        <Button className="mb-8" disabled={isSubmitting} type="submit">
+          {isSubmitting ? (
             <Loader2Icon className="size-4 animate-spin" />
           ) : null}
           Create course

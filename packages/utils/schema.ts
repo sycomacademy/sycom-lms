@@ -5,6 +5,9 @@ import {
   storageResourceTypeEnum,
 } from "../db/schema/storage";
 
+// ---------------------------------------------------------------------------
+// Auth schemas
+// ---------------------------------------------------------------------------
 export const passwordSchema = z
   .string()
   .min(8, "Password must be at least 8 characters")
@@ -20,7 +23,6 @@ export const nameSchema = z
     /^[a-zA-Z\s'-]+$/,
     "Name can only contain letters, spaces, hyphens, and apostrophes"
   );
-
 export const signUpSchema = z.object({
   firstName: nameSchema,
   lastName: nameSchema,
@@ -84,6 +86,9 @@ export const updateAccountSchema = z.object({
 });
 export type UpdateAccountInput = z.infer<typeof updateAccountSchema>;
 
+// ---------------------------------------------------------------------------
+// Feedback schemas
+// ---------------------------------------------------------------------------
 /**
  * Feedback submission input.
  */
@@ -160,6 +165,10 @@ export const avatarFormSchema = z.object({
 });
 export type AvatarFormInput = z.infer<typeof avatarFormSchema>;
 
+// ---------------------------------------------------------------------------
+// Storage schemas
+// ---------------------------------------------------------------------------
+
 /**
  * Storage schema.
  */
@@ -202,6 +211,23 @@ export const signedUrlSchema = z.object({
 // Course schemas
 // ---------------------------------------------------------------------------
 
+export const DIFFICULTY_OPTIONS = [
+  { value: "beginner", label: "Beginner" },
+  { value: "intermediate", label: "Intermediate" },
+  { value: "advanced", label: "Advanced" },
+  { value: "expert", label: "Expert" },
+] as const;
+
+export const STATUS_OPTIONS = [
+  { value: "draft", label: "Draft" },
+  { value: "published", label: "Published" },
+] as const;
+
+export const listPublicCoursesSchema = z.object({
+  limit: z.number().min(1).max(100).default(12),
+  offset: z.number().min(0).default(0),
+});
+
 export const listCoursesSchema = z.object({
   limit: z.number().min(1).max(100).default(10),
   offset: z.number().min(0).default(0),
@@ -228,20 +254,6 @@ export const listLibrarySchema = z.object({
     .optional(),
 });
 
-export const getEnrolledCourseSchema = z.object({
-  courseId: z.string(),
-});
-
-export const getEnrolledLessonSchema = z.object({
-  courseId: z.string(),
-  lessonId: z.string(),
-});
-
-export const markLessonCompleteSchema = z.object({
-  courseId: z.string(),
-  lessonId: z.string(),
-});
-
 export const createCourseSchema = z.object({
   title: z.string().min(1, "Title is required").max(200),
   description: z.string().max(2000).optional(),
@@ -263,6 +275,22 @@ export const createCourseSchema = z.object({
   categoryIds: z.array(z.string()).optional(),
 });
 
+export const createCourseFormSchema = z.object({
+  title: z.string().min(1, "Title is required").max(200),
+  slug: z
+    .string()
+    .min(1, "Slug is required")
+    .max(200)
+    .regex(
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      "Must be lowercase letters, numbers, and hyphens only"
+    ),
+  description: z.string().max(2000).optional(),
+  difficulty: z.enum(["beginner", "intermediate", "advanced", "expert"]),
+});
+
+export type CreateCourseFormInput = z.infer<typeof createCourseFormSchema>;
+
 export const updateCourseSchema = z.object({
   courseId: z.string(),
   title: z.string().min(1).max(200).optional(),
@@ -282,6 +310,23 @@ export const updateCourseSchema = z.object({
   status: z.enum(["draft", "published"]).optional(),
   categoryIds: z.array(z.string()).optional(),
 });
+
+export const editCourseFormSchema = z.object({
+  title: z.string().min(1, "Title is required").max(200),
+  slug: z
+    .string()
+    .min(1, "Slug is required")
+    .max(200)
+    .regex(
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      "Must be lowercase letters, numbers, and hyphens only"
+    ),
+  description: z.string().max(2000).optional(),
+  difficulty: z.enum(["beginner", "intermediate", "advanced", "expert"]),
+  status: z.enum(["draft", "published"]),
+  thumbnail: z.instanceof(File).nullable().optional(),
+});
+export type EditCourseFormInput = z.infer<typeof editCourseFormSchema>;
 
 export const deleteCourseSchema = z.object({
   courseId: z.string(),
@@ -364,4 +409,18 @@ export const setLessonDueDateSchema = z.object({
   cohortId: z.string(),
   lessonId: z.string(),
   dueDate: z.coerce.date(),
+});
+
+export const getEnrolledCourseSchema = z.object({
+  courseId: z.string(),
+});
+
+export const getEnrolledLessonSchema = z.object({
+  courseId: z.string(),
+  lessonId: z.string(),
+});
+
+export const markLessonCompleteSchema = z.object({
+  courseId: z.string(),
+  lessonId: z.string(),
 });

@@ -7,16 +7,10 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import type { JSONContent } from "@tiptap/react";
-import { Loader2Icon } from "lucide-react";
 import Image from "next/image";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import type { RouterOutputs } from "@/app/api/trpc/router";
-import {
-  getCourseThumbnailSignedParams,
-  persistCourseThumbnail,
-} from "@/app/dashboard/courses/actions";
 import { Editor } from "@/components/editor/editor";
 import { FileUploader } from "@/components/elements/file-uploader";
 import { Button } from "@/components/ui/button";
@@ -48,48 +42,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toastManager } from "@/components/ui/toast";
+import type { StorageFolder } from "@/packages/db/schema/storage";
 import { uploadFile } from "@/packages/storage/upload";
 import { useTRPC } from "@/packages/trpc/client";
+import {
+  DIFFICULTY_OPTIONS,
+  type EditCourseFormInput,
+  editCourseFormSchema,
+} from "@/packages/utils/schema";
+import { slugify } from "@/packages/utils/string";
 
 type CourseDetail = RouterOutputs["course"]["getById"];
 type CategoryListItem = RouterOutputs["category"]["list"][number];
 
-const DIFFICULTY_LABELS: Record<string, string> = {
-  beginner: "Beginner",
-  intermediate: "Intermediate",
-  advanced: "Advanced",
-  expert: "Expert",
-};
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-const editCourseFormSchema = z.object({
-  title: z.string().min(1, "Title is required").max(200),
-  slug: z
-    .string()
-    .min(1, "Slug is required")
-    .max(200)
-    .regex(
-      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-      "Must be lowercase letters, numbers, and hyphens only"
-    ),
-  description: z.string().max(2000).optional(),
-  difficulty: z.enum(["beginner", "intermediate", "advanced", "expert"]),
-  status: z.enum(["draft", "published"]),
-});
-
-type EditCourseFormInput = z.infer<typeof editCourseFormSchema>;
+const THUMBNAILS_FOLDER = "thumbnails" satisfies StorageFolder;
 
 interface EditCourseInfoFormProps {
   courseId: string;
@@ -110,8 +80,6 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
   );
   const categories: CategoryListItem[] = categoriesData ?? [];
 
-  const [files, setFiles] = useState<File[]>([]);
-  const [slugManuallyEdited, setSlugManuallyEdited] = useState(true); // Start true since we're editing
   const [categoryIds, setCategoryIds] = useState<string[]>(
     () => course.categories?.map((c: { id: string }) => c.id) ?? []
   );
@@ -128,8 +96,7 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
     }
     return undefined;
   });
-  const uploadedImageUrl = useRef<string | null>(course.imageUrl ?? null);
-  const [isUploading, setIsUploading] = useState(false);
+  const slugManuallyEdited = useRef(true);
 
   const form = useForm<EditCourseFormInput>({
     resolver: zodResolver(editCourseFormSchema),
@@ -139,6 +106,7 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
       description: course.description ?? "",
       difficulty: course.difficulty as EditCourseFormInput["difficulty"],
       status: course.status as EditCourseFormInput["status"],
+      thumbnail: null,
     },
   });
 
@@ -149,6 +117,12 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
           .filter((c): c is CategoryListItem => c != null)
       : [];
 
+  const signUploadMutation = useMutation(
+    trpc.storage.signUpload.mutationOptions()
+  );
+  const saveAssetMutation = useMutation(
+    trpc.storage.saveAsset.mutationOptions()
+  );
   const updateMutation = useMutation(
     trpc.course.update.mutationOptions({
       onSuccess: () => {
@@ -174,9 +148,14 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
     })
   );
 
+  const isSubmitting =
+    signUploadMutation.isPending ||
+    saveAssetMutation.isPending ||
+    updateMutation.isPending;
+
   const handleTitleChange = (value: string, onChange: (v: string) => void) => {
     onChange(value);
-    if (!slugManuallyEdited) {
+    if (!slugManuallyEdited.current) {
       form.setValue("slug", slugify(value), {
         shouldValidate: form.formState.isSubmitted,
       });
@@ -187,38 +166,43 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
     setCategoryIds(next ? next.map((c) => c.id) : []);
   };
 
-  const handleFilesChange = (newFiles: File[]) => {
-    setFiles(newFiles);
-    // Reset cached URL so a new file gets uploaded on next submit
-    uploadedImageUrl.current = null;
-    if (newFiles.length > 0) {
-      // Clear any previous file error — no explicit fileError state here
-    }
-  };
-
-  const isSubmitting = isUploading || updateMutation.isPending;
-
   const onSubmit = async (data: EditCourseFormInput) => {
-    let imageUrl = uploadedImageUrl.current;
+    let imageUrl: string | undefined = course.imageUrl ?? undefined;
 
-    if (files.length > 0 && !imageUrl) {
-      setIsUploading(true);
+    if (data.thumbnail) {
       try {
-        const signedParams = await getCourseThumbnailSignedParams(courseId);
-        const result = await uploadFile({ file: files[0], signedParams });
-        imageUrl = result.secureUrl;
-        uploadedImageUrl.current = imageUrl;
-        await persistCourseThumbnail(result, courseId);
+        const signedParams = await signUploadMutation.mutateAsync({
+          folder: THUMBNAILS_FOLDER,
+          entityId: courseId,
+        });
+
+        const uploadResult = await uploadFile({
+          file: data.thumbnail,
+          signedParams,
+        });
+
+        await saveAssetMutation.mutateAsync({
+          publicId: uploadResult.publicId,
+          secureUrl: uploadResult.secureUrl,
+          folder: THUMBNAILS_FOLDER,
+          resourceType: uploadResult.resourceType,
+          format: uploadResult.format,
+          bytes: uploadResult.bytes,
+          width: uploadResult.width,
+          height: uploadResult.height,
+          entityId: courseId,
+          entityType: "course",
+        });
+
+        imageUrl = uploadResult.secureUrl;
       } catch (err) {
         toastManager.add({
           title: "Failed to upload image",
           description: err instanceof Error ? err.message : "Upload failed",
           type: "error",
         });
-        setIsUploading(false);
         return;
       }
-      setIsUploading(false);
     }
 
     updateMutation.mutate({
@@ -229,10 +213,12 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
       difficulty: data.difficulty,
       status: data.status,
       summary: summary ? summary : undefined,
-      imageUrl: imageUrl ?? undefined,
+      imageUrl,
       categoryIds,
     });
   };
+
+  const thumbnailFile = form.watch("thumbnail");
 
   return (
     <Form {...form}>
@@ -241,31 +227,44 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
         onSubmit={form.handleSubmit(onSubmit)}
       >
         {/* Thumbnail */}
-        <Field>
-          <FieldLabel className="text-xs">Thumbnail</FieldLabel>
-          {course.imageUrl && files.length === 0 && (
-            <Image
-              alt={course.title}
-              className="mb-2 aspect-square size-32 w-auto rounded-md object-contain"
-              height={128}
-              src={course.imageUrl}
-              width={256}
-            />
+        <FormField
+          control={form.control}
+          name="thumbnail"
+          render={({ field }) => (
+            <FormItem>
+              <Field>
+                <FieldLabel className="text-xs">Thumbnail</FieldLabel>
+                {course.imageUrl && !thumbnailFile && (
+                  <Image
+                    alt={course.title}
+                    className="mb-2 aspect-square size-32 w-auto rounded-md object-contain"
+                    height={128}
+                    src={course.imageUrl}
+                    width={256}
+                  />
+                )}
+                <FormControl>
+                  <FileUploader
+                    accept={{
+                      "image/*": [".jpg", ".jpeg", ".png", ".webp", ".gif"],
+                    }}
+                    disabled={isSubmitting}
+                    maxFileCount={1}
+                    maxSize={1024 * 1024 * 10}
+                    onValueChange={(files) => {
+                      field.onChange(files[0] ?? null);
+                    }}
+                    value={field.value ? [field.value] : []}
+                  />
+                </FormControl>
+                <p className="text-muted-foreground text-xs">
+                  Upload a new image to replace the current thumbnail.
+                </p>
+              </Field>
+            </FormItem>
           )}
-          <FileUploader
-            accept={{
-              "image/*": [".jpg", ".jpeg", ".png", ".webp", ".gif"],
-            }}
-            disabled={isSubmitting}
-            maxFileCount={1}
-            maxSize={1024 * 1024 * 10}
-            onValueChange={handleFilesChange}
-            value={files}
-          />
-          <p className="text-muted-foreground text-xs">
-            Upload a new image to replace the current thumbnail.
-          </p>
-        </Field>
+        />
+
         {/* Title */}
         <FormField
           control={form.control}
@@ -288,6 +287,7 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
             </FormItem>
           )}
         />
+
         {/* Slug */}
         <FormField
           control={form.control}
@@ -302,7 +302,7 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
                     {...field}
                     onChange={(e) => {
                       field.onChange(e);
-                      setSlugManuallyEdited(true);
+                      slugManuallyEdited.current = true;
                     }}
                   />
                 </FormControl>
@@ -314,7 +314,8 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
             </FormItem>
           )}
         />
-        {/* Description (short) */}
+
+        {/* Description */}
         <FormField
           control={form.control}
           name="description"
@@ -324,8 +325,8 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
                 <FieldLabel className="text-xs">Description</FieldLabel>
                 <FormControl>
                   <Textarea
+                    className="min-h-28"
                     placeholder="A brief description of what students will learn..."
-                    rows={3}
                     {...field}
                   />
                 </FormControl>
@@ -337,6 +338,7 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
             </FormItem>
           )}
         />
+
         {/* Summary (rich text editor) */}
         <Field>
           <FieldLabel className="text-xs">Summary</FieldLabel>
@@ -351,6 +353,7 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
             formatting.
           </p>
         </Field>
+
         {/* Categories */}
         <Field>
           <FieldLabel className="text-xs">Categories</FieldLabel>
@@ -401,15 +404,20 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
                   <FormControl>
                     <SelectTrigger className="w-full">
                       <SelectValue>
-                        {DIFFICULTY_LABELS[field.value]}
+                        {
+                          DIFFICULTY_OPTIONS.find(
+                            (option) => option.value === field.value
+                          )?.label
+                        }
                       </SelectValue>
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="beginner">Beginner</SelectItem>
-                    <SelectItem value="intermediate">Intermediate</SelectItem>
-                    <SelectItem value="advanced">Advanced</SelectItem>
-                    <SelectItem value="expert">Expert</SelectItem>
+                    {DIFFICULTY_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -417,6 +425,7 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
             </FormItem>
           )}
         />
+
         {/* Status toggle */}
         <FormField
           control={form.control}
@@ -445,11 +454,14 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
             </FormItem>
           )}
         />
+
         <Button className="mb-8" disabled={isSubmitting} type="submit">
-          {isSubmitting ? (
-            <Loader2Icon className="size-4 animate-spin" />
-          ) : null}
-          Save changes
+          <span className="relative inline-flex items-center justify-center">
+            <span className={isSubmitting ? "invisible" : undefined}>
+              Save changes
+            </span>
+            {isSubmitting && <Spinner className="absolute size-3" />}
+          </span>
         </Button>
       </form>
     </Form>
