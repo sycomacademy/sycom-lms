@@ -2,10 +2,11 @@
 
 import { BookOpenIcon, InfoIcon } from "lucide-react";
 import { parseAsInteger, useQueryState } from "nuqs";
-
+import { Suspense } from "react";
 import { CoCreatorsModal } from "@/components/dashboard/courses/edit/co-creators-modal";
 import { EditCourseInfoForm } from "@/components/dashboard/courses/edit/edit-course-info-form";
 import { EditCurriculumForm } from "@/components/dashboard/courses/edit/edit-curriculum-form";
+import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import { BackButton } from "@/components/layout/back-button";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 
@@ -42,11 +43,15 @@ export function EditCoursePage({ courseId }: EditCoursePageProps) {
         </TabsList>
 
         <TabsPanel className="pt-6" value={0}>
-          <EditCourseInfoForm courseId={courseId} />
+          <Suspense fallback={<DashboardSkeleton />}>
+            <EditCourseInfoForm courseId={courseId} />
+          </Suspense>
         </TabsPanel>
 
         <TabsPanel className="pt-6" value={1}>
-          <EditCurriculumForm courseId={courseId} />
+          <Suspense fallback={<DashboardSkeleton />}>
+            <EditCurriculumForm courseId={courseId} />
+          </Suspense>
         </TabsPanel>
       </Tabs>
     </div>
