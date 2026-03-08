@@ -82,8 +82,7 @@ export function WelcomeEmail({
           </Section>
 
           <Text className="text-xs leading-6" style={{ color: colors.muted }}>
-            This welcome note is occasional product and onboarding email. If you
-            would rather not get emails like this,{" "}
+            If you would rather not get emails like this,{" "}
             <Link href={unsubscribeUrl}>click here to unsubscribe</Link>.
           </Text>
 

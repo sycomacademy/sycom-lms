@@ -1,7 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "instructions": [".cursor/rules/*.mdc"],
-
   "mcp": {
     "trigger": {
       "command": ["npx", "trigger.dev@4.4.1", "mcp", "--dev-only"],
@@ -11,6 +10,11 @@
     "neon": {
       "type": "remote",
       "url": "https://mcp.neon.tech/mcp",
+      "enabled": true
+    },
+    "better-auth": {
+      "type": "remote",
+      "url": "https://mcp.inkeep.com/better-auth/mcp",
       "enabled": true
     }
   }

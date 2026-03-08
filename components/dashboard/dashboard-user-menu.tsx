@@ -4,9 +4,14 @@ import { Facehash } from "facehash";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useState } from "react";
-import { Icon } from "@/components/icons/old";
-import { useAnimatedIcon } from "@/components/icons/old/use-animated-icon";
+import { Suspense, useState } from "react";
+import { LayoutDashboard } from "@/components/icons/animated/layout-dashboard";
+import { LogOut } from "@/components/icons/animated/log-out";
+import { MessageCircleQuestion } from "@/components/icons/animated/message-circle-question";
+import { Settings } from "@/components/icons/animated/settings";
+import { User } from "@/components/icons/animated/user";
+import { AnimateIcon } from "@/components/icons/core/icon";
+import { ThemeToggleIcon } from "@/components/icons/theme-toggle-icon";
 import { Link } from "@/components/layout/foresight-link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -26,25 +31,16 @@ import { authClient } from "@/packages/auth/auth-client";
 import { useUserQuery } from "@/packages/hooks/use-user";
 import { useKeyboardShortcutLabels } from "../layout/keyboard-shortcuts";
 import { toastManager } from "../ui/toast";
-import { useDashboardOrg } from "./dashboard-org-context";
-
-const {
-  UserIcon,
-  SettingsIcon,
-  HomeIcon,
-  LogoutIcon,
-  CircleHelpIcon,
-  ThemeToggleIcon,
-} = Icon;
 
 const PLATFORM_PREFIX_RE = /^platform_/;
 const ORG_PREFIX_RE = /^org_/;
 const UNDERSCORE_RE = /_/g;
 const WORD_START_RE = /\b\w/g;
 
-function formatRole(role: string, stripPrefix: "platform" | "org"): string {
-  const prefix =
-    stripPrefix === "platform" ? PLATFORM_PREFIX_RE : ORG_PREFIX_RE;
+function formatRole(role: string): string {
+  const prefix = role.startsWith("platform_")
+    ? PLATFORM_PREFIX_RE
+    : ORG_PREFIX_RE;
   return role
     .replace(prefix, "")
     .replace(UNDERSCORE_RE, " ")
@@ -52,17 +48,23 @@ function formatRole(role: string, stripPrefix: "platform" | "org"): string {
 }
 
 export function DashboardUserMenu() {
+  return (
+    <Suspense fallback={<DashboardUserMenuSkeleton />}>
+      <DashboardUserMenuContent />
+    </Suspense>
+  );
+}
+
+export function DashboardUserMenuSkeleton() {
+  return <Skeleton className="size-10" />;
+}
+
+function DashboardUserMenuContent() {
   const router = useRouter();
   const { profile, user, isPending } = useUserQuery();
   const { setTheme, resolvedTheme } = useTheme();
-  const { activeMember, orgs } = useDashboardOrg();
   const shortcuts = useKeyboardShortcutLabels();
   const [signOutPending, setSignOutPending] = useState(false);
-  const [userIconRef, userHover] = useAnimatedIcon();
-  const [settingsIconRef, settingsHover] = useAnimatedIcon();
-  const [homeIconRef, homeHover] = useAnimatedIcon();
-  const [helpIconRef, helpHover] = useAnimatedIcon();
-  const [logoutIconRef, logoutHover] = useAnimatedIcon();
 
   const toggleTheme = () => {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
@@ -73,7 +75,6 @@ export function DashboardUserMenu() {
     const { error } = await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
-          // Refresh invalidates the RSC cache so server components see the logged-out state
           router.refresh();
           router.push("/");
         },
@@ -90,7 +91,7 @@ export function DashboardUserMenu() {
   }
 
   if (!user) {
-    return <Skeleton className="size-10 rounded-none" />;
+    return <DashboardUserMenuSkeleton />;
   }
   const enableFacehash = profile?.settings?.enableFacehash ?? true;
   const facehashName = `${user.name}`;
@@ -101,15 +102,7 @@ export function DashboardUserMenu() {
   const logoutDisabled = isPending || signOutPending;
   const logoutLabel = signOutPending ? "Signing out…" : "Log out";
 
-  const activeOrg = orgs?.find((o) => o.id === activeMember?.organizationId);
-  const isPublicOrg = !activeOrg || activeOrg.slug === "platform";
-  let roleBadge: string;
-  if (isPublicOrg || !activeMember) {
-    roleBadge = formatRole(user.role ?? "platform_student", "platform");
-  } else {
-    roleBadge = `${formatRole(activeMember.role, "org")} @ ${activeOrg?.name}`;
-  }
-
+  const roleBadge = formatRole(user.role ?? "platform_student");
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -153,17 +146,20 @@ export function DashboardUserMenu() {
             </Badge>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem {...userHover} render={<Link href="/dashboard" />}>
-            <UserIcon ref={userIconRef} />
-            <span className="flex-1">Profile</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            {...settingsHover}
-            render={<Link href={"/dashboard/settings" as Route} />}
-          >
-            <SettingsIcon ref={settingsIconRef} />
-            <span className="flex-1">Settings</span>
-          </DropdownMenuItem>
+          <AnimateIcon animateOnHover>
+            <DropdownMenuItem render={<Link href="/dashboard" />}>
+              <User size={16} />
+              <span className="flex-1">Profile</span>
+            </DropdownMenuItem>
+          </AnimateIcon>
+          <AnimateIcon animateOnHover>
+            <DropdownMenuItem
+              render={<Link href={"/dashboard/settings" as Route} />}
+            >
+              <Settings size={16} />
+              <span className="flex-1">Settings</span>
+            </DropdownMenuItem>
+          </AnimateIcon>
         </DropdownMenuGroup>
         <DropdownMenuItem
           className="py-2"
@@ -171,39 +167,44 @@ export function DashboardUserMenu() {
           onClick={toggleTheme}
         >
           <ThemeToggleIcon
-            className="size-3.5"
+            size={16}
             theme={resolvedTheme === "dark" ? "dark" : "light"}
           />
           <span className="flex">Switch theme</span>
           <DropdownMenuShortcut>{shortcuts.TOGGLE_THEME}</DropdownMenuShortcut>
         </DropdownMenuItem>
+
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem {...homeHover} render={<Link href="/" />}>
-            <HomeIcon ref={homeIconRef} />
-            <span>Homepage</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            {...helpHover}
-            render={<Link href={"/dashboard/support" as Route} />}
-          >
-            <CircleHelpIcon ref={helpIconRef} />
-            <span>Help</span>
-          </DropdownMenuItem>
+          <AnimateIcon animateOnHover>
+            <DropdownMenuItem render={<Link href="/" />}>
+              <LayoutDashboard size={16} />
+              <span>Homepage</span>
+            </DropdownMenuItem>
+          </AnimateIcon>
+          <AnimateIcon animateOnHover>
+            <DropdownMenuItem
+              render={<Link href={"/dashboard/support" as Route} />}
+            >
+              <MessageCircleQuestion size={16} />
+              <span>Help</span>
+            </DropdownMenuItem>
+          </AnimateIcon>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          disabled={logoutDisabled}
-          onClick={handleSignOut}
-          variant="destructive"
-          {...logoutHover}
-        >
-          <LogoutIcon ref={logoutIconRef} />
-          <span>{logoutLabel}</span>
-          <DropdownMenuShortcut className="text-destructive group-focus/dropdown-menu-item:text-destructive">
-            {shortcuts.LOGOUT}
-          </DropdownMenuShortcut>
-        </DropdownMenuItem>
+        <AnimateIcon animateOnHover>
+          <DropdownMenuItem
+            disabled={logoutDisabled}
+            onClick={handleSignOut}
+            variant="destructive"
+          >
+            <LogOut size={16} />
+            <span>{logoutLabel}</span>
+            <DropdownMenuShortcut className="text-destructive group-focus/dropdown-menu-item:text-destructive">
+              {shortcuts.LOGOUT}
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+        </AnimateIcon>
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -18,7 +18,7 @@ export const storageRouter = router({
   signUpload: protectedProcedure
     .input(signUploadSchema)
     .mutation(async ({ input }) => {
-      return signUploadParams(input.folder, input.ownerId);
+      return signUploadParams(input.folder, input.entityId);
     }),
 
   saveAsset: protectedProcedure
@@ -33,8 +33,8 @@ export const storageRouter = router({
         bytes: input.bytes,
         width: input.width,
         height: input.height,
-        ownerId: input.ownerId,
-        ownerType: input.ownerType,
+        entityId: input.entityId,
+        entityType: input.entityType,
         uploadedBy: ctx.session.user.id,
       });
     }),

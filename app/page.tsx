@@ -10,8 +10,20 @@ import { Stats } from "@/components/landing/stats";
 import { Testimonials } from "@/components/landing/testimonials";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
+import { getQueryClient, trpc } from "@/packages/trpc/server";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const queryClient = getQueryClient();
+
+  const [{ posts }, { courses }] = await Promise.all([
+    queryClient.fetchQuery(
+      trpc.blog.listPublic.queryOptions({ limit: 3, offset: 0 })
+    ),
+    queryClient.fetchQuery(
+      trpc.course.listPublic.queryOptions({ limit: 3, offset: 0 })
+    ),
+  ]);
+
   return (
     <div>
       <Header />
@@ -20,9 +32,9 @@ export default function HomePage() {
       <Stats />
       <Features />
       <HowItWorks />
-      <CoursesPreview />
+      <CoursesPreview courses={courses} />
       <Testimonials />
-      <BlogPreview />
+      <BlogPreview posts={posts} />
       <Faq />
       <Cta />
       <Footer />

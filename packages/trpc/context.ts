@@ -8,7 +8,7 @@ const trpcLogger = createLoggerWithContext("trpc:context");
 export const createContext = async (req: NextRequest) => {
   trpcLogger.debug("createContext invoked");
   const headers = req.headers;
-  const session = await getSession();
+  const session = await getSession(headers);
   return {
     session,
     db,

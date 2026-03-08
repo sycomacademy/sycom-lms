@@ -1,6 +1,8 @@
+"use client";
+
 import { useState } from "react";
-import { Icon } from "@/components/icons/old";
-import { useAnimatedIcon } from "@/components/icons/old/use-animated-icon";
+import { MessageSquareMore } from "@/components/icons/animated/message-square-more";
+import { AnimateIcon } from "@/components/icons/core/icon";
 import {
   Popover,
   PopoverContent,
@@ -9,24 +11,23 @@ import {
 import { Button } from "../ui/button";
 import { FeedbackForm } from "./feedback-form";
 
-const { MessageSquareMoreIcon } = Icon;
-
 export function FeedbackPopover() {
   const [open, setOpen] = useState(false);
-  const [iconRef, iconHover] = useAnimatedIcon();
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger
-        {...iconHover}
-        className="hidden md:flex"
-        render={
-          <Button variant="ghost">
-            <MessageSquareMoreIcon ref={iconRef} size={20} />
-            Feedback
-          </Button>
-        }
-      />
+      <AnimateIcon animateOnHover>
+        <PopoverTrigger
+          className="hidden md:flex"
+          render={
+            <Button variant="ghost">
+              <MessageSquareMore size={20} />
+              Feedback
+            </Button>
+          }
+        />
+      </AnimateIcon>
+
       <PopoverContent align="end" className="w-80" side="top">
         <div className="mb-2 w-full space-y-1">
           <h3 className="font-medium text-foreground text-sm">Send feedback</h3>

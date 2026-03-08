@@ -4,6 +4,7 @@ import {
   type InsertMediaAsset,
   type MediaAsset,
   mediaAsset,
+  type StorageEntityType,
 } from "@/packages/db/schema/storage";
 
 /**
@@ -50,17 +51,20 @@ export async function findAssetByPublicId(
 }
 
 /**
- * List all assets belonging to an owner.
+ * List all assets attached to an entity.
  *
- * @param ownerType - narrow by entity type (e.g. "user", "course", "organization")
+ * @param entityType - narrow by entity type (e.g. "user", "course", "organization")
  */
-export async function findAssetsByOwner(
-  ownerId: string,
-  ownerType?: string
+export async function findAssetsByEntity(
+  entityId: string,
+  entityType?: StorageEntityType
 ): Promise<MediaAsset[]> {
-  const condition = ownerType
-    ? and(eq(mediaAsset.ownerId, ownerId), eq(mediaAsset.ownerType, ownerType))
-    : eq(mediaAsset.ownerId, ownerId);
+  const condition = entityType
+    ? and(
+        eq(mediaAsset.entityId, entityId),
+        eq(mediaAsset.entityType, entityType)
+      )
+    : eq(mediaAsset.entityId, entityId);
 
   return db.select().from(mediaAsset).where(condition);
 }

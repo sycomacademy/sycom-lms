@@ -21,6 +21,7 @@ import { CommandDemo } from "./demo/command-demo";
 import { ContextMenuDemo } from "./demo/context-menu-demo";
 import { DialogDemo } from "./demo/dialog-demo";
 import { DrawerDemo } from "./demo/drawer-demo";
+import { EditableDemo } from "./demo/editable-demo";
 import { EditorDemo } from "./demo/editor-demo";
 import { FileUploaderDemo } from "./demo/file-uploader-demo";
 import { FormDemo } from "./demo/form-demo";
@@ -185,6 +186,12 @@ export const componentRegistry: Record<string, ComponentConfig> = {
     component: DrawerDemo,
     type: "registry:ui",
     href: "/style-guide/drawer",
+  },
+  editable: {
+    name: "Editable",
+    component: EditableDemo,
+    type: "registry:ui",
+    href: "/style-guide/editable",
   },
   editor: {
     name: "Editor",

@@ -1,7 +1,10 @@
 "use client";
 
-import { ArrowRight, BookOpen, Clock, Star, Users } from "lucide-react";
+import { ArrowRight, BookOpen, Clock, Users } from "lucide-react";
 import { motion } from "motion/react";
+import type { Route } from "next";
+import Image from "next/image";
+import type { RouterOutputs } from "@/app/api/trpc/router";
 import { Link } from "@/components/layout/foresight-link";
 
 import { Badge } from "@/components/ui/badge";
@@ -14,16 +17,11 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { mockCourses } from "./mock-data";
 
-const difficultyColor = {
-  beginner: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  intermediate: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  advanced: "bg-red-500/10 text-red-400 border-red-500/20",
-};
+type PublicCourse = RouterOutputs["course"]["listPublic"]["courses"][number];
 
-export function CoursesPreview() {
-  const featured = mockCourses.slice(0, 3);
+export function CoursesPreview({ courses }: { courses: PublicCourse[] }) {
+  const featured = courses.slice(0, 3);
 
   return (
     <section className="relative bg-background py-24">
@@ -46,7 +44,7 @@ export function CoursesPreview() {
           </div>
           <Button
             nativeButton={false}
-            render={<Link href="/dashboard/courses" />}
+            render={<Link href={"/courses" as Route} />}
             variant="outline"
           >
             View All Courses
@@ -77,56 +75,62 @@ export function CoursesPreview() {
                 viewport={{ once: true }}
                 whileInView={{ opacity: 1, y: 0 }}
               >
-                <Card className="h-full pt-0 transition-colors hover:ring-primary/20">
-                  <div className="relative h-44 overflow-hidden bg-linear-to-br from-primary/10 to-primary/5">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="font-mono text-6xl text-primary/10">
-                        {course.category
-                          .split(" ")
-                          .map((w) => w[0])
-                          .join("")}
+                <Link href={`/courses/${course.slug ?? course.id}` as Route}>
+                  <Card className="h-full pt-0 transition-colors hover:ring-primary/20">
+                    <div className="relative h-44 overflow-hidden bg-linear-to-br from-primary/10 to-primary/5">
+                      {course.imageUrl ? (
+                        <Image
+                          alt={course.title}
+                          className="object-cover"
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          src={course.imageUrl}
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="font-mono text-6xl text-primary/10">
+                            {course.title
+                              .split(" ")
+                              .slice(0, 3)
+                              .map((w) => w[0])
+                              .join("")}
+                          </div>
+                        </div>
+                      )}
+                      <div className="absolute top-3 left-3">
+                        <Badge className="capitalize" variant="secondary">
+                          {course.difficulty}
+                        </Badge>
                       </div>
                     </div>
-                    <div className="absolute top-3 left-3">
-                      <Badge
-                        className={`border ${difficultyColor[course.difficulty]}`}
-                      >
-                        {course.difficulty}
-                      </Badge>
-                    </div>
-                  </div>
 
-                  <CardContent className="flex flex-1 flex-col">
-                    <span className="mb-2 font-mono text-primary/50 text-xs uppercase tracking-wider">
-                      {course.category}
-                    </span>
-                    <h3 className="mb-2 font-semibold text-lg leading-snug">
-                      {course.title}
-                    </h3>
-                    <p className="line-clamp-2 flex-1 text-muted-foreground text-sm">
-                      {course.summary}
-                    </p>
-                  </CardContent>
+                    <CardContent className="flex flex-1 flex-col">
+                      <h3 className="mb-2 font-semibold text-lg leading-snug">
+                        {course.title}
+                      </h3>
+                      <p className="line-clamp-2 flex-1 text-muted-foreground text-sm">
+                        {course.description ?? "No description."}
+                      </p>
+                    </CardContent>
 
-                  <CardFooter className="text-muted-foreground text-xs">
-                    <span className="flex items-center gap-1">
-                      <Clock className="size-3" />
-                      {course.estimatedDuration}
-                    </span>
-                    <span className="ml-4 flex items-center gap-1">
-                      <BookOpen className="size-3" />
-                      {course.lessonsCount} lessons
-                    </span>
-                    <span className="ml-4 flex items-center gap-1">
-                      <Users className="size-3" />
-                      {course.studentsCount.toLocaleString()}
-                    </span>
-                    <span className="ml-auto flex items-center gap-1 text-amber-400">
-                      <Star className="size-3 fill-current" />
-                      {course.rating}
-                    </span>
-                  </CardFooter>
-                </Card>
+                    <CardFooter className="text-muted-foreground text-xs">
+                      {course.estimatedDuration ? (
+                        <span className="flex items-center gap-1">
+                          <Clock className="size-3" />
+                          {Math.round(course.estimatedDuration / 60)}h
+                        </span>
+                      ) : null}
+                      <span className="ml-4 flex items-center gap-1">
+                        <BookOpen className="size-3" />
+                        {course.lessonCount} lessons
+                      </span>
+                      <span className="ml-4 flex items-center gap-1">
+                        <Users className="size-3" />
+                        {course.enrollmentCount.toLocaleString()}
+                      </span>
+                    </CardFooter>
+                  </Card>
+                </Link>
               </motion.div>
             ))}
           </div>

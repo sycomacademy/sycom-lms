@@ -1,6 +1,7 @@
 "use client";
 
 import { EyeIcon } from "lucide-react";
+import type { Route } from "next";
 import React from "react";
 import { Link } from "@/components/layout/foresight-link";
 import { cn } from "@/packages/utils/cn";
@@ -32,7 +33,7 @@ export function ComponentWrapper({
         <div className="border-b px-4 py-3">
           <div className="flex items-center gap-2 font-medium text-sm">
             {getComponentName(name)}
-            <Link href={slug}>
+            <Link href={slug as Route}>
               <EyeIcon size={16} />
             </Link>
           </div>

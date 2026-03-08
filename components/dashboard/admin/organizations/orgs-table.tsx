@@ -1,13 +1,9 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
-import { BuildingIcon, PlusIcon, SearchIcon } from "lucide-react";
+import { BuildingIcon, Loader2Icon, PlusIcon, SearchIcon } from "lucide-react";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -25,6 +21,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Field, FieldLabel } from "@/components/ui/field";
 import {
   Form,
@@ -33,72 +36,13 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
 import { useTRPC } from "@/packages/trpc/client";
-import { getInitials } from "@/packages/utils/string";
 
 type Org = RouterOutputs["admin"]["listOrganizations"]["orgs"][number];
-
-const USER_PREVIEW_LIMIT = 3;
-
-function OrgUsersCell({ org }: { org: Org }) {
-  if (!org.userCount || org.users.length === 0) {
-    return <span className="text-muted-foreground text-sm">No users</span>;
-  }
-
-  const preview = org.users
-    .slice(0, USER_PREVIEW_LIMIT)
-    .map((u) => u.name ?? u.email);
-  const remaining = org.userCount - preview.length;
-  const previewLabel =
-    remaining > 0 ? `${preview.join(", ")} +${remaining}` : preview.join(", ");
-
-  return (
-    <HoverCard>
-      <HoverCardTrigger
-        render={
-          <button className="cursor-help text-left text-sm" type="button" />
-        }
-      >
-        <span className="line-clamp-2">{previewLabel}</span>
-      </HoverCardTrigger>
-      <HoverCardContent align="start" className="w-80">
-        <div className="mb-2 font-medium text-foreground text-xs">
-          Users ({org.userCount})
-        </div>
-        <div className="max-h-60 space-y-1.5 overflow-y-auto">
-          {org.users.map((orgUser) => (
-            <div
-              className="flex items-center gap-2 rounded-md border px-2 py-1.5"
-              key={orgUser.id}
-            >
-              <Avatar className="size-6">
-                <AvatarFallback className="text-[10px]">
-                  {getInitials(orgUser.name ?? orgUser.email)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
-                <div className="truncate text-xs">
-                  {orgUser.name ?? "Unnamed user"}
-                </div>
-                <div className="truncate text-muted-foreground text-xs">
-                  {orgUser.email}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </HoverCardContent>
-    </HoverCard>
-  );
-}
 
 const slugRegex = /^[a-z0-9-]+$/;
 
@@ -330,6 +274,17 @@ const columns: ColumnDef<Org, unknown>[] = [
     },
   },
   {
+    accessorKey: "cohortCount",
+    header: "Cohorts",
+    size: 90,
+    enableSorting: false,
+    cell: ({ row }) => (
+      <span className="text-sm tabular-nums">
+        {row.getValue("cohortCount") ?? 0}
+      </span>
+    ),
+  },
+  {
     accessorKey: "memberCount",
     header: "Members",
     size: 90,
@@ -339,13 +294,6 @@ const columns: ColumnDef<Org, unknown>[] = [
         {row.getValue("memberCount") ?? 0}
       </span>
     ),
-  },
-  {
-    id: "users",
-    header: "Users",
-    size: 260,
-    enableSorting: false,
-    cell: ({ row }) => <OrgUsersCell org={row.original} />,
   },
   {
     accessorKey: "createdAt",
@@ -366,6 +314,64 @@ const columns: ColumnDef<Org, unknown>[] = [
   },
 ];
 
+function OrgsTableSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="overflow-hidden rounded-md border">
+        <div className="border-b bg-muted/30 px-4 py-3">
+          <div className="grid grid-cols-[1.2fr_1fr_0.5fr_0.5fr_0.7fr] gap-4">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-14" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-16" />
+          </div>
+        </div>
+
+        <div className="divide-y">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              className="grid grid-cols-[1.2fr_1fr_0.5fr_0.5fr_0.7fr] items-center gap-4 px-4 py-4"
+              key={index}
+            >
+              <div className="flex items-center gap-2">
+                <Skeleton className="size-8 rounded-md" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3 w-28" />
+              </div>
+              <Skeleton className="h-4 w-8" />
+              <Skeleton className="h-4 w-8" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrgsEmptyState() {
+  return (
+    <Empty className="border">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <BuildingIcon />
+        </EmptyMedia>
+        <EmptyTitle>No organizations found</EmptyTitle>
+        <EmptyDescription>
+          Try adjusting your search or create a new organization.
+        </EmptyDescription>
+      </EmptyHeader>
+    </Empty>
+  );
+}
+
 export function OrgsTable() {
   const trpc = useTRPC();
   const [, startTransition] = useTransition();
@@ -382,7 +388,10 @@ export function OrgsTable() {
     search: search || undefined,
   });
 
-  const { data } = useSuspenseQuery(queryOptions);
+  const { data, isFetching, isPending } = useQuery(queryOptions);
+  const orgs = data?.orgs ?? [];
+  const total = data?.total ?? 0;
+  const dataLoaded = Boolean(data) || !isPending;
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
@@ -400,7 +409,11 @@ export function OrgsTable() {
       {/* Toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-xs flex-1">
-          <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          {isFetching ? (
+            <Loader2Icon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+          ) : (
+            <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          )}
           <Input
             className="pl-8"
             onChange={(e) => handleSearchChange(e.target.value)}
@@ -411,16 +424,19 @@ export function OrgsTable() {
         <CreateOrgDialog />
       </div>
 
-      {/* Table */}
-      <DataTable
-        columns={columns}
-        data={data.orgs}
-        manualPagination
-        onPaginationChange={handlePaginationChange}
-        pageIndex={pagination.pageIndex}
-        pageSize={pagination.pageSize}
-        total={data.total}
-      />
+      {!dataLoaded && <OrgsTableSkeleton />}
+      {dataLoaded && orgs.length === 0 && <OrgsEmptyState />}
+      {dataLoaded && orgs.length > 0 && (
+        <DataTable
+          columns={columns}
+          data={orgs}
+          manualPagination
+          onPaginationChange={handlePaginationChange}
+          pageIndex={pagination.pageIndex}
+          pageSize={pagination.pageSize}
+          total={total}
+        />
+      )}
     </div>
   );
 }

@@ -21,6 +21,7 @@ export function Editor({
   className,
   autofocus = false,
   mediaUploadOwnerId,
+  mediaUploadEntityType,
 }: EditorProps) {
   const editor = useEditorInstance({
     variant,
@@ -47,6 +48,7 @@ export function Editor({
       {editor && editable && variant !== "bare" && (
         <EditorToolbar
           editor={editor}
+          mediaUploadEntityType={mediaUploadEntityType}
           mediaUploadOwnerId={mediaUploadOwnerId}
           variant={variant}
         />

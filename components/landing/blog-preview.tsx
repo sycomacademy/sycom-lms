@@ -2,6 +2,7 @@
 
 import { ArrowRight, Clock } from "lucide-react";
 import { motion } from "motion/react";
+import type { RouterOutputs } from "@/app/api/trpc/router";
 import { Link } from "@/components/layout/foresight-link";
 
 import { Button } from "@/components/ui/button";
@@ -13,10 +14,22 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { mockBlogPosts } from "./mock-data";
 
-export function BlogPreview() {
-  const posts = mockBlogPosts.slice(0, 3);
+type BlogPostPreview = RouterOutputs["blog"]["listPublic"]["posts"][number];
+
+function formatPublishedDate(value: Date | null) {
+  if (!value) {
+    return "Draft";
+  }
+
+  return value.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+export function BlogPreview({ posts }: { posts: BlogPostPreview[] }) {
   const featured = posts[0];
   const rest = posts.slice(1);
 
@@ -73,22 +86,19 @@ export function BlogPreview() {
                 <Card className="h-full pt-0">
                   <div className="h-56 bg-linear-to-br from-primary/10 to-primary/5">
                     <div className="flex h-full items-center justify-center font-mono text-4xl text-primary/10">
-                      {featured.category
-                        .split(" ")
-                        .map((w) => w[0])
-                        .join("")}
+                      BL
                     </div>
                   </div>
 
                   <CardContent>
                     <div className="mb-3 flex items-center gap-3 text-xs">
                       <span className="font-mono text-primary/50 uppercase tracking-wider">
-                        {featured.category}
+                        Article
                       </span>
                       <span className="text-muted-foreground">|</span>
                       <span className="flex items-center gap-1 text-muted-foreground">
                         <Clock className="size-3" />
-                        {featured.readTime}
+                        {featured.author.name}
                       </span>
                     </div>
                     <h3 className="mb-3 font-semibold text-xl leading-snug">
@@ -111,7 +121,7 @@ export function BlogPreview() {
                         {featured.author.name}
                       </p>
                       <p className="text-muted-foreground text-xs">
-                        {featured.publishedAt}
+                        {formatPublishedDate(featured.publishedAt)}
                       </p>
                     </div>
                   </CardFooter>
@@ -132,12 +142,12 @@ export function BlogPreview() {
                       <CardContent className="flex flex-1 flex-col">
                         <div className="mb-3 flex items-center gap-3 text-xs">
                           <span className="font-mono text-primary/50 uppercase tracking-wider">
-                            {post.category}
+                            Article
                           </span>
                           <span className="text-muted-foreground">|</span>
                           <span className="flex items-center gap-1 text-muted-foreground">
                             <Clock className="size-3" />
-                            {post.readTime}
+                            {post.author.name}
                           </span>
                         </div>
                         <h3 className="mb-2 font-semibold text-lg leading-snug">
@@ -159,7 +169,7 @@ export function BlogPreview() {
                           {post.author.name}
                         </p>
                         <p className="ml-auto text-muted-foreground text-xs">
-                          {post.publishedAt}
+                          {formatPublishedDate(post.publishedAt)}
                         </p>
                       </CardFooter>
                     </Card>

@@ -29,6 +29,7 @@ export function EditorToolbar({
   editor,
   variant,
   mediaUploadOwnerId,
+  mediaUploadEntityType,
 }: ToolbarProps) {
   useEditorRerender(editor);
 
@@ -60,6 +61,7 @@ export function EditorToolbar({
             <ToolbarSeparator />
             <MediaGroup
               editor={editor}
+              mediaUploadEntityType={mediaUploadEntityType}
               mediaUploadOwnerId={mediaUploadOwnerId}
             />
           </>

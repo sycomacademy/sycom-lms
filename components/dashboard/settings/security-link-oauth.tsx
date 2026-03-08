@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2Icon, Trash2Icon } from "lucide-react";
+import { ArrowRight, Check, Loader2, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
   AlertDialog,
@@ -70,10 +70,18 @@ type OAuthProvider = "google" | "linkedin";
 
 const providerConfig: Record<
   OAuthProvider,
-  { label: string; logo: React.ReactNode }
+  { label: string; logo: React.ReactNode; description: string }
 > = {
-  google: { label: "Google", logo: <GoogleLogo /> },
-  linkedin: { label: "LinkedIn", logo: <LinkedInLogo /> },
+  google: {
+    label: "Google",
+    logo: <GoogleLogo />,
+    description: "Sign in with your Google account",
+  },
+  linkedin: {
+    label: "LinkedIn",
+    logo: <LinkedInLogo />,
+    description: "Sign in with your LinkedIn account",
+  },
 };
 
 interface LinkedAccount {
@@ -132,7 +140,6 @@ export function SecurityLinkOAuth() {
       });
       return;
     }
-    // Success: user is redirected to OAuth provider. Toast on return via fetchAccounts.
     fetchAccounts();
   }
 
@@ -161,6 +168,11 @@ export function SecurityLinkOAuth() {
       (a) => a.providerId === provider || a.providerId.startsWith(`${provider}`)
     );
 
+  const getProviderIdForUnlink = (provider: OAuthProvider) =>
+    linkedAccounts.find(
+      (a) => a.providerId === provider || a.providerId.startsWith(`${provider}`)
+    )?.providerId;
+
   return (
     <Card>
       <CardContent className="pt-6">
@@ -169,93 +181,127 @@ export function SecurityLinkOAuth() {
             Linked accounts
           </h3>
           <p className="text-muted-foreground text-xs">
-            Sign in with Google or LinkedIn by linking them to this account.
+            Connect your Google or LinkedIn account for easier sign-in.
           </p>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {(["google", "linkedin"] as const).map((provider) => {
-            const config = providerConfig[provider];
-            const isLoading = loadingProvider === provider;
-            const linked = isLinked(provider);
-            const providerIdForUnlink = linkedAccounts.find(
-              (a) =>
-                a.providerId === provider ||
-                a.providerId.startsWith(`${provider}`)
-            )?.providerId;
-            const isUnlinking =
-              providerIdForUnlink &&
-              unlinkingProviderId === providerIdForUnlink;
 
-            return (
-              <div className="flex items-center gap-2" key={provider}>
-                <Button
-                  disabled={isLoading}
+        <div className="mt-4 flex flex-col gap-3">
+          {loadingAccounts ? (
+            <>
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </>
+          ) : (
+            (["google", "linkedin"] as const).map((provider) => {
+              const config = providerConfig[provider];
+              const isLoading = loadingProvider === provider;
+              const linked = isLinked(provider);
+              const providerIdForUnlink = getProviderIdForUnlink(provider);
+              const isUnlinking =
+                providerIdForUnlink &&
+                unlinkingProviderId === providerIdForUnlink;
+
+              return (
+                <div
+                  className="flex items-center gap-4 rounded-sm border border-border bg-card p-4"
                   key={provider}
-                  onClick={() => handleLink(provider)}
-                  type="button"
-                  variant={linked ? "outline" : "secondary"}
                 >
-                  {isLoading ? (
-                    <Loader2Icon className="size-4 animate-spin" />
-                  ) : (
-                    config.logo
-                  )}
-                  {linked ? "Linked" : "Link"} {config.label}
-                </Button>
-                {linked && providerIdForUnlink ? (
-                  <AlertDialog
-                    onOpenChange={(open) =>
-                      !open && setUnlinkDialogProvider(null)
-                    }
-                    open={unlinkDialogProvider === provider}
-                  >
-                    <Button
-                      onClick={() => setUnlinkDialogProvider(provider)}
-                      size="default"
-                      type="button"
-                      variant="destructive"
-                    >
-                      <Trash2Icon className="size-4" />
-                      Unlink {config.label}
-                    </Button>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          Unlink {config.label}?
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          You will no longer be able to sign in with{" "}
-                          {config.label}. You can link it again anytime.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          disabled={!!isUnlinking}
-                          onClick={() => handleUnlink(providerIdForUnlink)}
-                          variant="destructive"
+                  {/* Icon Container */}
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-sm bg-secondary">
+                    {config.logo}
+                  </div>
+
+                  {/* Text Content */}
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-foreground text-sm">
+                        {config.label}
+                      </span>
+                      {linked && (
+                        <span className="inline-flex items-center gap-1 text-success text-xs">
+                          <Check className="size-3.5" />
+                          Connected
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-muted-foreground text-xs">
+                      {linked
+                        ? `${config.label} is connected to your account`
+                        : config.description}
+                    </span>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    {linked ? (
+                      <AlertDialog
+                        onOpenChange={(open) =>
+                          !open && setUnlinkDialogProvider(null)
+                        }
+                        open={unlinkDialogProvider === provider}
+                      >
+                        <Button
+                          onClick={() => setUnlinkDialogProvider(provider)}
+                          size="icon-sm"
+                          variant={"destructive"}
                         >
                           {isUnlinking ? (
-                            <Spinner className="size-4" />
+                            <Loader2 className="size-4 animate-spin" />
                           ) : (
-                            "Unlink"
+                            <Trash2 className="size-4" />
                           )}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                ) : null}
-              </div>
-            );
-          })}
+                        </Button>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Disconnect {config.label}?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              You will no longer be able to sign in with{" "}
+                              {config.label}. You can reconnect it anytime.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              disabled={!!isUnlinking}
+                              onClick={() =>
+                                providerIdForUnlink &&
+                                handleUnlink(providerIdForUnlink)
+                              }
+                              variant="destructive"
+                            >
+                              {isUnlinking ? (
+                                <Spinner className="size-4" />
+                              ) : (
+                                "Disconnect"
+                              )}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    ) : (
+                      <Button
+                        disabled={isLoading}
+                        onClick={() => handleLink(provider)}
+                        size="sm"
+                      >
+                        {isLoading ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <>
+                            Connect
+                            <ArrowRight className="size-4" />
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
-        {loadingAccounts && <Skeleton className="mt-4 h-10 w-48" />}
-        {!loadingAccounts && linkedAccounts.length > 0 && (
-          <p className="mt-2 text-muted-foreground text-xs">
-            {linkedAccounts.length} account
-            {linkedAccounts.length !== 1 ? "s" : ""} linked
-          </p>
-        )}
       </CardContent>
     </Card>
   );

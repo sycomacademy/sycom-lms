@@ -27,6 +27,7 @@ import {
   userRoleEnum,
   verification,
 } from "./auth";
+import { blogPost, blogPostRelations } from "./blog";
 import {
   category,
   categoryRelations,
@@ -58,8 +59,10 @@ import {
   reportRelations,
 } from "./feedback";
 import { profile, profileRelations } from "./profile";
+import { publicInvite, publicInviteRelations } from "./public-invite";
 import {
   mediaAsset,
+  storageEntityTypeEnum,
   storageFolderEnum,
   storageResourceTypeEnum,
 } from "./storage";
@@ -93,6 +96,10 @@ const schema = {
   userRelations,
   verification,
 
+  // public invites
+  publicInvite,
+  publicInviteRelations,
+
   // profile
   profile,
   profileRelations,
@@ -107,8 +114,13 @@ const schema = {
 
   // storage
   mediaAsset,
+  storageEntityTypeEnum,
   storageFolderEnum,
   storageResourceTypeEnum,
+
+  // blog
+  blogPost,
+  blogPostRelations,
 
   // course
   category,

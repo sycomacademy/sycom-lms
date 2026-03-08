@@ -34,8 +34,8 @@ export async function persistCohortImageAsset(
       bytes: result.bytes,
       width: result.width,
       height: result.height,
-      ownerId: cohortId,
-      ownerType: "cohort",
+      entityId: cohortId,
+      entityType: "cohort",
       uploadedBy: session.user.id,
     });
     return { success: true };

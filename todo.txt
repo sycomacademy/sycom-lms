@@ -1,14 +1,14 @@
-- move course-schema int schema in utils
-- migrate to new animated icons
-- migrate to cloudinary cdn media
-- blog post schema & update course schema
-- sycom logos, seo and og images and metadata
-- look into ratelimiting the trpc
-- email design
-- keyboard shortcut for app
-- no console log in whole, add cool linear consol log
-- 404 page cool design
-- neon and trigger workflow fix in github
-- plan to clear orphaned images storage
-- fix editor to be more simplified
-- fix oauth error linking
+[x] move course chema int schema in utils
+[x] migrate to new animated icons
+[x] email design
+[ ] migrate to cloudinary cdn media
+[ ] blog post schema & update course schema
+[ ] sycom logos, seo and og images and metadata (/appletouchicon.png 404 /appletouchiconprecomposed.png 404 )
+[ ] look into ratelimiting the trpc
+[ ] keyboard shortcut for app
+[ ] no console log in whole, add cool linear consol log
+[ ] 404 page cool design
+[ ] neon and trigger workflow fix in github
+[ ] plan to clear orphaned images storage
+[ ] fix editor to be more simplified
+[ ] fix oauth error linking

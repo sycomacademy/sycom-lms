@@ -28,15 +28,16 @@ export function AccountPreferences() {
   const themeValue = theme ?? "system";
   const selectValue = mounted ? capitalize(themeValue) : "System";
 
+  const marketingEmails = profile?.settings?.marketingEmails ?? true;
   const useDeviceTimezone = profile?.settings?.useDeviceTimezone ?? true;
   const enableFacehash = profile?.settings?.enableFacehash ?? true;
 
-  const handleUseDeviceTimezoneChange = (checked: boolean) => {
+  const updateSettings = (nextSettings: Record<string, boolean>) => {
     mutation.mutate(
       {
         settings: {
           ...profile?.settings,
-          useDeviceTimezone: checked,
+          ...nextSettings,
         },
       },
       {
@@ -50,23 +51,16 @@ export function AccountPreferences() {
     );
   };
 
+  const handleMarketingEmailsChange = (checked: boolean) => {
+    updateSettings({ marketingEmails: checked });
+  };
+
+  const handleUseDeviceTimezoneChange = (checked: boolean) => {
+    updateSettings({ useDeviceTimezone: checked });
+  };
+
   const handleEnableFacehashChange = (checked: boolean) => {
-    mutation.mutate(
-      {
-        settings: {
-          ...profile?.settings,
-          enableFacehash: checked,
-        },
-      },
-      {
-        onSuccess: () => {
-          toastManager.add({
-            title: "Preferences updated",
-            type: "success",
-          });
-        },
-      }
-    );
+    updateSettings({ enableFacehash: checked });
   };
 
   return (
@@ -101,6 +95,29 @@ export function AccountPreferences() {
                 <SelectItem value="system">System</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent>
+          <div className="flex flex-col gap-1.5">
+            <h3 className="font-medium text-foreground text-sm">
+              Email preferences
+            </h3>
+            <p className="text-muted-foreground text-xs">
+              Control whether we send occasional welcome, product, and
+              promotional emails.
+            </p>
+          </div>
+          <div className="mt-4">
+            <SettingRow
+              checked={marketingEmails}
+              description="Receive occasional welcome, product, and promotional emails from Sycom LMS."
+              disabled={mutation.isPending}
+              onCheckedChange={handleMarketingEmailsChange}
+              title="Marketing emails"
+            />
           </div>
         </CardContent>
       </Card>

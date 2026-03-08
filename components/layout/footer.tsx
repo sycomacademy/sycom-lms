@@ -5,33 +5,9 @@ import { InstagramLogo } from "@/components/icons/logos/instagram";
 import { LinkedinLogo } from "@/components/icons/logos/linkedin";
 import { TwitterLogo } from "@/components/icons/logos/twitter";
 import { Link } from "@/components/layout/foresight-link";
+import { getQueryClient, trpc } from "@/packages/trpc/server";
 import { Separator } from "../ui/separator";
 import { ModeSwitcher } from "./mode-switcher";
-
-const popularCourses = [
-  { href: "/#courses", label: "Browse Courses" },
-  { href: "/#courses", label: "Certification Prep" },
-  { href: "/#courses", label: "Ethical Hacking" },
-  { href: "/#courses", label: "Cloud Security" },
-];
-
-const recentPosts = [
-  {
-    href: "/blog/ai-powered-cyber-threats-2026",
-    title: "The Rise of AI-Powered Cyber Threats",
-    date: "28 Feb 2026",
-  },
-  {
-    href: "/blog/zero-trust-architecture-implementation-guide",
-    title: "Zero Trust Architecture Guide",
-    date: "20 Feb 2026",
-  },
-  {
-    href: "/blog/top-cybersecurity-certifications-2026",
-    title: "Top Certifications for 2026",
-    date: "14 Feb 2026",
-  },
-];
 
 const socialLinks = [
   { href: "https://x.com/sycomsolutions", label: "Twitter" },
@@ -60,7 +36,16 @@ function SocialIcon({ label }: { label: string }) {
   }
 }
 
-export function Footer() {
+export async function Footer() {
+  const queryClient = getQueryClient();
+  const { posts } = await queryClient.fetchQuery(
+    trpc.blog.listPublic.queryOptions({ limit: 5, offset: 0 })
+  );
+
+  const { courses } = await queryClient.fetchQuery(
+    trpc.course.listPublic.queryOptions({ limit: 5, offset: 0 })
+  );
+
   return (
     <footer className="relative w-full overflow-hidden bg-primary">
       <div className="mx-auto max-w-[1400px] px-4 py-16 sm:px-8">
@@ -80,15 +65,21 @@ export function Footer() {
               Popular Courses
             </h3>
             <nav className="flex flex-col gap-2.5">
-              {popularCourses.map((course) => (
-                <Link
-                  className="block font-sans text-primary-foreground/80 text-sm transition-colors hover:text-primary-foreground"
-                  href={course.href as Route}
-                  key={course.label}
-                >
-                  {course.label}
-                </Link>
-              ))}
+              {courses.length > 0 ? (
+                courses.map((course) => (
+                  <Link
+                    className="block font-sans text-primary-foreground/80 text-sm transition-colors hover:text-primary-foreground"
+                    href={`/courses/${course.slug}` as Route}
+                    key={course.id}
+                  >
+                    {course.title}
+                  </Link>
+                ))
+              ) : (
+                <p className="font-sans text-primary-foreground/60 text-sm">
+                  No published courses yet.
+                </p>
+              )}
             </nav>
           </div>
 
@@ -97,20 +88,35 @@ export function Footer() {
               Recent Posts
             </h3>
             <nav className="flex flex-col gap-3">
-              {recentPosts.map((post) => (
-                <Link
-                  className="group block"
-                  href={post.href as Route}
-                  key={post.title}
-                >
-                  <h4 className="font-sans text-primary-foreground text-sm transition-colors group-hover:text-primary-foreground/80">
-                    {post.title}
-                  </h4>
-                  <time className="mt-1 block font-sans text-primary-foreground/60 text-xs">
-                    {post.date}
-                  </time>
-                </Link>
-              ))}
+              {posts.length > 0 ? (
+                posts.map((post) => (
+                  <Link
+                    className="group block"
+                    href={`/blog/${post.slug}` as Route}
+                    key={post.id}
+                  >
+                    <h4 className="font-sans text-primary-foreground text-sm transition-colors group-hover:text-primary-foreground/80">
+                      {post.title}
+                    </h4>
+                    <time className="mt-1 block font-sans text-primary-foreground/60 text-xs">
+                      {post.publishedAt
+                        ? new Date(post.publishedAt).toLocaleDateString(
+                            "en-GB",
+                            {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            }
+                          )
+                        : "Draft"}
+                    </time>
+                  </Link>
+                ))
+              ) : (
+                <p className="font-sans text-primary-foreground/60 text-sm">
+                  No published posts yet.
+                </p>
+              )}
             </nav>
           </div>
 

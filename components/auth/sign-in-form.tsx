@@ -229,7 +229,7 @@ export function SignInForm() {
       </Form>
 
       {/* OAuth accordion */}
-      <OAuthButtons />
+      <OAuthButtons type="sign-in" />
 
       {/* Toggle to sign-up */}
       <p className="text-center text-muted-foreground text-sm">
