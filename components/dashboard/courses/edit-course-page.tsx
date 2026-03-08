@@ -17,9 +17,9 @@ export function EditCoursePage({ courseId }: EditCoursePageProps) {
   const [tab, setTab] = useQueryState("tab", parseAsInteger.withDefault(0));
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
+      <div className="flex flex-col gap-4 border-border/70 border-b pb-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <BackButton className="px-0" />
           <h1 className="font-semibold text-2xl tracking-tight">Edit course</h1>
           <p className="mt-1 text-muted-foreground text-sm">

@@ -9,6 +9,7 @@ import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
+  InfoIcon,
   LayoutGridIcon,
   Loader2Icon,
   PencilIcon,
@@ -16,15 +17,17 @@ import {
   SearchIcon,
   TableIcon,
   Trash2Icon,
-  UsersIcon,
 } from "lucide-react";
+import type { Route } from "next";
 import { useQueryStates } from "nuqs";
+import type { ReactElement } from "react";
 import { useDeferredValue, useState } from "react";
 import type { RouterOutputs } from "@/app/api/trpc/router";
 import { CategoriesFilter } from "@/components/dashboard/courses/categories-filter";
 import { CourseCard } from "@/components/dashboard/courses/course-card";
 import { CoursePeopleDialog } from "@/components/dashboard/courses/course-people-dialog";
 import { coursesListParsers } from "@/components/dashboard/courses/courses-list-parsers";
+import { CreateCourseForm } from "@/components/dashboard/courses/create-course-form";
 import { MultiSelectFilter } from "@/components/dashboard/courses/multi-select-filter";
 import { Link } from "@/components/layout/foresight-link";
 import {
@@ -41,7 +44,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetPanel,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { toastManager } from "@/components/ui/toast";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useTRPC } from "@/packages/trpc/client";
 
 const DIFFICULTY_OPTIONS = [
@@ -76,6 +93,29 @@ const STATUS_BADGE_VARIANT: Record<
 
 type Course = RouterOutputs["course"]["list"]["courses"][number];
 
+function getCategoriesLabel(course: Course) {
+  if (course.categories.length === 0) {
+    return null;
+  }
+
+  return course.categories.map((category) => category.name).join(", ");
+}
+
+function IconAction({
+  tooltip,
+  trigger,
+}: {
+  tooltip: string;
+  trigger: ReactElement;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger render={trigger} />
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 function buildCourseColumns(
   openPeopleDialog: (course: Course) => void,
   onDeleteClick: (course: Course) => void
@@ -88,7 +128,7 @@ function buildCourseColumns(
       cell: ({ row }) => (
         <Link
           className="font-medium hover:underline"
-          href={`/dashboard/courses/${row.original.id}/edit`}
+          href={`/dashboard/courses/${row.original.id}/edit` as Route}
         >
           <span className="line-clamp-1">{row.original.title}</span>
         </Link>
@@ -97,21 +137,28 @@ function buildCourseColumns(
     {
       id: "categories",
       header: "Categories",
-      size: 200,
+      size: 240,
       enableSorting: false,
-      cell: ({ row }) => (
-        <div className="flex flex-wrap gap-1">
-          {row.original.categories.length > 0 ? (
-            row.original.categories.map((cat) => (
-              <Badge key={cat.id} variant="secondary">
-                {cat.name}
-              </Badge>
-            ))
-          ) : (
-            <span className="text-muted-foreground">&mdash;</span>
-          )}
-        </div>
-      ),
+      cell: ({ row }) => {
+        const categoriesLabel = getCategoriesLabel(row.original);
+
+        if (!categoriesLabel) {
+          return <span className="text-muted-foreground">&mdash;</span>;
+        }
+
+        return (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <span className="block max-w-56 cursor-default truncate text-muted-foreground text-sm">
+                  {categoriesLabel}
+                </span>
+              }
+            />
+            <TooltipContent>{categoriesLabel}</TooltipContent>
+          </Tooltip>
+        );
+      },
     },
     {
       accessorKey: "difficulty",
@@ -149,31 +196,47 @@ function buildCourseColumns(
       enableSorting: false,
       cell: ({ row }) => (
         <div className="flex items-center justify-end gap-1">
-          <Button
-            onClick={() => openPeopleDialog(row.original)}
-            size="icon-xs"
-            title="Instructor & students"
-            variant="outline"
-          >
-            <UsersIcon />
-          </Button>
-          <Button
-            onClick={() => onDeleteClick(row.original)}
-            size="icon-xs"
-            variant="destructive"
-          >
-            <Trash2Icon />
-          </Button>
-          <Button
-            nativeButton={false}
-            render={
-              <Link href={`/dashboard/courses/${row.original.id}/edit`} />
+          <IconAction
+            tooltip="Instructor & students"
+            trigger={
+              <Button
+                onClick={() => openPeopleDialog(row.original)}
+                size="icon-xs"
+                variant="outline"
+              >
+                <InfoIcon />
+              </Button>
             }
-            size="icon-xs"
-            variant="outline"
-          >
-            <PencilIcon />
-          </Button>
+          />
+          <IconAction
+            tooltip="Delete course"
+            trigger={
+              <Button
+                onClick={() => onDeleteClick(row.original)}
+                size="icon-xs"
+                variant="destructive"
+              >
+                <Trash2Icon />
+              </Button>
+            }
+          />
+          <IconAction
+            tooltip="Edit course"
+            trigger={
+              <Button
+                nativeButton={false}
+                render={
+                  <Link
+                    href={`/dashboard/courses/${row.original.id}/edit` as Route}
+                  />
+                }
+                size="icon-xs"
+                variant="outline"
+              >
+                <PencilIcon />
+              </Button>
+            }
+          />
         </div>
       ),
     },
@@ -206,6 +269,7 @@ export function CoursesList() {
     id: string;
     title: string;
   } | null>(null);
+  const [isCreateSheetOpen, setIsCreateSheetOpen] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState<{
     id: string;
     title: string;
@@ -297,14 +361,31 @@ export function CoursesList() {
             value={search}
           />
         </div>
-        <Button
-          nativeButton={false}
-          render={<Link href="/dashboard/courses/new" />}
-          size="sm"
-        >
-          <PlusIcon className="size-4" />
-          <span className="hidden sm:inline">Create course</span>
-        </Button>
+        <Sheet onOpenChange={setIsCreateSheetOpen} open={isCreateSheetOpen}>
+          <SheetTrigger
+            render={
+              <Button size="sm">
+                <PlusIcon className="size-4" />
+                <span className="hidden sm:inline">Create course</span>
+              </Button>
+            }
+          />
+          <SheetContent side="right" variant="inset">
+            <SheetHeader>
+              <SheetTitle>Create course</SheetTitle>
+              <SheetDescription>
+                Add the core course details here, then continue editing lessons
+                and curriculum on the next screen.
+              </SheetDescription>
+            </SheetHeader>
+            <SheetPanel>
+              <CreateCourseForm
+                className="max-w-none"
+                onCreated={() => setIsCreateSheetOpen(false)}
+              />
+            </SheetPanel>
+          </SheetContent>
+        </Sheet>
       </div>
 
       {/* Filters row */}

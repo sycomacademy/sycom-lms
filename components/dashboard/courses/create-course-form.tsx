@@ -49,6 +49,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toastManager } from "@/components/ui/toast";
 import { uploadFile } from "@/packages/storage/upload";
 import { useTRPC } from "@/packages/trpc/client";
+import { cn } from "@/packages/utils/cn";
 
 interface CategoryItem {
   id: string;
@@ -90,7 +91,17 @@ const createCourseFormSchema = z.object({
 
 type CreateCourseFormInput = z.infer<typeof createCourseFormSchema>;
 
-export function CreateCourseForm() {
+interface CreateCourseFormProps {
+  className?: string;
+  onCreated?: (course: { id: string; title: string }) => void;
+  redirectOnSuccess?: boolean;
+}
+
+export function CreateCourseForm({
+  className,
+  onCreated,
+  redirectOnSuccess = true,
+}: CreateCourseFormProps = {}) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -132,10 +143,16 @@ export function CreateCourseForm() {
         });
         toastManager.add({
           title: "Course created",
-          description: "Redirecting to edit page to add lessons.",
+          description: redirectOnSuccess
+            ? "Redirecting to edit page to add lessons."
+            : "Your course is ready to edit.",
           type: "success",
         });
-        router.push(`/dashboard/courses/${course.id}/edit`);
+        onCreated?.({ id: course.id, title: course.title });
+
+        if (redirectOnSuccess) {
+          router.push(`/dashboard/courses/${course.id}/edit`);
+        }
       },
       onError: (error) => {
         toastManager.add({
@@ -218,7 +235,7 @@ export function CreateCourseForm() {
   return (
     <Form {...form}>
       <form
-        className="flex max-w-2xl flex-col gap-6"
+        className={cn("flex max-w-2xl flex-col gap-6", className)}
         onSubmit={form.handleSubmit(onSubmit)}
       >
         <Field>
