@@ -31,6 +31,62 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
+interface ListUsersFilters {
+  search?: string;
+  filterRole?: "platform_admin" | "content_creator" | "platform_student";
+  filterStatus?: "active" | "banned" | "unverified";
+  filterRoles?: ("platform_admin" | "content_creator" | "platform_student")[];
+  filterStatuses?: ("active" | "banned" | "unverified")[];
+}
+
+function buildListUsersWhere(input: ListUsersFilters) {
+  let roleCondition:
+    | ReturnType<typeof inArray>
+    | ReturnType<typeof eq>
+    | undefined;
+  if (input.filterRoles && input.filterRoles.length > 0) {
+    roleCondition = inArray(user.role, input.filterRoles);
+  } else if (input.filterRole) {
+    roleCondition = eq(user.role, input.filterRole);
+  }
+
+  const statusConditions: Parameters<typeof or>[0][] = [];
+  let statuses: ("active" | "banned" | "unverified")[] = [];
+  if (input.filterStatuses?.length) {
+    statuses = input.filterStatuses;
+  } else if (input.filterStatus) {
+    statuses = [input.filterStatus];
+  }
+
+  for (const s of statuses) {
+    if (s === "banned") {
+      statusConditions.push(sql`${user.banned} IS TRUE`);
+    } else if (s === "unverified") {
+      statusConditions.push(
+        and(eq(user.emailVerified, false), sql`${user.banned} IS NOT TRUE`)
+      );
+    } else {
+      statusConditions.push(
+        and(eq(user.emailVerified, true), sql`${user.banned} IS NOT TRUE`)
+      );
+    }
+  }
+
+  const statusCondition =
+    statusConditions.length > 0 ? or(...statusConditions) : undefined;
+
+  return and(
+    input.search
+      ? or(
+          ilike(user.name, `%${input.search}%`),
+          ilike(user.email, `%${input.search}%`)
+        )
+      : undefined,
+    roleCondition,
+    statusCondition
+  );
+}
+
 export const adminRouter = router({
   // ── Users ────────────────────────────────────────────────────────────────
 
@@ -44,6 +100,14 @@ export const adminRouter = router({
           .enum(["platform_admin", "content_creator", "platform_student"])
           .optional(),
         filterStatus: z.enum(["active", "banned", "unverified"]).optional(),
+        filterRoles: z
+          .array(
+            z.enum(["platform_admin", "content_creator", "platform_student"])
+          )
+          .optional(),
+        filterStatuses: z
+          .array(z.enum(["active", "banned", "unverified"]))
+          .optional(),
         sortBy: z.enum(["name", "email", "createdAt"]).default("createdAt"),
         sortDirection: z.enum(["asc", "desc"]).default("desc"),
       })
@@ -55,26 +119,19 @@ export const adminRouter = router({
         search,
         filterRole,
         filterStatus,
+        filterRoles,
+        filterStatuses,
         sortBy,
         sortDirection,
       } = input;
 
-      const where = and(
-        search
-          ? or(
-              ilike(user.name, `%${search}%`),
-              ilike(user.email, `%${search}%`)
-            )
-          : undefined,
-        filterRole ? eq(user.role, filterRole) : undefined,
-        filterStatus === "banned" ? sql`${user.banned} IS TRUE` : undefined,
-        filterStatus === "unverified"
-          ? and(eq(user.emailVerified, false), sql`${user.banned} IS NOT TRUE`)
-          : undefined,
-        filterStatus === "active"
-          ? and(eq(user.emailVerified, true), sql`${user.banned} IS NOT TRUE`)
-          : undefined
-      );
+      const where = buildListUsersWhere({
+        filterRole,
+        filterRoles,
+        filterStatus,
+        filterStatuses,
+        search,
+      });
 
       const orderCol =
         sortBy === "name"

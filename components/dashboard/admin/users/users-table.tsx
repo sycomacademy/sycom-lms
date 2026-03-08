@@ -1,19 +1,29 @@
 "use client";
 
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type {
   ColumnDef,
   PaginationState,
   SortingState,
 } from "@tanstack/react-table";
-import { BanIcon, Loader2Icon, SearchIcon } from "lucide-react";
-import { useDeferredValue, useState, useTransition } from "react";
+import { BanIcon, Loader2Icon, SearchIcon, UsersIcon } from "lucide-react";
+import { useQueryStates } from "nuqs";
+import { useDeferredValue, useTransition } from "react";
 import type { RouterOutputs } from "@/app/api/trpc/router";
 import { CreateUserDialog } from "@/components/dashboard/admin/users/create-user-dialog";
 import { UserActions } from "@/components/dashboard/admin/users/user-actions";
+import { usersListParsers } from "@/components/dashboard/admin/users/users-list-parsers";
+import { MultiSelectFilter } from "@/components/dashboard/courses/multi-select-filter";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/ui/data-table";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import {
   HoverCard,
   HoverCardContent,
@@ -27,8 +37,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTRPC } from "@/packages/trpc/client";
 import { getInitials } from "@/packages/utils/string";
+
+const ROLE_OPTIONS = [
+  { value: "platform_admin", label: "Admin" },
+  { value: "content_creator", label: "Content Creator" },
+  { value: "platform_student", label: "Student" },
+] as const;
+
+const STATUS_OPTIONS = [
+  { value: "active", label: "Active" },
+  { value: "banned", label: "Banned" },
+  { value: "unverified", label: "Unverified email" },
+] as const;
 
 type User = RouterOutputs["admin"]["listUsers"]["users"][number];
 
@@ -85,13 +108,6 @@ const ROLE_LABELS: Record<string, string> = {
   platform_student: "Student",
 };
 
-const ROLE_FILTER_LABELS: Record<string, string> = {
-  all: "All roles",
-  platform_admin: "Admin",
-  content_creator: "Content Creator",
-  platform_student: "Student",
-};
-
 const STATUS_FILTER_LABELS: Record<string, string> = {
   all: "All statuses",
   active: "Active",
@@ -99,276 +115,341 @@ const STATUS_FILTER_LABELS: Record<string, string> = {
   unverified: "Unverified email",
 };
 
-const columns: ColumnDef<User, unknown>[] = [
-  {
-    accessorKey: "name",
-    header: "Name",
-    size: 200,
-    cell: ({ row }) => {
-      const u = row.original;
-      return (
-        <div className="flex items-center gap-2">
-          <Avatar>
-            <AvatarImage alt={u.name} src={u.image ?? undefined} />
-            <AvatarFallback>{getInitials(u.name)}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <div className="truncate font-medium text-sm">{u.name}</div>
-          </div>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-    size: 240,
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.getValue("email")}</span>
-    ),
-  },
-  {
-    accessorKey: "role",
-    header: "Role",
-    size: 130,
-    enableSorting: false,
-    cell: ({ row }) => {
-      const role = row.getValue("role") as string;
-      return (
-        <Badge
-          className="capitalize"
-          variant={ROLE_BADGE_VARIANT[role] ?? "outline"}
-        >
-          {ROLE_LABELS[role] ?? role}
-        </Badge>
-      );
-    },
-  },
-  {
-    id: "organizations",
-    header: "Organizations",
-    size: 220,
-    enableSorting: false,
-    cell: ({ row }) => <UserOrganizationsCell user={row.original} />,
-  },
-  {
-    accessorKey: "banned",
-    header: "Status",
-    size: 100,
-    enableSorting: false,
-    cell: ({ row }) => {
-      const banned = row.original.banned;
-      const isEmailVerified = row.original.emailVerified;
-      if (banned) {
+function getColumns(): ColumnDef<User, unknown>[] {
+  return [
+    {
+      accessorKey: "name",
+      header: "Name",
+      size: 200,
+      cell: ({ row }) => {
+        const u = row.original;
         return (
-          <Badge variant="destructive">
-            <BanIcon className="size-3" />
-            Banned
+          <div className="flex items-center gap-2">
+            <Avatar>
+              <AvatarImage alt={u.name} src={u.image ?? undefined} />
+              <AvatarFallback>{getInitials(u.name)}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <div className="truncate font-medium text-sm">{u.name}</div>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "email",
+      header: "Email",
+      size: 240,
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">{row.getValue("email")}</span>
+      ),
+    },
+    {
+      accessorKey: "role",
+      header: "Role",
+      size: 130,
+      enableSorting: false,
+      cell: ({ row }) => {
+        const role = row.getValue("role") as string;
+        return (
+          <Badge
+            className="capitalize"
+            variant={ROLE_BADGE_VARIANT[role] ?? "outline"}
+          >
+            {ROLE_LABELS[role] ?? role}
           </Badge>
         );
-      }
-      if (!isEmailVerified) {
+      },
+    },
+    {
+      id: "organizations",
+      header: "Organizations",
+      size: 220,
+      enableSorting: false,
+      cell: ({ row }) => <UserOrganizationsCell user={row.original} />,
+    },
+    {
+      accessorKey: "banned",
+      header: "Status",
+      size: 100,
+      enableSorting: false,
+      cell: ({ row }) => {
+        const banned = row.original.banned;
+        const isEmailVerified = row.original.emailVerified;
+        if (banned) {
+          return (
+            <Badge variant="destructive">
+              <BanIcon className="size-3" />
+              Banned
+            </Badge>
+          );
+        }
+        if (!isEmailVerified) {
+          return (
+            <Badge variant="outline">
+              <span className="size-1.5 rounded-full bg-warning" />
+              Unverified email
+            </Badge>
+          );
+        }
         return (
           <Badge variant="outline">
-            <span className="size-1.5 rounded-full bg-warning" />
-            Unverified email
+            <span className="size-1.5 rounded-full bg-success" />
+            Active
           </Badge>
         );
-      }
-      return (
-        <Badge variant="outline">
-          <span className="size-1.5 rounded-full bg-success" />
-          Active
-        </Badge>
-      );
+      },
     },
-  },
-  {
-    accessorKey: "createdAt",
-    header: "Joined",
-    size: 140,
-    cell: ({ row }) => {
-      const date = new Date(row.getValue("createdAt") as string);
-      return (
-        <span className="text-muted-foreground text-xs tabular-nums">
-          {date.toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })}
-        </span>
-      );
+    {
+      accessorKey: "createdAt",
+      header: "Joined",
+      size: 140,
+      cell: ({ row }) => {
+        const date = new Date(row.getValue("createdAt") as string);
+        return (
+          <span className="text-muted-foreground text-xs tabular-nums">
+            {date.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </span>
+        );
+      },
     },
-  },
-  {
-    id: "actions",
-    size: 50,
-    enableSorting: false,
-    cell: ({ row }) => {
-      const u = row.original;
-      return (
-        <UserActions
-          isBanned={u.banned ?? false}
-          isEmailVerified={u.emailVerified}
-          userEmail={u.email}
-          userId={u.id}
-          userName={u.name}
-          userRole={u.role ?? "platform_student"}
-        />
-      );
+    {
+      id: "actions",
+      size: 50,
+      enableSorting: false,
+      cell: ({ row }) => {
+        const u = row.original;
+        return (
+          <UserActions
+            isBanned={u.banned ?? false}
+            isEmailVerified={u.emailVerified}
+            userEmail={u.email}
+            userId={u.id}
+            userName={u.name}
+            userRole={u.role ?? "platform_student"}
+          />
+        );
+      },
     },
-  },
-];
+  ];
+}
+
+export function UsersTableSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="overflow-hidden rounded-md border">
+        <div className="border-b bg-muted/30 px-4 py-3">
+          <div className="grid grid-cols-[1.2fr_1.4fr_0.7fr_1fr_0.6fr_0.8fr_60px] gap-4">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-4 w-14" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="ml-auto h-4 w-12" />
+          </div>
+        </div>
+
+        <div className="divide-y">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              className="grid grid-cols-[1.2fr_1.4fr_0.7fr_1fr_0.6fr_0.8fr_60px] items-center gap-4 px-4 py-4"
+              key={index}
+            >
+              <div className="flex items-center gap-2">
+                <Skeleton className="size-8 rounded-full" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+              <Skeleton className="h-4 w-4/5" />
+              <Skeleton className="h-6 w-20 rounded-full" />
+              <Skeleton className="h-4 w-3/5" />
+              <Skeleton className="h-6 w-20 rounded-full" />
+              <Skeleton className="h-4 w-16" />
+              <div className="ml-auto flex gap-2">
+                <Skeleton className="size-8 rounded-md" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UsersEmptyState() {
+  return (
+    <Empty className="border">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <UsersIcon />
+        </EmptyMedia>
+        <EmptyTitle>No users found</EmptyTitle>
+        <EmptyDescription>
+          Try adjusting your search or filters to find what you need.
+        </EmptyDescription>
+      </EmptyHeader>
+    </Empty>
+  );
+}
 
 export function UsersTable() {
   const trpc = useTRPC();
   const [, startTransition] = useTransition();
 
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  });
-  const [search, setSearch] = useState("");
-  const deferredSearch = useDeferredValue(search);
-  const [filterRole, setFilterRole] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: "createdAt", desc: true },
-  ]);
+  const [
+    {
+      search,
+      roles: filterRoles,
+      statuses: filterStatuses,
+      sortBy,
+      sortDirection,
+      page,
+      pageSize,
+    },
+    setParams,
+  ] = useQueryStates(usersListParsers);
 
-  const sortBy =
-    (sorting[0]?.id as "name" | "email" | "createdAt") ?? "createdAt";
-  const sortDirection = sorting[0]?.desc === false ? "asc" : "desc";
+  const pageIndex = Math.max(0, page - 1);
+  const pagination = {
+    pageIndex,
+    pageSize,
+  };
+  const deferredSearch = useDeferredValue(search);
+  const deferredFilterRoles = useDeferredValue(filterRoles);
+  const deferredFilterStatuses = useDeferredValue(filterStatuses);
+  const deferredPagination = useDeferredValue(pagination);
+  const deferredSortBy = useDeferredValue(sortBy);
+  const deferredSortDirection = useDeferredValue(sortDirection);
 
   const queryOptions = trpc.admin.listUsers.queryOptions({
-    limit: pagination.pageSize,
-    offset: pagination.pageIndex * pagination.pageSize,
+    limit: deferredPagination.pageSize,
+    offset: deferredPagination.pageIndex * deferredPagination.pageSize,
     search: deferredSearch || undefined,
-    filterRole:
-      filterRole !== "all"
-        ? (filterRole as
-            | "platform_admin"
-            | "content_creator"
-            | "platform_student")
-        : undefined,
-    filterStatus:
-      filterStatus !== "all"
-        ? (filterStatus as "active" | "banned" | "unverified")
-        : undefined,
-    sortBy,
-    sortDirection,
+    filterRoles:
+      deferredFilterRoles.length > 0 ? deferredFilterRoles : undefined,
+    filterStatuses:
+      deferredFilterStatuses.length > 0 ? deferredFilterStatuses : undefined,
+    sortBy: deferredSortBy,
+    sortDirection: deferredSortDirection,
   });
 
-  const { data } = useSuspenseQuery(queryOptions);
-  const isSearching = deferredSearch !== search;
+  const { data, isFetching, isPending } = useQuery(queryOptions);
 
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-  };
+  const users = data?.users ?? [];
+  const total = data?.total ?? 0;
+  const dataLoaded = Boolean(data) || !isPending;
 
-  const handleRoleFilterChange = (value: string) => {
+  const handleTablePaginationChange = (next: PaginationState) => {
     startTransition(() => {
-      setFilterRole(value);
-      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+      setParams({ page: next.pageIndex + 1, pageSize: next.pageSize });
     });
   };
 
-  const handleStatusFilterChange = (value: string) => {
+  const handleTableSortingChange = (next: SortingState) => {
+    const nextSort = next[0];
     startTransition(() => {
-      setFilterStatus(value);
-      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+      setParams({
+        page: 1,
+        sortBy: (nextSort?.id as "name" | "email" | "createdAt") ?? "createdAt",
+        sortDirection: nextSort?.desc === false ? "asc" : "desc",
+      });
     });
   };
 
-  const handlePaginationChange = (next: PaginationState) => {
-    startTransition(() => {
-      setPagination(next);
-    });
-  };
+  const columns = getColumns();
 
-  const handleSortingChange = (next: SortingState) => {
-    startTransition(() => {
-      setSorting(next);
-      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-    });
-  };
+  const statusFilterValue =
+    filterStatuses.length === 0 ? "all" : filterStatuses[0];
 
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 items-center gap-2">
-          <div className="relative max-w-xs flex-1">
-            {isSearching ? (
-              <Loader2Icon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-            ) : (
-              <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-            )}
-            <Input
-              className="pl-8"
-              onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="Search by name or email..."
-              value={search}
-            />
-          </div>
-          <Select
-            onValueChange={(v) => {
-              if (v) {
-                handleRoleFilterChange(v);
-              }
-            }}
-            value={filterRole}
-          >
-            <SelectTrigger className="w-fit data-[size=default]:h-9">
-              <SelectValue>
-                {ROLE_FILTER_LABELS[filterRole] ?? "All roles"}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All roles</SelectItem>
-              <SelectItem value="platform_admin">Admin</SelectItem>
-              <SelectItem value="content_creator">Content Creator</SelectItem>
-              <SelectItem value="platform_student">Student</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select
-            onValueChange={(v) => {
-              if (v) {
-                handleStatusFilterChange(v);
-              }
-            }}
-            value={filterStatus}
-          >
-            <SelectTrigger className="w-fit data-[size=default]:h-9">
-              <SelectValue>
-                {STATUS_FILTER_LABELS[filterStatus] ?? "All statuses"}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="banned">Banned</SelectItem>
-              <SelectItem value="unverified">Unverified email</SelectItem>
-            </SelectContent>
-          </Select>
+      <div className="flex w-full items-center justify-between gap-3">
+        <div className="relative max-w-sm flex-1">
+          {isFetching ? (
+            <Loader2Icon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+          ) : (
+            <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          )}
+          <Input
+            className="pl-8"
+            onChange={(event) =>
+              setParams({ search: event.target.value, page: 1 })
+            }
+            placeholder="Search by name or email..."
+            value={search}
+          />
         </div>
         <CreateUserDialog />
       </div>
 
-      {/* Table */}
-      <DataTable
-        columns={columns}
-        data={data.users}
-        manualPagination
-        manualSorting
-        onPaginationChange={handlePaginationChange}
-        onSortingChange={handleSortingChange}
-        pageIndex={pagination.pageIndex}
-        pageSize={pagination.pageSize}
-        sorting={sorting}
-        total={data.total}
-      />
+      <div className="flex flex-wrap items-center gap-2">
+        <MultiSelectFilter
+          allLabel="All roles"
+          className="w-40"
+          onChange={(nextRoles) =>
+            setParams({
+              page: 1,
+              roles: nextRoles as typeof filterRoles,
+            })
+          }
+          options={[...ROLE_OPTIONS]}
+          resetLabel="Reset"
+          showAllAsUnchecked
+          triggerLabel="Role"
+          value={filterRoles as string[]}
+        />
+        <Select
+          onValueChange={(v) => {
+            if (v) {
+              startTransition(() => {
+                setParams({
+                  page: 1,
+                  statuses:
+                    v === "all"
+                      ? []
+                      : [v as "active" | "banned" | "unverified"],
+                });
+              });
+            }
+          }}
+          value={statusFilterValue}
+        >
+          <SelectTrigger className="w-40 data-[size=default]:h-9">
+            <SelectValue>
+              {STATUS_FILTER_LABELS[statusFilterValue] ?? "All statuses"}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            {STATUS_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {!dataLoaded && <UsersTableSkeleton />}
+      {dataLoaded && users.length === 0 && <UsersEmptyState />}
+      {dataLoaded && users.length > 0 && (
+        <DataTable
+          columns={columns}
+          data={users}
+          manualPagination
+          manualSorting
+          onPaginationChange={handleTablePaginationChange}
+          onSortingChange={handleTableSortingChange}
+          pageIndex={pageIndex}
+          pageSize={pagination.pageSize}
+          sorting={[{ id: sortBy, desc: sortDirection === "desc" }]}
+          total={total}
+        />
+      )}
     </div>
   );
 }

@@ -32,8 +32,15 @@ import {
   PlusIcon,
   Trash2Icon,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { RouterOutputs } from "@/app/api/trpc/router";
 import { Editor } from "@/components/editor/editor";
+import {
+  Editable,
+  EditableArea,
+  EditableInput,
+  EditablePreview,
+} from "@/components/elements/editable";
 import {
   SortableItem,
   SortableItemHandle,
@@ -61,7 +68,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import { toastManager } from "@/components/ui/toast";
 import { useTRPC } from "@/packages/trpc/client";
 import { cn } from "@/packages/utils/cn";
@@ -70,27 +76,199 @@ import { cn } from "@/packages/utils/cn";
 // Types
 // -----------------------------------------------------------------------------
 
-interface Section {
-  id: string;
-  courseId: string;
-  title: string;
-  description: string | null;
-  order: number;
-  lessons: Lesson[];
+type CourseDetail = RouterOutputs["course"]["getById"];
+type Section = CourseDetail["sections"][number];
+type Lesson = Section["lessons"][number];
+
+interface OrderSnapshot {
+  sectionIds: string[];
+  lessonIdsBySection: Record<string, string[]>;
 }
 
-interface Lesson {
-  id: string;
-  sectionId: string;
-  title: string;
-  content: JSONContent | null;
-  type: "article" | "test";
-  order: number;
-  estimatedDuration: number | null;
-}
+type CurriculumAction =
+  | {
+      type: "reorder-sections";
+      activeId: string;
+      overId: string;
+    }
+  | {
+      type: "reorder-lessons";
+      sectionId: string;
+      activeId: string;
+      overId: string;
+    }
+  | {
+      type: "move-lesson";
+      lessonId: string;
+      targetSectionId: string;
+      overLessonId?: string;
+    };
 
 interface EditCurriculumFormProps {
   courseId: string;
+}
+
+function cloneSections(sections: Section[]) {
+  return sections.map((section) => ({
+    ...section,
+    lessons: [...section.lessons],
+  }));
+}
+
+function buildOrderSnapshot(sections: Section[]): OrderSnapshot {
+  return {
+    sectionIds: sections.map((section) => section.id),
+    lessonIdsBySection: Object.fromEntries(
+      sections.map((section) => [
+        section.id,
+        section.lessons.map((lesson) => lesson.id),
+      ])
+    ),
+  };
+}
+
+function orderSnapshotsEqual(a: OrderSnapshot, b: OrderSnapshot) {
+  if (a.sectionIds.length !== b.sectionIds.length) {
+    return false;
+  }
+
+  if (a.sectionIds.some((id, index) => id !== b.sectionIds[index])) {
+    return false;
+  }
+
+  const sectionIds = new Set([
+    ...Object.keys(a.lessonIdsBySection),
+    ...Object.keys(b.lessonIdsBySection),
+  ]);
+
+  for (const sectionId of sectionIds) {
+    const aLessonIds = a.lessonIdsBySection[sectionId] ?? [];
+    const bLessonIds = b.lessonIdsBySection[sectionId] ?? [];
+
+    if (aLessonIds.length !== bLessonIds.length) {
+      return false;
+    }
+
+    if (aLessonIds.some((id, index) => id !== bLessonIds[index])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function normalizeLessonContent(content: Lesson["content"]) {
+  const raw = content as JSONContent | unknown[] | null | undefined;
+  if (!raw) {
+    return undefined;
+  }
+  if (typeof raw === "object" && "type" in (raw as object)) {
+    return raw as JSONContent;
+  }
+  if (Array.isArray(raw) && raw.length > 0) {
+    return { type: "doc", content: raw as JSONContent[] };
+  }
+  return undefined;
+}
+
+function applyCurriculumAction(
+  sections: Section[],
+  action: CurriculumAction
+): Section[] {
+  switch (action.type) {
+    case "reorder-sections": {
+      const sectionIds = sections.map((section) => section.id);
+      const oldIndex = sectionIds.indexOf(action.activeId);
+      const newIndex = sectionIds.indexOf(action.overId);
+
+      if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) {
+        return sections;
+      }
+
+      return arrayMove(sections, oldIndex, newIndex);
+    }
+
+    case "reorder-lessons": {
+      return sections.map((section) => {
+        if (section.id !== action.sectionId) {
+          return section;
+        }
+
+        const lessonIds = section.lessons.map((lesson) => lesson.id);
+        const oldIndex = lessonIds.indexOf(action.activeId);
+        const newIndex = lessonIds.indexOf(action.overId);
+
+        if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) {
+          return section;
+        }
+
+        return {
+          ...section,
+          lessons: arrayMove(section.lessons, oldIndex, newIndex),
+        };
+      });
+    }
+
+    case "move-lesson": {
+      const sourceSection = sections.find((section) =>
+        section.lessons.some((lesson) => lesson.id === action.lessonId)
+      );
+      const targetSection = sections.find(
+        (section) => section.id === action.targetSectionId
+      );
+      const lesson = sourceSection?.lessons.find(
+        (currentLesson) => currentLesson.id === action.lessonId
+      );
+
+      if (!(sourceSection && targetSection && lesson)) {
+        return sections;
+      }
+
+      const targetLessons = targetSection.lessons.filter(
+        (currentLesson) => currentLesson.id !== action.lessonId
+      );
+
+      const targetIndex = action.overLessonId
+        ? targetLessons.findIndex(
+            (currentLesson) => currentLesson.id === action.overLessonId
+          )
+        : -1;
+
+      const nextLesson = {
+        ...lesson,
+        sectionId: action.targetSectionId,
+      };
+
+      if (targetIndex >= 0) {
+        targetLessons.splice(targetIndex, 0, nextLesson);
+      } else {
+        targetLessons.push(nextLesson);
+      }
+
+      return sections.map((section) => {
+        if (section.id === sourceSection.id) {
+          return {
+            ...section,
+            lessons: section.lessons.filter(
+              (currentLesson) => currentLesson.id !== action.lessonId
+            ),
+          };
+        }
+
+        if (section.id === action.targetSectionId) {
+          return {
+            ...section,
+            lessons: targetLessons,
+          };
+        }
+
+        return section;
+      });
+    }
+
+    default:
+      return sections;
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -100,29 +278,74 @@ interface EditCurriculumFormProps {
 export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const courseQueryKey = trpc.course.getById.queryKey({ courseId });
 
   const { data: course } = useSuspenseQuery(
     trpc.course.getById.queryOptions({ courseId })
   );
 
-  // Local state for optimistic UI
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
     new Set()
   );
   const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [savingLessonId, setSavingLessonId] = useState<string | null>(null);
+  const persistedOrderRef = useRef<OrderSnapshot>(
+    buildOrderSnapshot((course.sections ?? []) as Section[])
+  );
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasPendingOrderChangesRef = useRef(false);
+  const isFlushingOrderRef = useRef(false);
 
   const invalidateCourse = useCallback(() => {
     queryClient.invalidateQueries({
-      queryKey: trpc.course.getById.queryKey({ courseId }),
+      queryKey: courseQueryKey,
     });
-  }, [queryClient, trpc.course.getById, courseId]);
+  }, [courseQueryKey, queryClient]);
+
+  const setCourseData = useCallback(
+    (updater: (currentCourse: CourseDetail) => CourseDetail) => {
+      queryClient.setQueryData<CourseDetail>(
+        courseQueryKey,
+        (currentCourse) => {
+          if (!currentCourse) {
+            return currentCourse;
+          }
+
+          return updater(currentCourse);
+        }
+      );
+    },
+    [courseQueryKey, queryClient]
+  );
+
+  const updateSectionsInCache = useCallback(
+    (updater: (sections: Section[]) => Section[]) => {
+      setCourseData((currentCourse) => ({
+        ...currentCourse,
+        sections: updater(
+          cloneSections((currentCourse.sections ?? []) as Section[])
+        ),
+      }));
+    },
+    [setCourseData]
+  );
+
+  const getSectionsFromCache = useCallback(() => {
+    const currentCourse =
+      queryClient.getQueryData<CourseDetail>(courseQueryKey);
+    return cloneSections((currentCourse?.sections ?? []) as Section[]);
+  }, [courseQueryKey, queryClient]);
 
   // Mutations
   const createSectionMutation = useMutation(
     trpc.course.createSection.mutationOptions({
-      onSuccess: () => {
-        invalidateCourse();
+      onSuccess: (createdSection) => {
+        updateSectionsInCache((sections) => [
+          ...sections,
+          { ...createdSection, lessons: [] },
+        ]);
+        persistedOrderRef.current = buildOrderSnapshot(getSectionsFromCache());
         toastManager.add({
           title: "Section created",
           type: "success",
@@ -140,10 +363,8 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
 
   const updateSectionMutation = useMutation(
     trpc.course.updateSection.mutationOptions({
-      onSuccess: () => {
-        invalidateCourse();
-      },
       onError: (error) => {
+        invalidateCourse();
         toastManager.add({
           title: "Failed to update section",
           description: error.message,
@@ -156,13 +377,14 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
   const deleteSectionMutation = useMutation(
     trpc.course.deleteSection.mutationOptions({
       onSuccess: () => {
-        invalidateCourse();
+        persistedOrderRef.current = buildOrderSnapshot(getSectionsFromCache());
         toastManager.add({
           title: "Section deleted",
           type: "success",
         });
       },
       onError: (error) => {
+        invalidateCourse();
         toastManager.add({
           title: "Failed to delete section",
           description: error.message,
@@ -175,7 +397,14 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
   const createLessonMutation = useMutation(
     trpc.course.createLesson.mutationOptions({
       onSuccess: (newLesson) => {
-        invalidateCourse();
+        updateSectionsInCache((sections) =>
+          sections.map((section) =>
+            section.id === newLesson.sectionId
+              ? { ...section, lessons: [...section.lessons, newLesson] }
+              : section
+          )
+        );
+        persistedOrderRef.current = buildOrderSnapshot(getSectionsFromCache());
         setExpandedLessonId(newLesson.id);
         toastManager.add({
           title: "Lesson created",
@@ -194,10 +423,8 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
 
   const updateLessonMutation = useMutation(
     trpc.course.updateLesson.mutationOptions({
-      onSuccess: () => {
-        invalidateCourse();
-      },
       onError: (error) => {
+        invalidateCourse();
         toastManager.add({
           title: "Failed to update lesson",
           description: error.message,
@@ -210,7 +437,7 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
   const deleteLessonMutation = useMutation(
     trpc.course.deleteLesson.mutationOptions({
       onSuccess: () => {
-        invalidateCourse();
+        persistedOrderRef.current = buildOrderSnapshot(getSectionsFromCache());
         setExpandedLessonId(null);
         toastManager.add({
           title: "Lesson deleted",
@@ -261,9 +488,6 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
 
   const moveLessonMutation = useMutation(
     trpc.course.moveLesson.mutationOptions({
-      onSuccess: () => {
-        invalidateCourse();
-      },
       onError: (error) => {
         invalidateCourse();
         toastManager.add({
@@ -275,81 +499,10 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
     })
   );
 
-  // Server data: initial and after refetch
-  const sectionsFromServer = useMemo(
-    () => (course.sections ?? []) as Section[],
+  const sections = useMemo(
+    () => cloneSections((course.sections ?? []) as Section[]),
     [course.sections]
   );
-
-  // Client-side sort state: source of truth for UI (ReUI pattern: value + onValueChange)
-  const [localSections, setLocalSections] = useState<Section[]>(() =>
-    ((course?.sections ?? []) as Section[]).map((s) => ({
-      ...s,
-      lessons: [...s.lessons],
-    }))
-  );
-  const localSectionsRef = useRef<Section[]>([]);
-  const hasOrderDirtyRef = useRef(false);
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastSavedSectionIdsRef = useRef<string[]>([]);
-  const lastSavedLessonIdsBySectionRef = useRef<Record<string, string[]>>({});
-
-  // Keep ref in sync for debounced flush
-  useEffect(() => {
-    localSectionsRef.current = localSections;
-  }, [localSections]);
-
-  // Sync local state from server only when not order-dirty and server data changed
-  useEffect(() => {
-    if (hasOrderDirtyRef.current) {
-      return;
-    }
-    const serverSectionIds = sectionsFromServer.map((s) => s.id).join(",");
-    const lastSectionIds = lastSavedSectionIdsRef.current.join(",");
-    const serverLessonKeys = sectionsFromServer
-      .map((s) => s.lessons.map((l) => l.id).join(","))
-      .join("|");
-    const lastLessonKeys = Object.values(lastSavedLessonIdsBySectionRef.current)
-      .map((ids) => ids.join(","))
-      .join("|");
-
-    // Include title fingerprint so content-only changes (renames) also trigger sync
-    const serverTitleFingerprint = sectionsFromServer
-      .map(
-        (s) =>
-          `${s.id}:${s.title}|${s.lessons.map((l) => `${l.id}:${l.title}`).join(",")}`
-      )
-      .join(";");
-    const localTitleFingerprint = localSections
-      .map(
-        (s) =>
-          `${s.id}:${s.title}|${s.lessons.map((l) => `${l.id}:${l.title}`).join(",")}`
-      )
-      .join(";");
-
-    const structureUnchanged =
-      serverSectionIds === lastSectionIds &&
-      serverLessonKeys === lastLessonKeys &&
-      lastSavedSectionIdsRef.current.length > 0;
-
-    // Skip sync only if both structure AND titles match (nothing changed on server)
-    if (
-      structureUnchanged &&
-      serverTitleFingerprint === localTitleFingerprint
-    ) {
-      return;
-    }
-
-    setLocalSections(
-      sectionsFromServer.map((s) => ({ ...s, lessons: [...s.lessons] }))
-    );
-    lastSavedSectionIdsRef.current = sectionsFromServer.map((s) => s.id);
-    const bySection: Record<string, string[]> = {};
-    for (const s of sectionsFromServer) {
-      bySection[s.id] = s.lessons.map((l) => l.id);
-    }
-    lastSavedLessonIdsBySectionRef.current = bySection;
-  }, [sectionsFromServer, localSections]);
 
   // Clear debounce timer on unmount
   useEffect(() => {
@@ -361,11 +514,16 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!(hasPendingOrderChangesRef.current || isFlushingOrderRef.current)) {
+      persistedOrderRef.current = buildOrderSnapshot(sections);
+    }
+  }, [sections]);
+
   const sectionIds = useMemo(
-    () => localSections.map((s) => s.id),
-    [localSections]
+    () => sections.map((section) => section.id),
+    [sections]
   );
-  const sections = localSections;
 
   // Handlers
   const handleAddSection = () => {
@@ -383,43 +541,133 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
   };
 
   const handleUpdateSectionTitle = (sectionId: string, title: string) => {
-    // Optimistically update local state so the title is visible immediately
-    setLocalSections((prev) =>
-      prev.map((s) => (s.id === sectionId ? { ...s, title } : s))
+    const previousCourse =
+      queryClient.getQueryData<CourseDetail>(courseQueryKey);
+
+    updateSectionsInCache((sections) =>
+      sections.map((section) =>
+        section.id === sectionId ? { ...section, title } : section
+      )
     );
-    updateSectionMutation.mutate({ sectionId, title });
+
+    updateSectionMutation.mutate(
+      { sectionId, title },
+      {
+        onError: () => {
+          if (previousCourse) {
+            queryClient.setQueryData(courseQueryKey, previousCourse);
+          }
+        },
+      }
+    );
   };
 
   const handleDeleteSection = (sectionId: string) => {
-    deleteSectionMutation.mutate({ sectionId });
+    const previousCourse =
+      queryClient.getQueryData<CourseDetail>(courseQueryKey);
+
+    updateSectionsInCache((sections) =>
+      sections.filter((section) => section.id !== sectionId)
+    );
+
+    deleteSectionMutation.mutate(
+      { sectionId },
+      {
+        onError: () => {
+          if (previousCourse) {
+            queryClient.setQueryData(courseQueryKey, previousCourse);
+          }
+        },
+      }
+    );
   };
 
   const handleUpdateLessonTitle = (lessonId: string, title: string) => {
-    // Optimistically update local state so the title is visible immediately
-    setLocalSections((prev) =>
-      prev.map((s) => ({
-        ...s,
-        lessons: s.lessons.map((l) =>
-          l.id === lessonId ? { ...l, title } : l
+    const previousCourse =
+      queryClient.getQueryData<CourseDetail>(courseQueryKey);
+
+    updateSectionsInCache((sections) =>
+      sections.map((section) => ({
+        ...section,
+        lessons: section.lessons.map((lesson) =>
+          lesson.id === lessonId ? { ...lesson, title } : lesson
         ),
       }))
     );
-    updateLessonMutation.mutate({ lessonId, title });
+
+    updateLessonMutation.mutate(
+      { lessonId, title },
+      {
+        onError: () => {
+          if (previousCourse) {
+            queryClient.setQueryData(courseQueryKey, previousCourse);
+          }
+        },
+      }
+    );
   };
 
   const handleUpdateLessonContent = (
     lessonId: string,
     content: JSONContent
   ) => {
-    updateLessonMutation.mutate({ lessonId, content });
-    toastManager.add({
-      title: "Lesson saved",
-      type: "success",
-    });
+    const previousCourse =
+      queryClient.getQueryData<CourseDetail>(courseQueryKey);
+
+    setSavingLessonId(lessonId);
+    updateSectionsInCache((sections) =>
+      sections.map((section) => ({
+        ...section,
+        lessons: section.lessons.map((lesson) =>
+          lesson.id === lessonId ? { ...lesson, content } : lesson
+        ),
+      }))
+    );
+
+    updateLessonMutation.mutate(
+      { lessonId, content },
+      {
+        onSuccess: () => {
+          toastManager.add({
+            title: "Lesson saved",
+            type: "success",
+          });
+        },
+        onError: () => {
+          if (previousCourse) {
+            queryClient.setQueryData(courseQueryKey, previousCourse);
+          }
+        },
+        onSettled: () => {
+          setSavingLessonId((currentLessonId) =>
+            currentLessonId === lessonId ? null : currentLessonId
+          );
+        },
+      }
+    );
   };
 
   const handleDeleteLesson = (lessonId: string) => {
-    deleteLessonMutation.mutate({ lessonId });
+    const previousCourse =
+      queryClient.getQueryData<CourseDetail>(courseQueryKey);
+
+    updateSectionsInCache((sections) =>
+      sections.map((section) => ({
+        ...section,
+        lessons: section.lessons.filter((lesson) => lesson.id !== lessonId),
+      }))
+    );
+
+    deleteLessonMutation.mutate(
+      { lessonId },
+      {
+        onError: () => {
+          if (previousCourse) {
+            queryClient.setQueryData(courseQueryKey, previousCourse);
+          }
+        },
+      }
+    );
   };
 
   const toggleSectionCollapse = (sectionId: string) => {
@@ -450,118 +698,116 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
 
   const DEBOUNCE_MS = 400;
 
-  // Flush local order state to server (section order, moves, lesson orders)
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: flush has multiple branches by design
-  const flushOrderToServer = useCallback(() => {
+  // Flush cached order state to server (section order, moves, lesson orders)
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: grouped sync matches curriculum state machine
+  const flushOrderToServer = useCallback(async () => {
     if (saveTimeoutRef.current !== null) {
       clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = null;
     }
-    const current = localSectionsRef.current;
-    const lastSectionIds = lastSavedSectionIdsRef.current;
-    const lastBySection = lastSavedLessonIdsBySectionRef.current;
+
+    if (isFlushingOrderRef.current) {
+      return;
+    }
+
+    const current = getSectionsFromCache();
+    const previousSnapshot = persistedOrderRef.current;
+    const currentSnapshot = buildOrderSnapshot(current);
+
+    if (orderSnapshotsEqual(currentSnapshot, previousSnapshot)) {
+      hasPendingOrderChangesRef.current = false;
+      return;
+    }
+
+    isFlushingOrderRef.current = true;
+
+    const lastSectionIds = previousSnapshot.sectionIds;
+    const lastBySection = previousSnapshot.lessonIdsBySection;
 
     const currentSectionIds = current.map((s) => s.id);
     const sectionOrderChanged =
       currentSectionIds.length !== lastSectionIds.length ||
       currentSectionIds.some((id, i) => id !== lastSectionIds[i]);
 
-    const applySavedRefs = () => {
-      lastSavedSectionIdsRef.current = currentSectionIds;
-      const newBySection: Record<string, string[]> = {};
-      for (const s of current) {
-        newBySection[s.id] = s.lessons.map((l) => l.id);
+    try {
+      if (sectionOrderChanged) {
+        await reorderSectionsMutation.mutateAsync({
+          courseId,
+          sectionIds: currentSectionIds,
+        });
       }
-      lastSavedLessonIdsBySectionRef.current = newBySection;
-      hasOrderDirtyRef.current = false;
-      invalidateCourse();
-    };
 
-    if (sectionOrderChanged) {
-      reorderSectionsMutation.mutate(
-        { courseId, sectionIds: currentSectionIds },
-        { onSuccess: applySavedRefs }
-      );
-      return;
-    }
-
-    const lastLessonToSection: Record<string, string> = {};
-    for (const [secId, lessonIds] of Object.entries(lastBySection)) {
-      const ids = lessonIds as string[];
-      for (const lid of ids) {
-        lastLessonToSection[lid] = secId;
-      }
-    }
-
-    const movedLessons: {
-      lessonId: string;
-      targetSectionId: string;
-      newOrder: number;
-    }[] = [];
-    for (const sec of current) {
-      for (let i = 0; i < sec.lessons.length; i++) {
-        const lesson = sec.lessons[i];
-        if (lastLessonToSection[lesson.id] !== sec.id) {
-          movedLessons.push({
-            lessonId: lesson.id,
-            targetSectionId: sec.id,
-            newOrder: i,
-          });
+      const lastLessonToSection: Record<string, string> = {};
+      for (const [secId, lessonIds] of Object.entries(lastBySection)) {
+        for (const lessonId of lessonIds) {
+          lastLessonToSection[lessonId] = secId;
         }
       }
-    }
 
-    const flushLessonOrders = (secs: Section[]) => {
-      const toFlush = secs.filter((sec) => {
-        const currentIds = sec.lessons.map((l) => l.id);
-        const lastIds = lastBySection[sec.id] ?? [];
+      const movedLessons: {
+        lessonId: string;
+        targetSectionId: string;
+        newOrder: number;
+      }[] = [];
+
+      for (const section of current) {
+        for (const [index, lesson] of section.lessons.entries()) {
+          if (lastLessonToSection[lesson.id] !== section.id) {
+            movedLessons.push({
+              lessonId: lesson.id,
+              targetSectionId: section.id,
+              newOrder: index,
+            });
+          }
+        }
+      }
+
+      for (const movedLesson of movedLessons) {
+        await moveLessonMutation.mutateAsync(movedLesson);
+      }
+
+      const sectionsToReorder = current.filter((section) => {
+        const currentLessonIds = section.lessons.map((lesson) => lesson.id);
+        const previousLessonIds = lastBySection[section.id] ?? [];
+
         return (
-          currentIds.length !== lastIds.length ||
-          currentIds.some((id, i) => id !== lastIds[i])
+          currentLessonIds.length !== previousLessonIds.length ||
+          currentLessonIds.some((id, index) => id !== previousLessonIds[index])
         );
       });
-      if (toFlush.length === 0) {
-        applySavedRefs();
-        return;
-      }
-      let pending = toFlush.length;
-      const checkDone = () => {
-        pending--;
-        if (pending === 0) {
-          applySavedRefs();
-        }
-      };
-      for (const sec of toFlush) {
-        reorderLessonsMutation.mutate(
-          { sectionId: sec.id, lessonIds: sec.lessons.map((l) => l.id) },
-          { onSettled: checkDone }
-        );
-      }
-    };
 
-    const runMovesThenLessons = (idx: number) => {
-      if (idx >= movedLessons.length) {
-        flushLessonOrders(current);
-        return;
-      }
-      const m = movedLessons[idx];
-      moveLessonMutation.mutate(
-        {
-          lessonId: m.lessonId,
-          targetSectionId: m.targetSectionId,
-          newOrder: m.newOrder,
-        },
-        { onSettled: () => runMovesThenLessons(idx + 1) }
+      await Promise.all(
+        sectionsToReorder.map((section) =>
+          reorderLessonsMutation.mutateAsync({
+            sectionId: section.id,
+            lessonIds: section.lessons.map((lesson) => lesson.id),
+          })
+        )
       );
-    };
 
-    if (movedLessons.length > 0) {
-      runMovesThenLessons(0);
-    } else {
-      flushLessonOrders(current);
+      persistedOrderRef.current = currentSnapshot;
+      hasPendingOrderChangesRef.current = false;
+    } catch {
+      hasPendingOrderChangesRef.current = false;
+      invalidateCourse();
+    } finally {
+      isFlushingOrderRef.current = false;
+
+      const latestSnapshot = buildOrderSnapshot(getSectionsFromCache());
+      if (orderSnapshotsEqual(latestSnapshot, persistedOrderRef.current)) {
+        hasPendingOrderChangesRef.current = false;
+      } else {
+        hasPendingOrderChangesRef.current = true;
+        saveTimeoutRef.current = setTimeout(() => {
+          flushOrderToServer().catch(() => {
+            // mutation handlers already surface errors
+          });
+        }, DEBOUNCE_MS);
+      }
     }
   }, [
     courseId,
+    getSectionsFromCache,
     invalidateCourse,
     moveLessonMutation,
     reorderLessonsMutation,
@@ -569,71 +815,25 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
   ]);
 
   const scheduleDebouncedSave = useCallback(() => {
-    hasOrderDirtyRef.current = true;
+    hasPendingOrderChangesRef.current = true;
     if (saveTimeoutRef.current !== null) {
       clearTimeout(saveTimeoutRef.current);
     }
-    saveTimeoutRef.current = setTimeout(flushOrderToServer, DEBOUNCE_MS);
+    saveTimeoutRef.current = setTimeout(() => {
+      flushOrderToServer().catch(() => {
+        // mutation handlers already surface errors
+      });
+    }, DEBOUNCE_MS);
   }, [flushOrderToServer]);
 
-  const handleSectionsReorder = useCallback(
-    (newSections: Section[]) => {
-      hasOrderDirtyRef.current = true;
-      setLocalSections(
-        newSections.map((s) => ({ ...s, lessons: [...s.lessons] }))
+  const handleCurriculumChange = useCallback(
+    (action: CurriculumAction) => {
+      updateSectionsInCache((sections) =>
+        applyCurriculumAction(sections, action)
       );
       scheduleDebouncedSave();
     },
-    [scheduleDebouncedSave]
-  );
-
-  const handleLessonsReorder = useCallback(
-    (sectionId: string, newLessons: Lesson[]) => {
-      hasOrderDirtyRef.current = true;
-      setLocalSections((prev) =>
-        prev.map((s) =>
-          s.id === sectionId ? { ...s, lessons: newLessons } : s
-        )
-      );
-      scheduleDebouncedSave();
-    },
-    [scheduleDebouncedSave]
-  );
-
-  const handleMoveLessonToSection = useCallback(
-    (lessonId: string, targetSectionId: string) => {
-      hasOrderDirtyRef.current = true;
-      setLocalSections((prev) => {
-        const activeLesson = prev
-          .flatMap((s) => s.lessons)
-          .find((l) => l.id === lessonId);
-        const targetSection = prev.find((s) => s.id === targetSectionId);
-        if (!(activeLesson && targetSection)) {
-          return prev;
-        }
-        const newLesson = { ...activeLesson, sectionId: targetSectionId };
-        return prev.map((s) => {
-          if (s.id === activeLesson.sectionId) {
-            return {
-              ...s,
-              lessons: s.lessons.filter((l) => l.id !== lessonId),
-            };
-          }
-          if (s.id === targetSectionId) {
-            return {
-              ...s,
-              lessons: [
-                ...s.lessons.filter((l) => l.id !== lessonId),
-                newLesson,
-              ],
-            };
-          }
-          return s;
-        });
-      });
-      scheduleDebouncedSave();
-    },
-    [scheduleDebouncedSave]
+    [scheduleDebouncedSave, updateSectionsInCache]
   );
 
   // ---- Shared single DndContext for all sections and lessons ----
@@ -666,9 +866,11 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
       // Section reordering
       if (sectionIds.includes(activeId)) {
         if (sectionIds.includes(overId) && activeId !== overId) {
-          const oldIndex = sectionIds.indexOf(activeId);
-          const newIndex = sectionIds.indexOf(overId);
-          handleSectionsReorder(arrayMove(sections, oldIndex, newIndex));
+          handleCurriculumChange({
+            type: "reorder-sections",
+            activeId,
+            overId,
+          });
         }
         return;
       }
@@ -688,7 +890,11 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
       // Dropped on an empty-section droppable zone
       if (over.data?.current?.type === "empty-section") {
         if (overId !== sourceSection.id) {
-          handleMoveLessonToSection(activeId, overId);
+          handleCurriculumChange({
+            type: "move-lesson",
+            lessonId: activeId,
+            targetSectionId: overId,
+          });
         }
         return;
       }
@@ -703,37 +909,33 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
         }
 
         if (sourceSection.id === targetSection.id) {
-          const oldIndex = sourceSection.lessons.findIndex(
-            (l) => l.id === activeId
-          );
-          const newIndex = sourceSection.lessons.findIndex(
-            (l) => l.id === overId
-          );
-          if (oldIndex !== newIndex) {
-            handleLessonsReorder(
-              sourceSection.id,
-              arrayMove(sourceSection.lessons, oldIndex, newIndex)
-            );
-          }
+          handleCurriculumChange({
+            type: "reorder-lessons",
+            sectionId: sourceSection.id,
+            activeId,
+            overId,
+          });
         } else {
-          handleMoveLessonToSection(activeId, targetSection.id);
+          handleCurriculumChange({
+            type: "move-lesson",
+            lessonId: activeId,
+            targetSectionId: targetSection.id,
+            overLessonId: overId,
+          });
         }
         return;
       }
 
       // Dropped on a section container (non-empty section)
       if (sectionIds.includes(overId) && overId !== sourceSection.id) {
-        handleMoveLessonToSection(activeId, overId);
+        handleCurriculumChange({
+          type: "move-lesson",
+          lessonId: activeId,
+          targetSectionId: overId,
+        });
       }
     },
-    [
-      sectionIds,
-      allLessonIds,
-      sections,
-      handleSectionsReorder,
-      handleLessonsReorder,
-      handleMoveLessonToSection,
-    ]
+    [sectionIds, allLessonIds, sections, handleCurriculumChange]
   );
 
   // Active drag item info for overlay
@@ -796,12 +998,19 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
                     onAddLesson={handleAddLesson}
                     onDeleteLesson={handleDeleteLesson}
                     onDeleteSection={handleDeleteSection}
-                    onMoveLessonToSection={handleMoveLessonToSection}
+                    onMoveLessonToSection={(lessonId, targetSectionId) =>
+                      handleCurriculumChange({
+                        type: "move-lesson",
+                        lessonId,
+                        targetSectionId,
+                      })
+                    }
                     onToggleCollapse={toggleSectionCollapse}
                     onToggleLessonExpand={toggleLessonExpand}
                     onUpdateLessonContent={handleUpdateLessonContent}
                     onUpdateLessonTitle={handleUpdateLessonTitle}
                     onUpdateSectionTitle={handleUpdateSectionTitle}
+                    savingLessonId={savingLessonId}
                     section={section}
                   />
                 </SortableItem>
@@ -877,6 +1086,7 @@ interface SectionItemProps {
   collapsedSections: Set<string>;
   expandedLessonId: string | null;
   isUpdating: boolean;
+  savingLessonId: string | null;
   onToggleCollapse: (sectionId: string) => void;
   onToggleLessonExpand: (lessonId: string) => void;
   onAddLesson: (sectionId: string) => void;
@@ -888,12 +1098,13 @@ interface SectionItemProps {
   onMoveLessonToSection: (lessonId: string, targetSectionId: string) => void;
 }
 
-function SectionItem({
+function SectionItemImpl({
   section,
   allSections,
   collapsedSections,
   expandedLessonId,
   isUpdating,
+  savingLessonId,
   onToggleCollapse,
   onToggleLessonExpand,
   onAddLesson,
@@ -905,33 +1116,6 @@ function SectionItem({
   onMoveLessonToSection,
 }: SectionItemProps) {
   const isCollapsed = collapsedSections.has(section.id);
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [titleValue, setTitleValue] = useState(section.title);
-
-  // Keep local title in sync when the prop changes (e.g. after server confirms rename)
-  useEffect(() => {
-    if (!isEditingTitle) {
-      setTitleValue(section.title);
-    }
-  }, [section.title, isEditingTitle]);
-
-  const handleTitleBlur = () => {
-    setIsEditingTitle(false);
-    if (titleValue.trim() && titleValue !== section.title) {
-      onUpdateSectionTitle(section.id, titleValue.trim());
-    } else {
-      setTitleValue(section.title);
-    }
-  };
-
-  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleTitleBlur();
-    } else if (e.key === "Escape") {
-      setTitleValue(section.title);
-      setIsEditingTitle(false);
-    }
-  };
 
   const otherSections = allSections.filter((s) => s.id !== section.id);
 
@@ -956,25 +1140,21 @@ function SectionItem({
             )}
           </CollapsibleTrigger>
 
-          {/* Title */}
-          {isEditingTitle ? (
-            <Input
-              autoFocus
-              className="h-7 flex-1 text-sm"
-              onBlur={handleTitleBlur}
-              onChange={(e) => setTitleValue(e.target.value)}
-              onKeyDown={handleTitleKeyDown}
-              value={titleValue}
-            />
-          ) : (
-            <button
-              className="flex-1 text-left font-medium text-sm hover:underline"
-              onClick={() => setIsEditingTitle(true)}
-              type="button"
-            >
-              {section.title}
-            </button>
-          )}
+          <Editable
+            className="flex-1 gap-0"
+            onSubmit={(value) => {
+              const trimmedValue = value.trim();
+              if (trimmedValue && trimmedValue !== section.title) {
+                onUpdateSectionTitle(section.id, trimmedValue);
+              }
+            }}
+            value={section.title}
+          >
+            <EditableArea className="w-full">
+              <EditablePreview className="font-medium text-sm hover:underline" />
+              <EditableInput className="h-7 px-2 text-sm" />
+            </EditableArea>
+          </Editable>
 
           {/* Lesson Count */}
           <span className="text-muted-foreground text-xs">
@@ -1055,6 +1235,7 @@ function SectionItem({
                           onUpdateContent={onUpdateLessonContent}
                           onUpdateTitle={onUpdateLessonTitle}
                           otherSections={otherSections}
+                          savingLessonId={savingLessonId}
                         />
                       </div>
                     </SortableItem>
@@ -1077,6 +1258,7 @@ interface LessonItemProps {
   lesson: Lesson;
   expandedLessonId: string | null;
   isUpdating: boolean;
+  savingLessonId: string | null;
   onToggleExpand: (lessonId: string) => void;
   onUpdateTitle: (lessonId: string, title: string) => void;
   onUpdateContent: (lessonId: string, content: JSONContent) => void;
@@ -1085,10 +1267,11 @@ interface LessonItemProps {
   onMoveToSection?: (lessonId: string, targetSectionId: string) => void;
 }
 
-function LessonItem({
+function LessonItemImpl({
   lesson,
   expandedLessonId,
   isUpdating,
+  savingLessonId,
   onToggleExpand,
   onUpdateTitle,
   onUpdateContent,
@@ -1097,54 +1280,22 @@ function LessonItem({
   onMoveToSection,
 }: LessonItemProps) {
   const isExpanded = expandedLessonId === lesson.id;
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [titleValue, setTitleValue] = useState(lesson.title);
+  const [content, setContent] = useState<JSONContent | undefined>(() =>
+    normalizeLessonContent(lesson.content)
+  );
 
-  // Keep local title in sync when the prop changes (e.g. after server confirms rename)
   useEffect(() => {
-    if (!isEditingTitle) {
-      setTitleValue(lesson.title);
+    if (!isExpanded) {
+      setContent(normalizeLessonContent(lesson.content));
     }
-  }, [lesson.title, isEditingTitle]);
-
-  const [content, setContent] = useState<JSONContent | undefined>(() => {
-    const raw = lesson.content as JSONContent | unknown[] | null | undefined;
-    if (!raw) {
-      return undefined;
-    }
-    if (typeof raw === "object" && "type" in (raw as object)) {
-      return raw as JSONContent;
-    }
-    if (Array.isArray(raw) && raw.length > 0) {
-      return { type: "doc", content: raw as JSONContent[] };
-    }
-    return undefined;
-  });
-
-  const handleTitleBlur = () => {
-    setIsEditingTitle(false);
-    if (titleValue.trim() && titleValue !== lesson.title) {
-      onUpdateTitle(lesson.id, titleValue.trim());
-    } else {
-      setTitleValue(lesson.title);
-    }
-  };
-
-  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleTitleBlur();
-    } else if (e.key === "Escape") {
-      setTitleValue(lesson.title);
-      setIsEditingTitle(false);
-    }
-  };
+  }, [isExpanded, lesson.content]);
 
   const handleSaveContent = () => {
     onUpdateContent(lesson.id, content ?? { type: "doc", content: [] });
   };
 
   return (
-    <div className={cn(isExpanded && "rounded-md ring-1 ring-primary/20")}>
+    <div className={cn(isExpanded && "ring-1 ring-primary/20")}>
       {/* Lesson Header */}
       <div className="flex items-center gap-2 p-2">
         {/* Expand/Collapse */}
@@ -1160,25 +1311,21 @@ function LessonItem({
           )}
         </button>
 
-        {/* Title */}
-        {isEditingTitle ? (
-          <Input
-            autoFocus
-            className="h-6 flex-1 text-sm"
-            onBlur={handleTitleBlur}
-            onChange={(e) => setTitleValue(e.target.value)}
-            onKeyDown={handleTitleKeyDown}
-            value={titleValue}
-          />
-        ) : (
-          <button
-            className="flex-1 text-left text-sm hover:underline"
-            onClick={() => setIsEditingTitle(true)}
-            type="button"
-          >
-            {lesson.title}
-          </button>
-        )}
+        <Editable
+          className="flex-1 gap-0"
+          onSubmit={(value) => {
+            const trimmedValue = value.trim();
+            if (trimmedValue && trimmedValue !== lesson.title) {
+              onUpdateTitle(lesson.id, trimmedValue);
+            }
+          }}
+          value={lesson.title}
+        >
+          <EditableArea className="w-full">
+            <EditablePreview className="text-sm hover:underline" />
+            <EditableInput className="h-6 px-2 text-sm" />
+          </EditableArea>
+        </Editable>
 
         {/* Move to section */}
         {onMoveToSection && otherSections.length > 0 && (
@@ -1239,7 +1386,7 @@ function LessonItem({
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="border-t p-3">
+        <div className="p-2">
           <Editor
             content={content}
             mediaUploadOwnerId={lesson.id}
@@ -1249,12 +1396,14 @@ function LessonItem({
           />
           <div className="mt-3 flex justify-end">
             <Button
-              disabled={isUpdating}
+              disabled={isUpdating && savingLessonId === lesson.id}
               onClick={handleSaveContent}
               size="sm"
               type="button"
             >
-              {isUpdating && <Loader2Icon className="size-4 animate-spin" />}
+              {isUpdating && savingLessonId === lesson.id && (
+                <Loader2Icon className="size-4 animate-spin" />
+              )}
               Save Lesson
             </Button>
           </div>
@@ -1263,3 +1412,6 @@ function LessonItem({
     </div>
   );
 }
+
+const SectionItem = memo(SectionItemImpl);
+const LessonItem = memo(LessonItemImpl);

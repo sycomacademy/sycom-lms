@@ -8,12 +8,8 @@ import {
 } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import {
-  getCourseThumbnailSignedParams,
-  persistCourseThumbnail,
-} from "@/app/dashboard/courses/actions";
 import { FileUploader } from "@/components/elements/file-uploader";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +42,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toastManager } from "@/components/ui/toast";
+import type { StorageFolder } from "@/packages/db/schema/storage";
 import { uploadFile } from "@/packages/storage/upload";
 import { useTRPC } from "@/packages/trpc/client";
 import { cn } from "@/packages/utils/cn";
@@ -55,6 +52,8 @@ import {
   DIFFICULTY_OPTIONS,
 } from "@/packages/utils/schema";
 import { slugify } from "@/packages/utils/string";
+
+const THUMBNAILS_FOLDER = "thumbnails" satisfies StorageFolder;
 
 interface CategoryItem {
   id: string;
@@ -87,7 +86,6 @@ export function CreateCourseForm({
   const [fileError, setFileError] = useState<string | null>(null);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
-  const uploadedImageUrl = useRef<string | null>(null);
 
   const form = useForm<CreateCourseFormInput>({
     resolver: zodResolver(createCourseFormSchema),
@@ -105,6 +103,13 @@ export function CreateCourseForm({
           .map((id) => categories.find((c) => c.id === id))
           .filter((c): c is CategoryItem => c != null)
       : [];
+
+  const signUploadMutation = useMutation(
+    trpc.storage.signUpload.mutationOptions()
+  );
+  const saveAssetMutation = useMutation(
+    trpc.storage.saveAsset.mutationOptions()
+  );
 
   const createMutation = useMutation(
     trpc.course.create.mutationOptions({
@@ -150,14 +155,15 @@ export function CreateCourseForm({
 
   const handleFilesChange = (newFiles: File[]) => {
     setFiles(newFiles);
-    // Reset cached URL so a new file gets uploaded on next submit
-    uploadedImageUrl.current = null;
     if (newFiles.length > 0) {
       setFileError(null);
     }
   };
 
-  const isSubmitting = createMutation.isPending;
+  const isSubmitting =
+    signUploadMutation.isPending ||
+    saveAssetMutation.isPending ||
+    createMutation.isPending;
 
   const onSubmit = async (data: CreateCourseFormInput) => {
     if (files.length === 0) {
@@ -170,23 +176,40 @@ export function CreateCourseForm({
       return;
     }
 
-    let imageUrl = uploadedImageUrl.current;
+    let imageUrl: string;
 
-    if (!imageUrl) {
-      try {
-        const signedParams = await getCourseThumbnailSignedParams("new");
-        const result = await uploadFile({ file: files[0], signedParams });
-        imageUrl = result.secureUrl;
-        uploadedImageUrl.current = imageUrl;
-        await persistCourseThumbnail(result, "new");
-      } catch (err) {
-        toastManager.add({
-          title: "Failed to upload image",
-          description: err instanceof Error ? err.message : "Upload failed",
-          type: "error",
-        });
-        return;
-      }
+    try {
+      const signedParams = await signUploadMutation.mutateAsync({
+        folder: THUMBNAILS_FOLDER,
+        entityId: "new",
+      });
+
+      const uploadResult = await uploadFile({
+        file: files[0],
+        signedParams,
+      });
+
+      await saveAssetMutation.mutateAsync({
+        publicId: uploadResult.publicId,
+        secureUrl: uploadResult.secureUrl,
+        folder: THUMBNAILS_FOLDER,
+        resourceType: uploadResult.resourceType,
+        format: uploadResult.format,
+        bytes: uploadResult.bytes,
+        width: uploadResult.width,
+        height: uploadResult.height,
+        entityId: "new",
+        entityType: "course",
+      });
+
+      imageUrl = uploadResult.secureUrl;
+    } catch (err) {
+      toastManager.add({
+        title: "Failed to upload image",
+        description: err instanceof Error ? err.message : "Upload failed",
+        type: "error",
+      });
+      return;
     }
 
     createMutation.mutate({

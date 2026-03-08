@@ -1,5 +1,6 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
 import type { Editor } from "@tiptap/react";
 import {
   CircleHelpIcon,
@@ -11,10 +12,6 @@ import {
   VideoIcon,
 } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
-import {
-  getLessonMediaSignedParams,
-  persistLessonMedia,
-} from "@/app/dashboard/courses/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -30,7 +27,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { StorageFolder } from "@/packages/db/schema/storage";
 import { uploadFile } from "@/packages/storage/upload";
+import { useTRPC } from "@/packages/trpc/client";
+
+const CONTENT_FOLDER = "course-content" satisfies StorageFolder;
 
 interface MediaGroupProps {
   editor: Editor;
@@ -64,6 +65,7 @@ function fileToDataUrl(file: File): Promise<string> {
 }
 
 export function MediaGroup({ editor, mediaUploadOwnerId }: MediaGroupProps) {
+  const trpc = useTRPC();
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [uploadingType, setUploadingType] = useState<
     "image" | "video" | "audio" | "file" | null
@@ -73,14 +75,35 @@ export function MediaGroup({ editor, mediaUploadOwnerId }: MediaGroupProps) {
   const audioInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const signUploadMutation = useMutation(
+    trpc.storage.signUpload.mutationOptions()
+  );
+  const saveAssetMutation = useMutation(
+    trpc.storage.saveAsset.mutationOptions()
+  );
+
   const uploadToCloudinary = useCallback(
     async (file: File, lessonId: string): Promise<string> => {
-      const signedParams = await getLessonMediaSignedParams(lessonId);
+      const signedParams = await signUploadMutation.mutateAsync({
+        folder: CONTENT_FOLDER,
+        entityId: lessonId,
+      });
       const result = await uploadFile({ file, signedParams });
-      await persistLessonMedia(result, lessonId);
+      await saveAssetMutation.mutateAsync({
+        publicId: result.publicId,
+        secureUrl: result.secureUrl,
+        folder: CONTENT_FOLDER,
+        resourceType: result.resourceType,
+        format: result.format,
+        bytes: result.bytes,
+        width: result.width,
+        height: result.height,
+        entityId: lessonId,
+        entityType: "lesson",
+      });
       return result.secureUrl;
     },
-    []
+    [signUploadMutation, saveAssetMutation]
   );
 
   const getSrc = useCallback(
