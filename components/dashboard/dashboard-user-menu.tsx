@@ -4,7 +4,7 @@ import { Facehash } from "facehash";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { LayoutDashboard } from "@/components/icons/animated/layout-dashboard";
 import { LogOut } from "@/components/icons/animated/log-out";
 import { MessageCircleQuestion } from "@/components/icons/animated/message-circle-question";
@@ -48,6 +48,18 @@ function formatRole(role: string): string {
 }
 
 export function DashboardUserMenu() {
+  return (
+    <Suspense fallback={<DashboardUserMenuSkeleton />}>
+      <DashboardUserMenuContent />
+    </Suspense>
+  );
+}
+
+export function DashboardUserMenuSkeleton() {
+  return <Skeleton className="size-10" />;
+}
+
+function DashboardUserMenuContent() {
   const router = useRouter();
   const { profile, user, isPending } = useUserQuery();
   const { setTheme, resolvedTheme } = useTheme();
@@ -79,7 +91,7 @@ export function DashboardUserMenu() {
   }
 
   if (!user) {
-    return <Skeleton className="size-10 rounded-none" />;
+    return <DashboardUserMenuSkeleton />;
   }
   const enableFacehash = profile?.settings?.enableFacehash ?? true;
   const facehashName = `${user.name}`;

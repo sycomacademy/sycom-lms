@@ -2,7 +2,7 @@
 
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
-import type { ComponentType } from "react";
+import { type ComponentType, Suspense } from "react";
 import { Blocks } from "@/components/icons/animated/blocks";
 import { Layers } from "@/components/icons/animated/layers";
 import { LayoutDashboard } from "@/components/icons/animated/layout-dashboard";
@@ -21,6 +21,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSkeleton,
   useSidebar,
 } from "@/components/ui/sidebar";
 import type { UserRole } from "@/packages/db/schema/auth";
@@ -103,13 +104,72 @@ const groupLabelCollapseClass =
   "group-data-[collapsible=icon]:mt-0 group-data-[collapsible=icon]:opacity-100";
 
 export function AppSidebar() {
+  return (
+    <Suspense fallback={<AppSidebarSkeleton />}>
+      <AppSidebarContent />
+    </Suspense>
+  );
+}
+
+export function AppSidebarSkeleton() {
+  return (
+    <Sidebar
+      className="border-sidebar-border"
+      collapsible="icon"
+      variant="inset"
+    >
+      <SidebarHeader className="border-sidebar-border">
+        <Link
+          className="flex items-center gap-2 font-semibold text-sidebar-foreground text-sm"
+          href="/dashboard"
+        >
+          <span className="flex size-10 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+            S
+          </span>
+        </Link>
+      </SidebarHeader>
+
+      <SidebarContent>
+        {Array.from({ length: 2 }, (_, groupIndex) => (
+          <SidebarGroup key={`sidebar-skeleton-group-${groupIndex}`}>
+            <SidebarGroupLabel>Loading</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-2">
+                {Array.from(
+                  { length: groupIndex === 0 ? 3 : 2 },
+                  (_, itemIndex) => (
+                    <SidebarMenuItem
+                      key={`sidebar-skeleton-item-${groupIndex}-${itemIndex}`}
+                    >
+                      <SidebarMenuSkeleton showIcon />
+                    </SidebarMenuItem>
+                  )
+                )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
+      </SidebarContent>
+
+      <SidebarFooter />
+    </Sidebar>
+  );
+}
+
+function AppSidebarContent() {
   const { user } = useUserQuery();
   const { open } = useSidebar();
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const isOpen = useDelayedValue(open, 195);
 
-  const navGroups = NAV[user?.role as UserRole];
+  if (!user) {
+    return <AppSidebarSkeleton />;
+  }
+
+  const role = (user.role ?? "platform_student") as UserRole;
+  const navGroups = NAV[role];
+  const navEntries = Object.entries(navGroups) as [string, NavItem[]][];
 
   return (
     <Sidebar
@@ -129,7 +189,7 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {Object.entries(navGroups).map(([groupLabel, items]) => (
+        {navEntries.map(([groupLabel, items]) => (
           <SidebarGroup key={groupLabel}>
             <SidebarGroupLabel
               className={cn(
