@@ -1,7 +1,13 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type {
+  ColumnDef,
+  PaginationState,
+  SortingState,
+} from "@tanstack/react-table";
 import {
+  BookOpenIcon,
   InfoIcon,
   LayoutGridIcon,
   Loader2Icon,
@@ -13,7 +19,7 @@ import {
 } from "lucide-react";
 import type { Route } from "next";
 import { useQueryStates } from "nuqs";
-import { useDeferredValue, useState } from "react";
+import { useDeferredValue, useState, useTransition } from "react";
 import type { RouterOutputs } from "@/app/api/trpc/router";
 import { CategoriesFilter } from "@/components/dashboard/courses/categories-filter";
 import { CourseCard } from "@/components/dashboard/courses/course-card";
@@ -41,6 +47,14 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
+import { DataTable } from "@/components/ui/data-table";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import {
   Pagination,
@@ -60,14 +74,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Tabs, TabsList, TabsTab } from "@/components/ui/tabs";
 import { toastManager } from "@/components/ui/toast";
 import {
@@ -80,12 +86,169 @@ import {
   STATUS_OPTIONS,
 } from "@/packages/db/schema/course";
 import { useTRPC } from "@/packages/trpc/client";
+import { formatCourseDate } from "@/packages/utils/time";
 
 type Course = RouterOutputs["course"]["list"]["courses"][number];
+
+interface CoursesTableColumnOptions {
+  deleteCourse: (courseId: string) => void;
+  isDeleting: boolean;
+  onViewPeople: (course: Pick<Course, "id" | "title">) => void;
+}
+
+function getColumns({
+  deleteCourse,
+  isDeleting,
+  onViewPeople,
+}: CoursesTableColumnOptions): ColumnDef<Course, unknown>[] {
+  return [
+    {
+      accessorKey: "title",
+      header: "Title",
+      size: 220,
+      cell: ({ row }) => (
+        <Link
+          className="font-medium hover:underline"
+          href={`/dashboard/courses/${row.original.id}/edit` as Route}
+        >
+          <span className="line-clamp-1">{row.original.title}</span>
+        </Link>
+      ),
+    },
+    {
+      id: "categories",
+      header: "Categories",
+      size: 220,
+      enableSorting: false,
+      cell: ({ row }) => {
+        const categoriesLabel =
+          row.original.categories.length > 0
+            ? row.original.categories
+                .map((category) => category.name)
+                .join(", ")
+            : null;
+
+        if (!categoriesLabel) {
+          return <span className="text-muted-foreground">&mdash;</span>;
+        }
+
+        return (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <span className="block max-w-56 cursor-default truncate text-muted-foreground text-sm">
+                  {categoriesLabel}
+                </span>
+              }
+            />
+            <TooltipContent>{categoriesLabel}</TooltipContent>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      accessorKey: "difficulty",
+      header: "Difficulty",
+      size: 120,
+      enableSorting: false,
+      cell: ({ row }) => (
+        <Badge className="capitalize">{row.original.difficulty}</Badge>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      size: 120,
+      cell: ({ row }) => (
+        <Badge className="capitalize" variant="outline">
+          {row.original.status}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "updatedAt",
+      header: "Updated",
+      size: 130,
+      cell: ({ row }) => (
+        <span className="text-muted-foreground text-xs tabular-nums">
+          {formatCourseDate(row.original.updatedAt)}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      size: 110,
+      enableSorting: false,
+      cell: ({ row }) => {
+        const course = row.original;
+
+        return (
+          <div className="flex items-center justify-end gap-1">
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    onClick={() =>
+                      onViewPeople({
+                        id: course.id,
+                        title: course.title,
+                      })
+                    }
+                    size="icon-xs"
+                    variant="outline"
+                  >
+                    <InfoIcon />
+                  </Button>
+                }
+              />
+              <TooltipContent>Instructor & students</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    disabled={isDeleting}
+                    onClick={() => deleteCourse(course.id)}
+                    size="icon-xs"
+                    variant="destructive"
+                  >
+                    <Trash2Icon />
+                  </Button>
+                }
+              />
+              <TooltipContent>Delete course</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    nativeButton={false}
+                    render={
+                      <Link
+                        href={`/dashboard/courses/${course.id}/edit` as Route}
+                      />
+                    }
+                    size="icon-xs"
+                    variant="outline"
+                  >
+                    <PencilIcon />
+                  </Button>
+                }
+              />
+              <TooltipContent>Edit course</TooltipContent>
+            </Tooltip>
+          </div>
+        );
+      },
+    },
+  ];
+}
 
 export function CoursesList() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const [, startTransition] = useTransition();
   const [peopleDialogCourse, setPeopleDialogCourse] = useState<Course | null>(
     null
   );
@@ -162,6 +325,42 @@ export function CoursesList() {
     (pagination.pageIndex + 1) * pagination.pageSize,
     total
   );
+
+  const handleTablePaginationChange = (next: PaginationState) => {
+    startTransition(() => {
+      setParams({ page: next.pageIndex + 1, pageSize: next.pageSize });
+    });
+  };
+
+  const handleTableSortingChange = (next: SortingState) => {
+    const nextSort = next[0];
+
+    startTransition(() => {
+      setParams({
+        page: 1,
+        sortBy:
+          (nextSort?.id as "title" | "createdAt" | "updatedAt" | "status") ??
+          "updatedAt",
+        sortDirection: nextSort?.desc === false ? "asc" : "desc",
+      });
+    });
+  };
+
+  const columns = getColumns({
+    deleteCourse: (courseId) => {
+      const course = courses.find((item) => item.id === courseId);
+      if (course) {
+        setDeleteAlertCourse(course);
+      }
+    },
+    isDeleting: deleteCourseMutation.isPending,
+    onViewPeople: (course) => {
+      const match = courses.find((item) => item.id === course.id);
+      if (match) {
+        setPeopleDialogCourse(match);
+      }
+    },
+  });
 
   return (
     <div className="space-y-4">
@@ -246,7 +445,11 @@ export function CoursesList() {
 
         <Tabs
           onValueChange={(nextView) =>
-            setParams({ view: nextView as "card" | "table" })
+            setParams({
+              page: 1,
+              pageSize: nextView === "table" ? 10 : 12,
+              view: nextView as "card" | "table",
+            })
           }
           value={view}
         >
@@ -264,6 +467,7 @@ export function CoursesList() {
       </div>
 
       <CoursesResults
+        columns={columns}
         courses={courses}
         dataLoaded={Boolean(data) || !isPending}
         deleteCourse={(courseId) => {
@@ -272,17 +476,22 @@ export function CoursesList() {
             setDeleteAlertCourse(course);
           }
         }}
-        isDeleting={deleteCourseMutation.isPending}
+        onTablePaginationChange={handleTablePaginationChange}
+        onTableSortingChange={handleTableSortingChange}
         onViewPeople={(course) => {
           const match = courses.find((item) => item.id === course.id);
           if (match) {
             setPeopleDialogCourse(match);
           }
         }}
+        pageIndex={pageIndex}
+        pageSize={pagination.pageSize}
+        sorting={[{ id: sortBy, desc: sortDirection === "desc" }]}
+        total={total}
         view={view}
       />
 
-      {totalPages > 1 && (
+      {view === "card" && totalPages > 1 && (
         <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-muted-foreground text-sm">
             Showing{" "}
@@ -302,7 +511,6 @@ export function CoursesList() {
                       ? "pointer-events-none opacity-50"
                       : undefined
                   }
-                  href="#"
                   onClick={(event) => {
                     event.preventDefault();
                     if (pageIndex > 0) {
@@ -313,7 +521,6 @@ export function CoursesList() {
               </PaginationItem>
               <PaginationItem>
                 <PaginationLink
-                  href="#"
                   isActive
                   onClick={(event) => event.preventDefault()}
                 >
@@ -321,10 +528,7 @@ export function CoursesList() {
                 </PaginationLink>
               </PaginationItem>
               <PaginationItem>
-                <PaginationLink
-                  href="#"
-                  onClick={(event) => event.preventDefault()}
-                >
+                <PaginationLink onClick={(event) => event.preventDefault()}>
                   {totalPages}
                 </PaginationLink>
               </PaginationItem>
@@ -336,7 +540,6 @@ export function CoursesList() {
                       ? "pointer-events-none opacity-50"
                       : undefined
                   }
-                  href="#"
                   onClick={(event) => {
                     event.preventDefault();
                     if (pageIndex < totalPages - 1) {
@@ -486,145 +689,54 @@ function CoursesCardsSkeleton() {
 
 function CoursesEmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12 text-center">
-      <p className="text-muted-foreground text-sm">
-        No courses found. Create your first course to get started.
-      </p>
-    </div>
+    <Empty className="border">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <BookOpenIcon />
+        </EmptyMedia>
+        <EmptyTitle>No courses yet</EmptyTitle>
+        <EmptyDescription>
+          Create your first course to get started.
+        </EmptyDescription>
+      </EmptyHeader>
+    </Empty>
   );
 }
 
 interface CoursesTableContentProps {
+  columns: ColumnDef<Course, unknown>[];
   courses: Course[];
-  deleteCourse: (courseId: string) => void;
-  isDeleting: boolean;
-  onViewPeople: (course: Pick<Course, "id" | "title">) => void;
+  onPaginationChange: (pagination: PaginationState) => void;
+  onSortingChange: (sorting: SortingState) => void;
+  pageIndex: number;
+  pageSize: number;
+  sorting: SortingState;
+  total: number;
 }
 
 function CoursesTableContent({
+  columns,
   courses,
-  deleteCourse,
-  isDeleting,
-  onViewPeople,
+  onPaginationChange,
+  onSortingChange,
+  pageIndex,
+  pageSize,
+  sorting,
+  total,
 }: CoursesTableContentProps) {
   return (
-    <div className="overflow-hidden rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead className="w-[30%]">Title</TableHead>
-            <TableHead className="w-[28%]">Categories</TableHead>
-            <TableHead>Difficulty</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {courses.map((course) => {
-            const categoriesLabel =
-              course.categories.length > 0
-                ? course.categories.map((category) => category.name).join(", ")
-                : null;
-
-            return (
-              <TableRow key={course.id}>
-                <TableCell>
-                  <Link
-                    className="font-medium hover:underline"
-                    href={`/dashboard/courses/${course.id}/edit` as Route}
-                  >
-                    <span className="line-clamp-1">{course.title}</span>
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  {categoriesLabel ? (
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <span className="block max-w-56 cursor-default truncate text-muted-foreground text-sm">
-                            {categoriesLabel}
-                          </span>
-                        }
-                      />
-                      <TooltipContent>{categoriesLabel}</TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <span className="text-muted-foreground">&mdash;</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Badge className="capitalize">{course.difficulty}</Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge className="capitalize" variant="outline">
-                    {course.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center justify-end gap-1">
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <Button
-                            onClick={() =>
-                              onViewPeople({
-                                id: course.id,
-                                title: course.title,
-                              })
-                            }
-                            size="icon-xs"
-                            variant="outline"
-                          >
-                            <InfoIcon />
-                          </Button>
-                        }
-                      />
-                      <TooltipContent>Instructor & students</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <Button
-                            disabled={isDeleting}
-                            onClick={() => deleteCourse(course.id)}
-                            size="icon-xs"
-                            variant="destructive"
-                          >
-                            <Trash2Icon />
-                          </Button>
-                        }
-                      />
-                      <TooltipContent>Delete course</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <Button
-                            nativeButton={false}
-                            render={
-                              <Link
-                                href={
-                                  `/dashboard/courses/${course.id}/edit` as Route
-                                }
-                              />
-                            }
-                            size="icon-xs"
-                            variant="outline"
-                          >
-                            <PencilIcon />
-                          </Button>
-                        }
-                      />
-                      <TooltipContent>Edit course</TooltipContent>
-                    </Tooltip>
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
+    <DataTable
+      columns={columns}
+      data={courses}
+      manualPagination
+      manualSorting
+      onPaginationChange={onPaginationChange}
+      onSortingChange={onSortingChange}
+      pageIndex={pageIndex}
+      pageSize={pageSize}
+      sorting={sorting}
+      total={total}
+    />
   );
 }
 
@@ -659,20 +771,32 @@ function CoursesCardsContent({
 }
 
 interface CoursesResultsProps {
+  columns: ColumnDef<Course, unknown>[];
   courses: Course[];
   dataLoaded: boolean;
   deleteCourse: (courseId: string) => void;
-  isDeleting: boolean;
   onViewPeople: (course: Pick<Course, "id" | "title">) => void;
+  onTablePaginationChange: (pagination: PaginationState) => void;
+  onTableSortingChange: (sorting: SortingState) => void;
+  pageIndex: number;
+  pageSize: number;
+  sorting: SortingState;
+  total: number;
   view: "card" | "table";
 }
 
 function CoursesResults({
+  columns,
   courses,
   dataLoaded,
   deleteCourse,
-  isDeleting,
   onViewPeople,
+  onTablePaginationChange,
+  onTableSortingChange,
+  pageIndex,
+  pageSize,
+  sorting,
+  total,
   view,
 }: CoursesResultsProps) {
   if (!dataLoaded) {
@@ -690,10 +814,14 @@ function CoursesResults({
   if (view === "table") {
     return (
       <CoursesTableContent
+        columns={columns}
         courses={courses}
-        deleteCourse={deleteCourse}
-        isDeleting={isDeleting}
-        onViewPeople={onViewPeople}
+        onPaginationChange={onTablePaginationChange}
+        onSortingChange={onTableSortingChange}
+        pageIndex={pageIndex}
+        pageSize={pageSize}
+        sorting={sorting}
+        total={total}
       />
     );
   }

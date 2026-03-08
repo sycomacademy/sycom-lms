@@ -1,12 +1,12 @@
 import { Calendar, Clock } from "lucide-react";
 import type { Metadata, Route } from "next";
+import { mockBlogPosts } from "@/components/landing/mock-data";
 import { Footer } from "@/components/layout/footer";
 import { Link } from "@/components/layout/foresight-link";
 import { Header } from "@/components/layout/header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { SectionLabel } from "@/components/ui/section-label";
-import { mockBlogPosts } from "@/packages/utils/mock-data";
 
 export const metadata: Metadata = {
   title: "Blog | Sycom LMS",

@@ -21,3 +21,11 @@ export function isValidTimezone(tz: string): boolean {
     return false;
   }
 }
+
+export function formatCourseDate(value: string | Date) {
+  return new Date(value).toLocaleDateString("en-UK", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
