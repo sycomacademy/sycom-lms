@@ -8,6 +8,7 @@ import {
   getEnrolledCourse,
   getEnrolledLesson,
   getEnrollmentStatus,
+  hasOrgCourseEntitlement,
   listAssignableCourses,
   listCohortCourses,
   listMyEnrollments,
@@ -220,6 +221,19 @@ export const enrollmentRouter = router({
   assignCourseToCohort: orgProcedure
     .input(assignCourseToCohortSchema)
     .mutation(async ({ ctx, input }) => {
+      // Verify org has an active entitlement for this course
+      const entitled = await hasOrgCourseEntitlement(ctx.db, {
+        organizationId: ctx.organizationId,
+        courseId: input.courseId,
+      });
+      if (!entitled) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message:
+            "Your organization does not have access to this course. Contact your administrator.",
+        });
+      }
+
       const result = await assignCourseToCohort(ctx.db, {
         courseId: input.courseId,
         cohortId: input.cohortId,

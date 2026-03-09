@@ -16,6 +16,7 @@ import {
   enrollment,
   lessonProgress,
 } from "@/packages/db/schema/enrollment";
+import { orgCourseEntitlement } from "@/packages/db/schema/entitlement";
 
 // ---------------------------------------------------------------------------
 // Enums (inline text enums)
@@ -204,6 +205,7 @@ export const courseRelations = relations(course, ({ one, many }) => ({
   enrollments: many(enrollment),
   courseAssignments: many(courseAssignment),
   categories: many(courseCategory),
+  entitlements: many(orgCourseEntitlement),
 }));
 
 export const courseInstructorRelations = relations(

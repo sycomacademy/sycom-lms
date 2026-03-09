@@ -28,6 +28,7 @@ export const env = createEnv({
     CLOUDINARY_API_KEY: z.string().min(1),
     CLOUDINARY_API_SECRET: z.string().min(1),
 
+    ROOT_DOMAIN: z.string().min(1).default("localhost:3000"),
     HEALTH_IP_ALLOWLIST: z.string().min(1).optional(),
     NODE_ENV: z
       .enum(["development", "production", "test"])
