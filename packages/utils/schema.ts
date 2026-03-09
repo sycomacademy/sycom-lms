@@ -385,6 +385,13 @@ export type BlogPostFormInput = z.infer<typeof blogPostFormSchema>;
 export const listPublicCoursesSchema = z.object({
   limit: z.number().min(1).max(100).default(12),
   offset: z.number().min(0).default(0),
+  search: z.string().optional(),
+  sortBy: z.enum(["title", "createdAt", "updatedAt"]).default("updatedAt"),
+  sortDirection: z.enum(["asc", "desc"]).default("desc"),
+  filterDifficulties: z
+    .array(z.enum(["beginner", "intermediate", "advanced", "expert"]))
+    .optional(),
+  filterCategoryIds: z.array(z.string()).optional(),
 });
 
 export const listCoursesSchema = z.object({
@@ -408,6 +415,7 @@ export const listLibrarySchema = z.object({
   search: z.string().optional(),
   sortBy: z.enum(["title", "createdAt", "updatedAt"]).default("updatedAt"),
   sortDirection: z.enum(["asc", "desc"]).default("desc"),
+  filterCategoryIds: z.array(z.string()).optional(),
   filterDifficulties: z
     .array(z.enum(["beginner", "intermediate", "advanced", "expert"]))
     .optional(),

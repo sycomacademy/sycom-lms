@@ -6,11 +6,16 @@ import {
   pgTable,
   primaryKey,
   text,
-  timestamp,
-  unique,
 } from "drizzle-orm/pg-core";
 import { createdAt, updatedAt } from "@/packages/db/helper";
-import { cohort, organization, user } from "@/packages/db/schema/auth";
+import { user } from "@/packages/db/schema/auth";
+import {
+  cohortLessonSettings,
+  cohortSectionSettings,
+  courseAssignment,
+  enrollment,
+  lessonProgress,
+} from "@/packages/db/schema/enrollment";
 
 // ---------------------------------------------------------------------------
 // Enums (inline text enums)
@@ -171,142 +176,6 @@ export const lesson = pgTable(
 );
 
 // ---------------------------------------------------------------------------
-// Enrollments
-// ---------------------------------------------------------------------------
-
-export const enrollment = pgTable(
-  "enrollment",
-  {
-    id: text("id")
-      .primaryKey()
-      .$defaultFn(() => `enr_${crypto.randomUUID()}`),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    courseId: text("course_id")
-      .notNull()
-      .references(() => course.id, { onDelete: "cascade" }),
-    organizationId: text("organization_id")
-      .notNull()
-      .references(() => organization.id, { onDelete: "cascade" }),
-    cohortId: text("cohort_id")
-      .notNull()
-      .references(() => cohort.id, { onDelete: "cascade" }),
-    enrolledAt: timestamp("enrolled_at").defaultNow().notNull(),
-    completedAt: timestamp("completed_at"),
-  },
-  (table) => [
-    unique("enrollment_user_course_cohort_uniq").on(
-      table.userId,
-      table.courseId,
-      table.cohortId
-    ),
-    index("enrollment_user_id_idx").on(table.userId),
-    index("enrollment_course_id_idx").on(table.courseId),
-    index("enrollment_org_id_idx").on(table.organizationId),
-    index("enrollment_cohort_id_idx").on(table.cohortId),
-    index("enrollment_user_org_idx").on(table.userId, table.organizationId),
-    index("enrollment_user_course_cohort_idx").on(
-      table.userId,
-      table.courseId,
-      table.cohortId
-    ),
-  ]
-);
-
-// ---------------------------------------------------------------------------
-// Lesson Completions
-// ---------------------------------------------------------------------------
-
-export const lessonCompletion = pgTable(
-  "lesson_completion",
-  {
-    id: text("id")
-      .primaryKey()
-      .$defaultFn(() => `lcp_${crypto.randomUUID()}`),
-    enrollmentId: text("enrollment_id")
-      .notNull()
-      .references(() => enrollment.id, { onDelete: "cascade" }),
-    lessonId: text("lesson_id")
-      .notNull()
-      .references(() => lesson.id, { onDelete: "cascade" }),
-    completedAt: timestamp("completed_at").defaultNow().notNull(),
-  },
-  (table) => [
-    unique("lesson_completion_enrollment_lesson_uniq").on(
-      table.enrollmentId,
-      table.lessonId
-    ),
-    index("lesson_completion_enrollment_id_idx").on(table.enrollmentId),
-    index("lesson_completion_lesson_id_idx").on(table.lessonId),
-    index("lesson_completion_enrollment_lesson_idx").on(
-      table.enrollmentId,
-      table.lessonId
-    ),
-  ]
-);
-
-// ---------------------------------------------------------------------------
-// Cohort-Course Assignment (org assigns courses to cohorts)
-// ---------------------------------------------------------------------------
-
-export const cohortCourse = pgTable(
-  "cohort_course",
-  {
-    cohortId: text("cohort_id")
-      .notNull()
-      .references(() => cohort.id, { onDelete: "cascade" }),
-    courseId: text("course_id")
-      .notNull()
-      .references(() => course.id, { onDelete: "cascade" }),
-    assignedAt: timestamp("assigned_at").defaultNow().notNull(),
-  },
-  (table) => [
-    primaryKey({ columns: [table.cohortId, table.courseId] }),
-    index("cohort_course_cohort_id_idx").on(table.cohortId),
-    index("cohort_course_course_id_idx").on(table.courseId),
-  ]
-);
-
-// ---------------------------------------------------------------------------
-// Per-Cohort Due Dates (org_teacher/owner/admin set these)
-// ---------------------------------------------------------------------------
-
-export const cohortSectionDueDate = pgTable(
-  "cohort_section_due_date",
-  {
-    cohortId: text("cohort_id")
-      .notNull()
-      .references(() => cohort.id, { onDelete: "cascade" }),
-    sectionId: text("section_id")
-      .notNull()
-      .references(() => section.id, { onDelete: "cascade" }),
-    dueDate: timestamp("due_date").notNull(),
-  },
-  (table) => [
-    primaryKey({ columns: [table.cohortId, table.sectionId] }),
-    index("cohort_section_due_date_cohort_id_idx").on(table.cohortId),
-  ]
-);
-
-export const cohortLessonDueDate = pgTable(
-  "cohort_lesson_due_date",
-  {
-    cohortId: text("cohort_id")
-      .notNull()
-      .references(() => cohort.id, { onDelete: "cascade" }),
-    lessonId: text("lesson_id")
-      .notNull()
-      .references(() => lesson.id, { onDelete: "cascade" }),
-    dueDate: timestamp("due_date").notNull(),
-  },
-  (table) => [
-    primaryKey({ columns: [table.cohortId, table.lessonId] }),
-    index("cohort_lesson_due_date_cohort_id_idx").on(table.cohortId),
-  ]
-);
-
-// ---------------------------------------------------------------------------
 // Relations
 // ---------------------------------------------------------------------------
 
@@ -333,7 +202,7 @@ export const courseRelations = relations(course, ({ one, many }) => ({
   instructors: many(courseInstructor),
   sections: many(section),
   enrollments: many(enrollment),
-  cohortCourses: many(cohortCourse),
+  courseAssignments: many(courseAssignment),
   categories: many(courseCategory),
 }));
 
@@ -361,7 +230,7 @@ export const sectionRelations = relations(section, ({ one, many }) => ({
     references: [course.id],
   }),
   lessons: many(lesson),
-  cohortSectionDueDates: many(cohortSectionDueDate),
+  cohortSectionSettings: many(cohortSectionSettings),
 }));
 
 export const lessonRelations = relations(lesson, ({ one, many }) => ({
@@ -369,79 +238,6 @@ export const lessonRelations = relations(lesson, ({ one, many }) => ({
     fields: [lesson.sectionId],
     references: [section.id],
   }),
-  completions: many(lessonCompletion),
-  cohortLessonDueDates: many(cohortLessonDueDate),
+  progress: many(lessonProgress),
+  cohortLessonSettings: many(cohortLessonSettings),
 }));
-
-export const enrollmentRelations = relations(enrollment, ({ one, many }) => ({
-  user: one(user, {
-    fields: [enrollment.userId],
-    references: [user.id],
-  }),
-  course: one(course, {
-    fields: [enrollment.courseId],
-    references: [course.id],
-  }),
-  organization: one(organization, {
-    fields: [enrollment.organizationId],
-    references: [organization.id],
-  }),
-  cohort: one(cohort, {
-    fields: [enrollment.cohortId],
-    references: [cohort.id],
-  }),
-  lessonCompletions: many(lessonCompletion),
-}));
-
-export const lessonCompletionRelations = relations(
-  lessonCompletion,
-  ({ one }) => ({
-    enrollment: one(enrollment, {
-      fields: [lessonCompletion.enrollmentId],
-      references: [enrollment.id],
-    }),
-    lesson: one(lesson, {
-      fields: [lessonCompletion.lessonId],
-      references: [lesson.id],
-    }),
-  })
-);
-
-export const cohortCourseRelations = relations(cohortCourse, ({ one }) => ({
-  cohort: one(cohort, {
-    fields: [cohortCourse.cohortId],
-    references: [cohort.id],
-  }),
-  course: one(course, {
-    fields: [cohortCourse.courseId],
-    references: [course.id],
-  }),
-}));
-
-export const cohortSectionDueDateRelations = relations(
-  cohortSectionDueDate,
-  ({ one }) => ({
-    cohort: one(cohort, {
-      fields: [cohortSectionDueDate.cohortId],
-      references: [cohort.id],
-    }),
-    section: one(section, {
-      fields: [cohortSectionDueDate.sectionId],
-      references: [section.id],
-    }),
-  })
-);
-
-export const cohortLessonDueDateRelations = relations(
-  cohortLessonDueDate,
-  ({ one }) => ({
-    cohort: one(cohort, {
-      fields: [cohortLessonDueDate.cohortId],
-      references: [cohort.id],
-    }),
-    lesson: one(lesson, {
-      fields: [cohortLessonDueDate.lessonId],
-      references: [lesson.id],
-    }),
-  })
-);

@@ -5,6 +5,7 @@ import { adminRouter } from "./admin";
 import { blogRouter } from "./blog";
 import { categoryRouter } from "./category";
 import { courseRouter } from "./course";
+import { enrollmentRouter } from "./enrollment";
 import { feedbackRouter } from "./feedback";
 import { inviteRouter } from "./invite";
 import { orgRouter } from "./org";
@@ -24,6 +25,7 @@ export const appRouter = router({
   blog: blogRouter,
   category: categoryRouter,
   course: courseRouter,
+  enrollment: enrollmentRouter,
   org: orgRouter,
   overview: overviewRouter,
   storage: storageRouter,

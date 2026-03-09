@@ -1,9 +1,11 @@
+import type { JSONContent } from "@tiptap/react";
 import { BookOpenIcon, ClockIcon, UsersIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CourseActions } from "@/components/course/course-actions";
+import { CourseSummary } from "@/components/course/course-summary";
 import {
   Accordion,
   AccordionContent,
@@ -60,6 +62,8 @@ async function CourseDetail({ slug }: { slug: string }) {
     (acc, s) => acc + s.lessons.length,
     0
   );
+  const courseSummary = (course as { summary?: JSONContent | unknown[] | null })
+    .summary;
 
   return (
     <>
@@ -128,6 +132,34 @@ async function CourseDetail({ slug }: { slug: string }) {
 
       <section className="py-16 lg:py-24">
         <div className="container mx-auto px-4">
+          <div className="mb-8 grid gap-6 lg:grid-cols-3">
+            <Card className="lg:col-span-1">
+              <CardHeader>
+                <CardTitle>About this course</CardTitle>
+                <CardDescription>
+                  What you can expect before you start.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground text-sm leading-7">
+                  {course.description ?? "No description."}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Course summary</CardTitle>
+                <CardDescription>
+                  A more detailed overview of the learning experience.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CourseSummary content={courseSummary} />
+              </CardContent>
+            </Card>
+          </div>
+
           <Card>
             <CardHeader>
               <CardTitle>Course Curriculum</CardTitle>
@@ -222,6 +254,10 @@ function CourseDetailSkeleton() {
       </section>
       <section className="py-16 lg:py-24">
         <div className="container mx-auto px-4">
+          <div className="mb-8 grid gap-6 lg:grid-cols-3">
+            <Skeleton className="h-56 w-full rounded-lg lg:col-span-1" />
+            <Skeleton className="h-56 w-full rounded-lg lg:col-span-2" />
+          </div>
           <Skeleton className="h-64 w-full rounded-lg" />
         </div>
       </section>

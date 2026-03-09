@@ -24,17 +24,19 @@ export function OrgCoursesList() {
   const [pendingCourseId, setPendingCourseId] = useState<string | null>(null);
   const deferredSearch = useDeferredValue(search);
 
-  const { data } = useSuspenseQuery(trpc.course.listOrgCourses.queryOptions());
+  const { data } = useSuspenseQuery(
+    trpc.enrollment.listOrgCourses.queryOptions()
+  );
 
   const enrollMutation = useMutation(
-    trpc.course.enroll.mutationOptions({
+    trpc.enrollment.enroll.mutationOptions({
       onMutate: ({ courseId }) => {
         setPendingCourseId(courseId);
       },
       onSuccess: () => {
         toastManager.add({ title: "Enrolled successfully", type: "success" });
         queryClient.invalidateQueries({
-          queryKey: trpc.course.listOrgCourses.queryKey(),
+          queryKey: trpc.enrollment.listOrgCourses.queryKey(),
         });
       },
       onError: (error) => {

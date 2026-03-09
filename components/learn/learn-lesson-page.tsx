@@ -21,14 +21,14 @@ import { LessonBottomBar } from "./lesson-bottom-bar";
 import type { LessonRequirements } from "./lesson-viewer";
 import { LessonViewer } from "./lesson-viewer";
 
-type EnrolledCourse = RouterOutputs["course"]["getEnrolledCourse"];
+type EnrolledCourse = RouterOutputs["enrollment"]["getEnrolledCourse"];
 
 export function LearnLessonPage({ courseId }: { courseId: string }) {
   const trpc = useTRPC();
   const [lessonId, setLessonId] = useQueryState("lesson", learnParsers.lesson);
 
   const { data: courseData } = useSuspenseQuery(
-    trpc.course.getEnrolledCourse.queryOptions({ courseId })
+    trpc.enrollment.getEnrolledCourse.queryOptions({ courseId })
   );
 
   useEffect(() => {
@@ -89,17 +89,17 @@ function LessonInner({
   }
 
   const { data: lessonData } = useSuspenseQuery(
-    trpc.course.getEnrolledLesson.queryOptions({ courseId, lessonId })
+    trpc.enrollment.getEnrolledLesson.queryOptions({ courseId, lessonId })
   );
 
   const markCompleteMutation = useMutation(
-    trpc.course.markLessonComplete.mutationOptions({
+    trpc.enrollment.markLessonComplete.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: trpc.course.getEnrolledCourse.queryKey({ courseId }),
+          queryKey: trpc.enrollment.getEnrolledCourse.queryKey({ courseId }),
         });
         queryClient.invalidateQueries({
-          queryKey: trpc.course.getEnrolledLesson.queryKey({
+          queryKey: trpc.enrollment.getEnrolledLesson.queryKey({
             courseId,
             lessonId,
           }),

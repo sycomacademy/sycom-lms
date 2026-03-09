@@ -31,27 +31,29 @@ import { blogPost, blogPostRelations } from "./blog";
 import {
   category,
   categoryRelations,
-  cohortCourse,
-  cohortCourseRelations,
-  cohortLessonDueDate,
-  cohortLessonDueDateRelations,
-  cohortSectionDueDate,
-  cohortSectionDueDateRelations,
   course,
   courseCategory,
   courseCategoryRelations,
   courseInstructor,
   courseInstructorRelations,
   courseRelations,
-  enrollment,
-  enrollmentRelations,
   lesson,
-  lessonCompletion,
-  lessonCompletionRelations,
   lessonRelations,
   section,
   sectionRelations,
 } from "./course";
+import {
+  cohortLessonSettings,
+  cohortLessonSettingsRelations,
+  cohortSectionSettings,
+  cohortSectionSettingsRelations,
+  courseAssignment,
+  courseAssignmentRelations,
+  enrollment,
+  enrollmentRelations,
+  lessonProgress,
+  lessonProgressRelations,
+} from "./enrollment";
 import {
   feedback,
   feedbackRelations,
@@ -122,7 +124,7 @@ const schema = {
   blogPost,
   blogPostRelations,
 
-  // course
+  // course (authoring)
   category,
   categoryRelations,
   course,
@@ -135,16 +137,18 @@ const schema = {
   sectionRelations,
   lesson,
   lessonRelations,
+
+  // enrollment (delivery + learning)
+  courseAssignment,
+  courseAssignmentRelations,
   enrollment,
   enrollmentRelations,
-  lessonCompletion,
-  lessonCompletionRelations,
-  cohortCourse,
-  cohortCourseRelations,
-  cohortSectionDueDate,
-  cohortSectionDueDateRelations,
-  cohortLessonDueDate,
-  cohortLessonDueDateRelations,
+  lessonProgress,
+  lessonProgressRelations,
+  cohortSectionSettings,
+  cohortSectionSettingsRelations,
+  cohortLessonSettings,
+  cohortLessonSettingsRelations,
 };
 
 export { schema };

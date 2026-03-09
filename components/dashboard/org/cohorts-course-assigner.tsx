@@ -31,15 +31,15 @@ export function CohortsCourseAssigner({
   const queryClient = useQueryClient();
 
   const { data: assignableData } = useQuery(
-    trpc.course.listAssignableCourses.queryOptions({})
+    trpc.enrollment.listAssignableCourses.queryOptions()
   );
 
   const assignMutation = useMutation(
-    trpc.course.assignCourseToCohort.mutationOptions({
+    trpc.enrollment.assignCourseToCohort.mutationOptions({
       onSuccess: () => {
         toastManager.add({ title: "Course assigned", type: "success" });
         queryClient.invalidateQueries({
-          queryKey: trpc.course.listCohortCourses.queryKey({ cohortId }),
+          queryKey: trpc.enrollment.listCohortCourses.queryKey({ cohortId }),
         });
       },
       onError: (error) => {
@@ -53,11 +53,11 @@ export function CohortsCourseAssigner({
   );
 
   const unassignMutation = useMutation(
-    trpc.course.unassignCourseFromCohort.mutationOptions({
+    trpc.enrollment.unassignCourseFromCohort.mutationOptions({
       onSuccess: () => {
         toastManager.add({ title: "Course unassigned", type: "success" });
         queryClient.invalidateQueries({
-          queryKey: trpc.course.listCohortCourses.queryKey({ cohortId }),
+          queryKey: trpc.enrollment.listCohortCourses.queryKey({ cohortId }),
         });
       },
       onError: (error) => {

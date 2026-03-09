@@ -22,11 +22,13 @@ export default async function LearnCoursePage({ params, searchParams }: Props) {
   try {
     await withAuthRedirect(async () => {
       const caller = await getCaller();
-      await caller.course.getEnrolledCourse({ courseId });
-      await prefetch(trpc.course.getEnrolledCourse.queryOptions({ courseId }));
+      await caller.enrollment.getEnrolledCourse({ courseId });
+      await prefetch(
+        trpc.enrollment.getEnrolledCourse.queryOptions({ courseId })
+      );
       if (lessonId) {
         await prefetch(
-          trpc.course.getEnrolledLesson.queryOptions({ courseId, lessonId })
+          trpc.enrollment.getEnrolledLesson.queryOptions({ courseId, lessonId })
         );
       }
     });

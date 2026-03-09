@@ -428,7 +428,7 @@ function CohortCard({
     enabled: expanded && canManage,
   });
   const { data: coursesData } = useQuery({
-    ...trpc.course.listCohortCourses.queryOptions({ cohortId: cohort.id }),
+    ...trpc.enrollment.listCohortCourses.queryOptions({ cohortId: cohort.id }),
     enabled: expanded,
   });
 
