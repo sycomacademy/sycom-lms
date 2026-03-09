@@ -15,6 +15,14 @@ export const metadata: Metadata = {
   title: "Sycom LMS - Learn Cybersecurity",
   description:
     "Master cybersecurity with hands-on labs, certification prep, and career-focused training. Build real-world security skills through interactive learning.",
+  openGraph: {
+    title: "Sycom LMS - Learn Cybersecurity",
+    description:
+      "Master cybersecurity with hands-on labs, certification prep, and career-focused training. Build real-world security skills through interactive learning.",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({
