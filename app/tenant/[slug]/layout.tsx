@@ -44,7 +44,7 @@ export default async function TenantLayout({
     });
   }
 
-  prefetch(trpc.user.me.queryOptions());
+  await prefetch(trpc.user.me.queryOptions());
 
   return (
     <HydrateClient>
