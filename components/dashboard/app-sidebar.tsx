@@ -1,6 +1,7 @@
 "use client";
 
 import type { Route } from "next";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { type ComponentType, Suspense } from "react";
 import { Blocks } from "@/components/icons/animated/blocks";
@@ -135,9 +136,22 @@ export function AppSidebarSkeleton() {
           className="flex items-center gap-2 font-semibold text-sidebar-foreground text-sm"
           href="/dashboard"
         >
-          <span className="flex size-10 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-            S
-          </span>
+          <Image
+            alt="Sycom"
+            className="h-10 w-auto group-data-[collapsible=icon]:hidden"
+            height={40}
+            priority
+            src="/sycom logos/Logo 1.png"
+            width={160}
+          />
+          <Image
+            alt="Sycom"
+            className="hidden size-10 rounded-md group-data-[collapsible=icon]:block"
+            height={40}
+            priority
+            src="/sycom logos/Logo 1.png"
+            width={40}
+          />
         </Link>
       </SidebarHeader>
 
@@ -194,9 +208,22 @@ function AppSidebarContent() {
           className="flex items-center gap-2 font-semibold text-sidebar-foreground text-sm"
           href="/dashboard"
         >
-          <span className="flex size-10 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-            S
-          </span>
+          <Image
+            alt="Sycom"
+            className="h-10 w-auto group-data-[collapsible=icon]:hidden"
+            height={40}
+            priority
+            src="/sycom logos/Logo 1.png"
+            width={160}
+          />
+          <Image
+            alt="Sycom"
+            className="hidden size-10 rounded-md group-data-[collapsible=icon]:block"
+            height={40}
+            priority
+            src="/sycom logos/Logo 1.png"
+            width={40}
+          />
         </Link>
       </SidebarHeader>
 
