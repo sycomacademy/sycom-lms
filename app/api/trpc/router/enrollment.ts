@@ -101,7 +101,23 @@ export const enrollmentRouter = router({
 
   /** List all enrolled courses for the current user (My Journey). */
   listMy: protectedProcedure.query(async ({ ctx }) => {
-    return listMyEnrollments(ctx.db, { userId: ctx.session.user.id });
+    const userId = ctx.session.user.id;
+    if (!userId) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "User ID not found in session",
+      });
+    }
+    try {
+      return await listMyEnrollments(ctx.db, { userId });
+    } catch (error) {
+      console.error("[enrollment.listMy] Failed to fetch enrollments:", error);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch enrollments",
+        cause: error,
+      });
+    }
   }),
 
   // ── Student-facing (org context) ──
