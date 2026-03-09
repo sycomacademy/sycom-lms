@@ -24,7 +24,7 @@ export async function Header() {
         >
           <Image
             alt="Sycom Integrated Solutions"
-            className="h-12 w-auto sm:h-14"
+            className="h-12 w-auto scale-150 sm:h-14"
             height={48}
             priority
             src="/sycom logos/Logo 1.png"
