@@ -2,10 +2,10 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { Link } from "@/components/layout/foresight-link";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
@@ -251,7 +251,7 @@ export function SignUpForm() {
         </form>
       </Form>
 
-      <OAuthButtons />
+      <OAuthButtons type="sign-up" />
 
       <p className="text-center text-muted-foreground text-sm">
         Already have an account?{" "}

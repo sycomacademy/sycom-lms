@@ -1,6 +1,10 @@
-import type { Route } from "next";
-import { redirect } from "next/navigation";
+import { AdminOverview } from "@/components/dashboard/overview/admin-overview";
+import { adminGuard } from "@/packages/auth/helper";
+import { prefetch, trpc } from "@/packages/trpc/server";
 
-export default function AdminPage() {
-  redirect("/dashboard/admin/users" as Route);
+export default async function AdminOverviewPage() {
+  await adminGuard();
+  await prefetch(trpc.overview.admin.queryOptions());
+
+  return <AdminOverview />;
 }

@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { CoursesList } from "@/components/dashboard/courses/courses-list";
-import { Spinner } from "@/components/ui/spinner";
+import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import { instructorGuard } from "@/packages/auth/helper";
 
 export default async function DashboardCoursesPage() {
@@ -14,13 +14,7 @@ export default async function DashboardCoursesPage() {
         </p>
       </div>
 
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center py-12">
-            <Spinner className="size-5" />
-          </div>
-        }
-      >
+      <Suspense fallback={<DashboardSkeleton />}>
         <CoursesList />
       </Suspense>
     </div>

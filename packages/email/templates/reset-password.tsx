@@ -1,6 +1,15 @@
-import { Text } from "@react-email/components";
+import {
+  Body,
+  Container,
+  Heading,
+  Preview,
+  Section,
+  Text,
+} from "@react-email/components";
 import { Button } from "../_components/button";
-import { EmailLayout } from "../_components/layout";
+import { Footer } from "../_components/footer";
+import { Logo } from "../_components/logo";
+import { colors, EmailThemeProvider } from "../_components/theme";
 
 interface ResetPasswordEmailProps {
   name: string;
@@ -12,46 +21,70 @@ export function ResetPasswordEmail({
   resetUrl = "https://example.com",
 }: ResetPasswordEmailProps) {
   return (
-    <EmailLayout preview="Reset your Sycom LMS password">
-      <Text style={heading}>Reset your password</Text>
+    <EmailThemeProvider
+      preview={<Preview>Reset your Sycom LMS password</Preview>}
+    >
+      <Body
+        className="mx-auto my-auto font-sans"
+        style={{ backgroundColor: colors.surface, color: colors.foreground }}
+      >
+        <Container
+          className="mx-auto my-10 max-w-xl border border-solid p-5"
+          style={{
+            borderColor: colors.border,
+            backgroundColor: colors.background,
+          }}
+        >
+          <Logo />
 
-      <Text style={paragraph}>Hi {name},</Text>
+          <Heading
+            className="mx-0 my-8 p-0 text-center font-semibold text-xl"
+            style={{ color: colors.foreground }}
+          >
+            Reset your password
+          </Heading>
 
-      <Text style={paragraph}>
-        We received a request to reset your password. Click the button below to
-        choose a new one. This link is valid for 1 hour.
-      </Text>
+          <Text
+            className="text-sm leading-6"
+            style={{ color: colors.foreground }}
+          >
+            Hi {name},
+          </Text>
 
-      <Button href={resetUrl}>Reset password</Button>
+          <Text
+            className="text-sm leading-6"
+            style={{ color: colors.foreground }}
+          >
+            We received a request to reset your password. Click the button below
+            to choose a new one. This link is valid for 1 hour.
+          </Text>
 
-      <Text style={muted}>
-        If you didn&apos;t request a password reset, you can safely ignore this
-        email. Your password will remain unchanged.
-      </Text>
-    </EmailLayout>
+          <Section className="mt-8 mb-8 text-center">
+            <Button href={resetUrl}>Reset password</Button>
+          </Section>
+
+          <Text className="text-xs" style={{ color: colors.muted }}>
+            If you didn't request a password reset, you can safely ignore this
+            email. Your password will remain unchanged.
+          </Text>
+
+          <Text className="text-xs" style={{ color: colors.muted }}>
+            If the button above doesn't work, copy and paste this link into your
+            browser:
+          </Text>
+          <code
+            className="block break-all text-xs"
+            style={{ color: colors.primary }}
+          >
+            {resetUrl}
+          </code>
+
+          <Footer />
+        </Container>
+      </Body>
+    </EmailThemeProvider>
   );
 }
-
-const heading: React.CSSProperties = {
-  fontSize: "18px",
-  fontWeight: 600,
-  color: "#1a1a1a",
-  margin: "0 0 16px",
-};
-
-const paragraph: React.CSSProperties = {
-  fontSize: "14px",
-  lineHeight: "1.6",
-  color: "#333333",
-  margin: "0 0 16px",
-};
-
-const muted: React.CSSProperties = {
-  fontSize: "12px",
-  lineHeight: "1.5",
-  color: "#8c8c8c",
-  margin: "24px 0 0",
-};
 
 export default ResetPasswordEmail;
 ResetPasswordEmail.PreviewProps = {

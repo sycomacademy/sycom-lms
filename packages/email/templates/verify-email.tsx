@@ -1,6 +1,15 @@
-import { Text } from "@react-email/components";
+import {
+  Body,
+  Container,
+  Heading,
+  Preview,
+  Section,
+  Text,
+} from "@react-email/components";
 import { Button } from "../_components/button";
-import { EmailLayout } from "../_components/layout";
+import { Footer } from "../_components/footer";
+import { Logo } from "../_components/logo";
+import { colors, EmailThemeProvider } from "../_components/theme";
 
 interface VerifyEmailProps {
   name: string;
@@ -12,46 +21,70 @@ export function VerifyEmail({
   verifyUrl = "https://example.com",
 }: VerifyEmailProps) {
   return (
-    <EmailLayout preview="Verify your email for Sycom LMS">
-      <Text style={heading}>Verify your email</Text>
+    <EmailThemeProvider
+      preview={<Preview>Verify your email for Sycom LMS</Preview>}
+    >
+      <Body
+        className="mx-auto my-auto font-sans"
+        style={{ backgroundColor: colors.surface, color: colors.foreground }}
+      >
+        <Container
+          className="mx-auto my-10 max-w-xl border border-solid p-5"
+          style={{
+            borderColor: colors.border,
+            backgroundColor: colors.background,
+          }}
+        >
+          <Logo />
 
-      <Text style={paragraph}>Hi {name},</Text>
+          <Heading
+            className="mx-0 my-8 p-0 text-center font-semibold text-xl"
+            style={{ color: colors.foreground }}
+          >
+            Verify your email
+          </Heading>
 
-      <Text style={paragraph}>
-        Welcome to Sycom LMS! Please verify your email address by clicking the
-        button below. This link is valid for 1 hour.
-      </Text>
+          <Text
+            className="text-sm leading-6"
+            style={{ color: colors.foreground }}
+          >
+            Hi {name},
+          </Text>
 
-      <Button href={verifyUrl}>Verify email address</Button>
+          <Text
+            className="text-sm leading-6"
+            style={{ color: colors.foreground }}
+          >
+            Welcome to Sycom LMS! Please verify your email address by clicking
+            the button below. This link is valid for 1 hour.
+          </Text>
 
-      <Text style={muted}>
-        If you didn&apos;t create a Sycom account, you can safely ignore this
-        email.
-      </Text>
-    </EmailLayout>
+          <Section className="mt-8 mb-8 text-center">
+            <Button href={verifyUrl}>Verify email address</Button>
+          </Section>
+
+          <Text className="text-xs" style={{ color: colors.muted }}>
+            If you didn't create a Sycom account, you can safely ignore this
+            email.
+          </Text>
+
+          <Text className="text-xs" style={{ color: colors.muted }}>
+            If the button above doesn't work, copy and paste this link into your
+            browser:
+          </Text>
+          <code
+            className="block break-all text-xs"
+            style={{ color: colors.primary }}
+          >
+            {verifyUrl}
+          </code>
+
+          <Footer />
+        </Container>
+      </Body>
+    </EmailThemeProvider>
   );
 }
-
-const heading: React.CSSProperties = {
-  fontSize: "18px",
-  fontWeight: 600,
-  color: "#1a1a1a",
-  margin: "0 0 16px",
-};
-
-const paragraph: React.CSSProperties = {
-  fontSize: "14px",
-  lineHeight: "1.6",
-  color: "#333333",
-  margin: "0 0 16px",
-};
-
-const muted: React.CSSProperties = {
-  fontSize: "12px",
-  lineHeight: "1.5",
-  color: "#8c8c8c",
-  margin: "24px 0 0",
-};
 
 export default VerifyEmail;
 VerifyEmail.PreviewProps = {

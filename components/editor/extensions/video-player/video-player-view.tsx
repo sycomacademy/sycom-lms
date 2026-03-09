@@ -13,7 +13,7 @@ import {
   VideoPlayerTimeDisplay,
   VideoPlayerTimeRange,
   VideoPlayerVolumeRange,
-} from "@/components/layout/video-player";
+} from "@/components/elements/video-player";
 
 import { cn } from "@/packages/utils/cn";
 

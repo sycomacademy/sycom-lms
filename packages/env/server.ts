@@ -13,6 +13,8 @@ export const env = createEnv({
 
     RESEND_API_KEY: z.string().min(1),
     RESEND_EMAIL_FROM: z.string().min(1),
+    RESEND_EMAIL_REPLY_TO: z.string().min(1),
+    RESEND_EMAIL_UNSUBSCRIBE_SALT: z.string().min(1),
 
     GOOGLE_CLIENT_ID: z.string().min(1),
     GOOGLE_CLIENT_SECRET: z.string().min(1),

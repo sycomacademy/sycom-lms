@@ -14,7 +14,8 @@
       "!build",
       "!old",
       "!.cursor",
-      "!.claude"
+      "!.claude",
+      "!components/reactbits"
     ]
   },
   "formatter": {

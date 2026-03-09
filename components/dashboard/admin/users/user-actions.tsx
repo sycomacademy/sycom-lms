@@ -44,14 +44,9 @@ import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
 import { useUserQuery } from "@/packages/hooks/use-user";
 import { useTRPC } from "@/packages/trpc/client";
+import { ROLE_LABELS } from "@/packages/utils/schema";
 
 type UserRole = "platform_admin" | "content_creator" | "platform_student";
-
-const ROLE_LABELS: Record<UserRole, string> = {
-  platform_admin: "Platform Admin",
-  content_creator: "Content Creator",
-  platform_student: "Student",
-};
 
 interface UserActionsProps {
   userId: string;

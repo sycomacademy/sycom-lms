@@ -22,7 +22,7 @@ export async function persistAsset(
     bytes: result.bytes,
     width: result.width,
     height: result.height,
-    ownerId: "demo",
-    ownerType: "user",
+    entityId: "demo",
+    entityType: "user",
   });
 }

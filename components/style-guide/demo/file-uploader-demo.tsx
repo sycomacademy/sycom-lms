@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileUploader } from "@/components/layout/file-uploader";
+import { FileUploader } from "@/components/elements/file-uploader";
 import { Button } from "@/components/ui/button";
 import { toastManager } from "@/components/ui/toast";
 import type { StorageFolder } from "@/packages/db/schema/storage";

@@ -1,10 +1,6 @@
 export const MOBILE_UA =
   /mobile|android|iphone|ipad|ipod|webos|blackberry|iemobile|opera mini/i;
 
-export function wait(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 export function getOsFromUa(ua: string): string {
   if (ua.includes("win")) {
     return "Windows";

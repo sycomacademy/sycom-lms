@@ -64,6 +64,62 @@
       "when": 1772792649473,
       "tag": "0008_lush_thanos",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1772835462953,
+      "tag": "0009_enrollment_scoped_lesson_completion",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1772922071127,
+      "tag": "0010_storage-entity-rename",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1772923401477,
+      "tag": "0011_closed_madame_web",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1772993978356,
+      "tag": "0012_broken_old_lace",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1772996139102,
+      "tag": "0013_whole_nova",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1772996294064,
+      "tag": "0014_mighty_onslaught",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1772999730228,
+      "tag": "0015_flimsy_maelstrom",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1773012422305,
+      "tag": "0016_faulty_killer_shrike",
+      "breakpoints": true
     }
   ]
 }

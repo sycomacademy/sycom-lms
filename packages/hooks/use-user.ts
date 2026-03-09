@@ -31,6 +31,10 @@ export function useUserQuery() {
   const profile = userData.profile;
   const session = userData.session;
   const user = userData.user;
+  const organization = userData.organization;
+  const cohort = userData.cohort;
+  const memberRole = userData.memberRole;
+  const isPublicOrg = userData.isPublicOrg;
 
   const hasAttemptedDetection = useRef(false);
   const [detectedTimezone, setDetectedTimezone] = useState<string | null>(null);
@@ -57,6 +61,9 @@ export function useUserQuery() {
       isSignedIn: false,
       user: null,
       profile: null,
+      organization: null,
+      cohort: null,
+      isPublicOrg: false,
     };
   }
 
@@ -68,6 +75,10 @@ export function useUserQuery() {
     isPending: profileIsPending,
     isFetching: profileIsFetching,
     timezone: detectedTimezone,
+    organization,
+    cohort,
+    memberRole,
+    isPublicOrg,
   };
 }
 

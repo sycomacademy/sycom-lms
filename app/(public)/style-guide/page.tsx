@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import type { Route } from "next";
+import { Link } from "@/components/layout/foresight-link";
 import { ModeSwitcher } from "@/components/layout/mode-switcher";
 import { componentRegistry } from "@/components/style-guide/component-registry";
 import { ComponentWrapper } from "@/components/style-guide/demo/component-wrapper";
@@ -47,7 +48,7 @@ export default function StyleGuidePage() {
             {uiEntries.map(([slug, config]) => (
               <Link
                 className="rounded-md border border-border bg-background px-2 py-1 text-muted-foreground text-sm hover:bg-muted hover:text-foreground"
-                href={config.href}
+                href={config.href as Route}
                 key={slug}
               >
                 {config.label ?? config.name}
@@ -62,7 +63,7 @@ export default function StyleGuidePage() {
             {blockEntries.map(([slug, config]) => (
               <Link
                 className="rounded-md border border-border bg-background px-2 py-1 text-muted-foreground text-sm hover:bg-muted hover:text-foreground"
-                href={config.href}
+                href={config.href as Route}
                 key={slug}
               >
                 {config.label ?? config.name}
@@ -77,7 +78,7 @@ export default function StyleGuidePage() {
             {pageEntries.map(([slug, config]) => (
               <Link
                 className="rounded-md border border-border bg-background px-2 py-1 text-muted-foreground text-sm hover:bg-muted hover:text-foreground"
-                href={config.href}
+                href={config.href as Route}
                 key={slug}
               >
                 {config.label ?? config.name}

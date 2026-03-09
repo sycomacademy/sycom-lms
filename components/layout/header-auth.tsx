@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/components/layout/foresight-link";
+
 import { Button } from "@/components/ui/button";
 
 export function HeaderAuth({ isSignedIn }: { isSignedIn: boolean }) {
@@ -17,7 +18,7 @@ export function HeaderAuth({ isSignedIn }: { isSignedIn: boolean }) {
   return (
     <Button
       nativeButton={false}
-      render={<Link href="/dashboard">Go to Dashboard</Link>}
+      render={<Link href="/dashboard">Dashboard</Link>}
       variant="outline"
     />
   );

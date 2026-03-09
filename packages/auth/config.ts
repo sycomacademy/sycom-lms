@@ -2,6 +2,8 @@ import { scim } from "@better-auth/scim";
 import { sso } from "@better-auth/sso";
 import { APIError, type User } from "better-auth";
 import { admin, organization } from "better-auth/plugins";
+import { db } from "@/packages/db";
+import { claimWelcomeEmailSend } from "@/packages/db/queries";
 import type { UserRole } from "@/packages/db/schema/auth";
 import { render } from "@/packages/email/render";
 import { sendEmail } from "@/packages/email/resend";
@@ -25,6 +27,23 @@ import {
 } from "./permissions";
 
 export const baseURL = getWebsiteUrl();
+
+export async function queueWelcomeEmail(user: Pick<User, "id">) {
+  const claimedUser = await claimWelcomeEmailSend(db, { userId: user.id });
+
+  if (!claimedUser) {
+    return;
+  }
+
+  await triggerJob({
+    task: welcomeEmailTask,
+    payload: {
+      userId: claimedUser.userId,
+      email: claimedUser.email,
+      name: claimedUser.name,
+    },
+  });
+}
 
 export const sendVerificationEmail = async ({
   user,
@@ -65,14 +84,7 @@ export const sendResetPassword = async ({
 };
 
 export const afterEmailVerification = async (user: User) => {
-  triggerJob({
-    task: welcomeEmailTask,
-    payload: {
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-    },
-  });
+  await queueWelcomeEmail(user);
 };
 
 export const adminPlugin = admin({

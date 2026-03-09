@@ -20,6 +20,18 @@ export const storageResourceTypeEnum = pgEnum("storage_resource_type", [
 export type StorageResourceType =
   (typeof storageResourceTypeEnum.enumValues)[number];
 
+export const storageEntityTypeEnum = pgEnum("storage_entity_type", [
+  "user",
+  "organization",
+  "cohort",
+  "course",
+  "lesson",
+  "report",
+  "blog-post",
+]);
+export type StorageEntityType =
+  (typeof storageEntityTypeEnum.enumValues)[number];
+
 const storageSchema = pgSchema("storage");
 
 export const mediaAsset = storageSchema.table(
@@ -36,15 +48,18 @@ export const mediaAsset = storageSchema.table(
     bytes: integer("bytes"),
     width: integer("width"),
     height: integer("height"),
-    uploadedBy: text("uploaded_by").references(() => user.id),
-    ownerId: text("owner_id"), // polymorphic ref: user / course / organization
-    ownerType: text("owner_type"), // "user" | "organization" | "course"
+    uploadedBy: text("uploaded_by").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    entityId: text("entity_id"), // polymorphic resource reference, e.g. user / cohort / course / lesson / report
+    entityType: storageEntityTypeEnum("entity_type"),
     createdAt,
     updatedAt,
   },
   (t) => [
     index("media_asset_publicId_idx").on(t.publicId),
-    index("media_asset_ownerId_idx").on(t.ownerId),
+    index("media_asset_entityId_idx").on(t.entityId),
+    index("media_asset_entityType_entityId_idx").on(t.entityType, t.entityId),
   ]
 );
 

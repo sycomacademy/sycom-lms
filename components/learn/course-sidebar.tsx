@@ -2,8 +2,8 @@
 
 import { CheckIcon, LockIcon } from "lucide-react";
 import type { Route } from "next";
-import Link from "next/link";
 import type { RouterOutputs } from "@/app/api/trpc/router";
+import { Link } from "@/components/layout/foresight-link";
 import {
   Accordion,
   AccordionContent,
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/progress";
 import { cn } from "@/packages/utils/cn";
 
-type EnrolledCourse = RouterOutputs["course"]["getEnrolledCourse"];
+type EnrolledCourse = RouterOutputs["enrollment"]["getEnrolledCourse"];
 
 export function CourseSidebar({
   courseId,
@@ -47,8 +47,7 @@ export function CourseSidebar({
         <div className="min-w-0">
           <p className="truncate font-medium text-sm">{data.course.title}</p>
           <p className="mt-0.5 text-muted-foreground text-xs">
-            {data.progress.completedLessonCount} / {data.progress.lessonCount}{" "}
-            lessons
+            {data.progress.completed} / {data.progress.total} lessons
           </p>
         </div>
         <div className="mt-4">
@@ -72,19 +71,14 @@ export function CourseSidebar({
               <AccordionTrigger className="px-2 py-2 text-sm hover:no-underline">
                 <div className="flex min-w-0 items-center gap-2">
                   <span className="truncate">{section.title}</span>
-                  {section.isCompleted ? (
+                  {section.lessons.length > 0 &&
+                  section.lessons.every((l) => l.isCompleted) ? (
                     <CheckIcon className="size-4 shrink-0 text-primary" />
                   ) : null}
                 </div>
               </AccordionTrigger>
 
               <AccordionContent className="bg-background text-sm">
-                {section.description ? (
-                  <p className="text-muted-foreground text-xs">
-                    {section.description}
-                  </p>
-                ) : null}
-
                 <div className="-mx-2 mt-2 space-y-1">
                   {section.lessons.map((lesson) => {
                     const isActive = lesson.id === currentLessonId;

@@ -1,10 +1,13 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
-import { FileUploader } from "@/components/layout/file-uploader";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { FileUploader } from "@/components/elements/file-uploader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -16,102 +19,82 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { toastManager } from "@/components/ui/toast";
-import { uploadFile } from "@/packages/storage/upload";
-import { submitReport } from "./actions";
+import { useTRPC } from "@/packages/trpc/client";
 import {
-  getReportUploadParams,
-  persistReportAsset,
-} from "./report-upload-actions";
+  REPORT_TYPE_OPTIONS,
+  type SubmitReportFormInput,
+  submitReportFormSchema,
+} from "@/packages/utils/schema";
+import { capitalize } from "@/packages/utils/string";
 
-const REPORT_TYPES = [
-  { value: "bug", label: "Bug Report" },
-  { value: "feature", label: "Feature Request" },
-  { value: "complaint", label: "Complaint" },
-  { value: "other", label: "Other" },
-];
-
-async function uploadScreenshot(
-  file: File
-): Promise<{ url: string } | { error: string }> {
-  const signedParams = await getReportUploadParams();
-  if (!signedParams) {
-    return { error: "You must be signed in to attach a screenshot." };
-  }
-  const uploadResult = await uploadFile({ file, signedParams });
-  const persistResult = await persistReportAsset(uploadResult);
-  if (!persistResult.success) {
-    return { error: persistResult.error ?? "Failed to save screenshot." };
-  }
-  return { url: uploadResult.secureUrl };
-}
-
-async function handleReportSubmit(
-  formData: FormData,
-  fileToUpload: File | null,
-  formRef: React.RefObject<HTMLFormElement | null>,
-  setFiles: (files: File[]) => void
-) {
-  let imageUrl: string | null = null;
-
-  if (fileToUpload) {
-    try {
-      const uploadResult = await uploadScreenshot(fileToUpload);
-      if ("error" in uploadResult) {
-        toastManager.add({
-          title: "Failed to submit report",
-          description: uploadResult.error,
-          type: "error",
-        });
-        return;
-      }
-      imageUrl = uploadResult.url;
-    } catch (err) {
-      toastManager.add({
-        title: "Screenshot upload failed",
-        description: err instanceof Error ? err.message : "Please try again.",
-        type: "error",
-      });
-      return;
-    }
-  }
-
-  if (imageUrl) {
-    formData.set("imageUrl", imageUrl);
-  }
-
-  const result = await submitReport(formData);
-
-  if (result.success) {
-    toastManager.add({
-      title: "Report submitted",
-      description: "Thank you for your feedback. We'll review it shortly.",
-      type: "success",
-    });
-    formRef.current?.reset();
-    setFiles([]);
-  } else {
-    toastManager.add({
-      title: "Failed to submit report",
-      description: result.error ?? "Please try again later.",
-      type: "error",
-    });
-  }
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
 }
 
 export function ReportForm() {
-  const formRef = useRef<HTMLFormElement>(null);
-  const [files, setFiles] = useState<File[]>([]);
-  const [isPending, startTransition] = useTransition();
+  const trpc = useTRPC();
+  const submitReportMutation = useMutation(
+    trpc.feedback.submitReport.mutationOptions()
+  );
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const form = useForm<SubmitReportFormInput>({
+    resolver: zodResolver(submitReportFormSchema),
+    defaultValues: {
+      type: REPORT_TYPE_OPTIONS[0].value,
+      subject: "",
+      description: "",
+      screenshot: null,
+    },
+  });
 
-    const formData = new FormData(e.currentTarget);
-    const fileToUpload = files.length > 0 ? files[0] : null;
+  const onSubmit = async (data: SubmitReportFormInput) => {
+    let imageBase64: string | null | undefined;
+    let imageMimeType: string | null | undefined;
 
-    startTransition(() =>
-      handleReportSubmit(formData, fileToUpload, formRef, setFiles)
-    );
+    if (data.screenshot) {
+      try {
+        imageBase64 = await fileToBase64(data.screenshot);
+        imageMimeType = data.screenshot.type;
+      } catch {
+        toastManager.add({
+          type: "error",
+          title: "Failed to process image",
+          description: "Could not read the screenshot file. Please try again.",
+        });
+        return;
+      }
+    }
+
+    try {
+      await submitReportMutation.mutateAsync({
+        type: data.type,
+        subject: data.subject,
+        description: data.description,
+        imageBase64,
+        imageMimeType,
+      });
+
+      toastManager.add({
+        type: "success",
+        title: "Report submitted",
+        description: "Your report has been submitted successfully.",
+      });
+      form.reset();
+    } catch (error) {
+      toastManager.add({
+        type: "error",
+        title: "Failed to submit report",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred. Please try again.",
+      });
+    }
   };
 
   return (
@@ -126,71 +109,135 @@ export function ReportForm() {
               Report a bug, request a feature, or share your feedback with us.
             </p>
           </div>
-          <form
-            className="mt-4 flex flex-col gap-4"
-            onSubmit={handleSubmit}
-            ref={formRef}
-          >
-            <Field>
-              <FieldLabel className="text-xs">Report Type</FieldLabel>
-              <Select items={REPORT_TYPES} name="type" required>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a report type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {REPORT_TYPES.map(({ value, label }) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
+          <Form {...form}>
+            <form
+              className="mt-4 flex flex-col gap-4"
+              onSubmit={form.handleSubmit(onSubmit)}
+            >
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <Field>
+                      <FieldLabel className="text-xs">Report Type</FieldLabel>
+                      <FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select a report type">
+                              {capitalize(field.value)}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {REPORT_TYPE_OPTIONS.map(({ value, label }) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                    </Field>
+                  </FormItem>
+                )}
+              />
 
-            <Field>
-              <FieldLabel className="text-xs">Subject</FieldLabel>
-              <Input
+              <FormField
+                control={form.control}
                 name="subject"
-                placeholder="Brief summary of your report"
-                required
+                render={({ field }) => (
+                  <FormItem>
+                    <Field>
+                      <FieldLabel className="text-xs">Subject</FieldLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Brief summary of your report"
+                          {...field}
+                        />
+                      </FormControl>
+                    </Field>
+                  </FormItem>
+                )}
               />
-            </Field>
 
-            <Field>
-              <FieldLabel className="text-xs">Description</FieldLabel>
-              <Textarea
-                className="min-h-32"
+              <FormField
+                control={form.control}
                 name="description"
-                placeholder="Provide as much detail as possible..."
-                required
+                render={({ field }) => (
+                  <FormItem>
+                    <Field>
+                      <FieldLabel className="text-xs">Description</FieldLabel>
+                      <FormControl>
+                        <Textarea
+                          className="min-h-32"
+                          placeholder="Provide as much detail as possible..."
+                          {...field}
+                        />
+                      </FormControl>
+                    </Field>
+                  </FormItem>
+                )}
               />
-            </Field>
 
-            <Field>
-              <FieldLabel className="text-xs">Screenshot (optional)</FieldLabel>
-              <FileUploader
-                accept={{
-                  "image/*": [".png", ".jpg", ".jpeg", ".gif", ".webp"],
-                }}
-                disabled={isPending}
-                maxFileCount={1}
-                maxSize={1024 * 1024 * 5}
-                onValueChange={setFiles}
-                value={files}
+              <FormField
+                control={form.control}
+                name="screenshot"
+                render={({ field }) => (
+                  <FormItem>
+                    <Field>
+                      <FieldLabel className="text-xs">
+                        Screenshot (optional)
+                      </FieldLabel>
+                      <FormControl>
+                        <FileUploader
+                          accept={{
+                            "image/*": [
+                              ".png",
+                              ".jpg",
+                              ".jpeg",
+                              ".gif",
+                              ".webp",
+                            ],
+                          }}
+                          disabled={submitReportMutation.isPending}
+                          maxFileCount={1}
+                          maxSize={1024 * 1024 * 5}
+                          onValueChange={(files) => {
+                            field.onChange(files[0] ?? null);
+                          }}
+                          value={field.value ? [field.value] : []}
+                        />
+                      </FormControl>
+                    </Field>
+                  </FormItem>
+                )}
               />
-            </Field>
 
-            <div className="flex justify-end">
-              <Button disabled={isPending} size="sm" type="submit">
-                <span className="relative inline-flex items-center justify-center">
-                  <span className={isPending ? "invisible" : undefined}>
-                    Submit Report
+              <div className="flex justify-end">
+                <Button
+                  disabled={submitReportMutation.isPending}
+                  size="sm"
+                  type="submit"
+                >
+                  <span className="relative inline-flex items-center justify-center">
+                    <span
+                      className={
+                        submitReportMutation.isPending ? "invisible" : undefined
+                      }
+                    >
+                      Submit Report
+                    </span>
+                    {submitReportMutation.isPending && (
+                      <Spinner className="absolute size-3" />
+                    )}
                   </span>
-                  {isPending && <Spinner className="absolute size-3" />}
-                </span>
-              </Button>
-            </div>
-          </form>
+                </Button>
+              </div>
+            </form>
+          </Form>
         </CardContent>
       </Card>
     </div>

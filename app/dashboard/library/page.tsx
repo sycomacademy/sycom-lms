@@ -1,6 +1,6 @@
 import { Suspense } from "react";
+import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import { LibraryList } from "@/components/dashboard/library/library-list";
-import { Spinner } from "@/components/ui/spinner";
 import { dashboardGuard } from "@/packages/auth/helper";
 
 export default async function DashboardLibraryPage() {
@@ -14,13 +14,7 @@ export default async function DashboardLibraryPage() {
         </p>
       </div>
 
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center py-12">
-            <Spinner className="size-5" />
-          </div>
-        }
-      >
+      <Suspense fallback={<DashboardSkeleton />}>
         <LibraryList />
       </Suspense>
     </div>

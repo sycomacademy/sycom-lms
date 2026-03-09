@@ -5,12 +5,15 @@ import { user } from "./auth";
 
 export const profileSettingsDefault = {
   enableFacehash: true,
+  marketingEmails: true,
   useDeviceTimezone: true,
 } as const;
 
 export interface ProfileSettings {
   enableFacehash?: boolean;
+  marketingEmails?: boolean;
   useDeviceTimezone?: boolean;
+  welcomeEmailSent?: boolean;
 }
 
 export const profile = pgTable("profile", {
@@ -22,7 +25,9 @@ export const profile = pgTable("profile", {
   bio: text("bio").default(""),
   settings: jsonb("settings")
     .$type<ProfileSettings>()
-    .default(sql`'{"useDeviceTimezone":true,"enableFacehash":true}'::jsonb`),
+    .default(
+      sql`'{"useDeviceTimezone":true,"enableFacehash":true,"marketingEmails":true,"welcomeEmailSent":false}'::jsonb`
+    ),
   createdAt,
   updatedAt,
 });

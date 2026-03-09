@@ -5,7 +5,7 @@ import { CopyIcon, RefreshCcwIcon, ShieldCheckIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { QRCode } from "@/components/layout/qr-code";
+import { QRCode } from "@/components/elements/qr-code";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
