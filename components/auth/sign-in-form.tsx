@@ -34,19 +34,20 @@ export function SignInForm() {
     defaultValues: { email: "", password: "", rememberMe: false },
   });
 
-  const attemptSsoSignIn = async (email: string): Promise<boolean> => {
-    try {
-      const { error } = await authClient.signIn.sso({
-        email,
-        callbackURL: "/dashboard",
-      });
-      if (error) {
-        return false;
-      }
-      return true;
-    } catch {
-      return false;
-    }
+  const attemptSsoSignIn = async (email: string) => {
+    // try {
+    //   const { error } = await authClient.signIn.sso({
+    //     email,
+    //     callbackURL: "/dashboard",
+    //   });
+    //   if (error) {
+    //     return false;
+    //   }
+    //   return true;
+    // } catch {
+    //   return false;
+    // }
+    return false;
   };
 
   const onSubmit = async (data: SignInInput) => {
