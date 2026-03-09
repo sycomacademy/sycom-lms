@@ -9,6 +9,7 @@ import {
   createAdminOrganization,
   getAdminReportById,
   getUserRoleById,
+  listAdminEnrollments,
   listAdminOrganizations,
   listAdminReports,
   listAdminUsers,
@@ -19,6 +20,7 @@ import {
   createOrganizationSchema,
   createPublicInviteSchema,
   getAdminReportSchema,
+  listAdminEnrollmentsSchema,
   listAdminReportsSchema,
   listAdminUsersSchema,
   listOrganizationsSchema,
@@ -238,5 +240,13 @@ export const adminRouter = router({
       }
 
       return result.organization;
+    }),
+
+  // ── Enrollments ──────────────────────────────────────────────────────────
+
+  listEnrollments: adminProcedure
+    .input(listAdminEnrollmentsSchema)
+    .query(async ({ ctx, input }) => {
+      return listAdminEnrollments(ctx.db, input);
     }),
 });

@@ -3,7 +3,6 @@
 import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
 import { cva, type VariantProps } from "class-variance-authority";
-import { MenuIcon, PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react";
 import type React from "react";
 import {
   createContext,
@@ -30,6 +29,9 @@ import {
 } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/packages/hooks/use-mobile";
 import { cn } from "@/packages/utils/cn";
+import { MenuIcon } from "../icons/animated/menu";
+import { PanelLeftCloseIcon } from "../icons/animated/panel-left-close";
+import { PanelLeftOpenIcon } from "../icons/animated/panel-left-open";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -277,9 +279,9 @@ function SidebarTrigger({
       variant="ghost"
       {...props}
     >
-      {isMobile && <MenuIcon />}
-      {!isMobile && open && <PanelLeftCloseIcon />}
-      {!(isMobile || open) && <PanelLeftOpenIcon />}
+      {isMobile && <MenuIcon animateOnHover />}
+      {!isMobile && open && <PanelLeftCloseIcon animateOnHover />}
+      {!(isMobile || open) && <PanelLeftOpenIcon animateOnHover />}
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );

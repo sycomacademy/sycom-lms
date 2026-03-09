@@ -18,7 +18,12 @@ export default async function AdminLayout({
             path: "/dashboard/admin/public-invites" as Route,
             label: "Public Invites",
           },
+          {
+            path: "/dashboard/admin/enrollments" as Route,
+            label: "Enrollments",
+          },
           { path: "/dashboard/admin/organizations", label: "Organizations" },
+
           { path: "/dashboard/admin/reports", label: "Reports & Feedback" },
         ]}
         label="Admin"

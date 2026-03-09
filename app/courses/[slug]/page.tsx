@@ -132,33 +132,17 @@ async function CourseDetail({ slug }: { slug: string }) {
 
       <section className="py-16 lg:py-24">
         <div className="container mx-auto px-4">
-          <div className="mb-8 grid gap-6 lg:grid-cols-3">
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle>About this course</CardTitle>
-                <CardDescription>
-                  What you can expect before you start.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-sm leading-7">
-                  {course.description ?? "No description."}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Course summary</CardTitle>
-                <CardDescription>
-                  A more detailed overview of the learning experience.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <CourseSummary content={courseSummary} />
-              </CardContent>
-            </Card>
-          </div>
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Course summary</CardTitle>
+              <CardDescription>
+                A more detailed overview of the learning experience.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CourseSummary content={courseSummary} />
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>

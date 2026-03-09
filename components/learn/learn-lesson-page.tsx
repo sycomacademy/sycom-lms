@@ -14,6 +14,7 @@ import { Link } from "@/components/layout/foresight-link";
 import { Button } from "@/components/ui/button";
 import { toastManager } from "@/components/ui/toast";
 import { useTRPC } from "@/packages/trpc/client";
+import { CourseFinishedDialog } from "./course-finished-dialog";
 import { CourseSidebar } from "./course-sidebar";
 import { learnParsers } from "./learn-parsers";
 import { LearnShell } from "./learn-shell";
@@ -75,6 +76,7 @@ function LessonInner({
     quizSatisfied: true,
     scrollReachedEnd: false,
   });
+  const [showFinished, setShowFinished] = useState(false);
 
   const canMarkComplete =
     requirements.scrollReachedEnd && requirements.quizSatisfied;
@@ -94,7 +96,7 @@ function LessonInner({
 
   const markCompleteMutation = useMutation(
     trpc.enrollment.markLessonComplete.mutationOptions({
-      onSuccess: () => {
+      onSuccess: (result) => {
         queryClient.invalidateQueries({
           queryKey: trpc.enrollment.getEnrolledCourse.queryKey({ courseId }),
         });
@@ -104,6 +106,10 @@ function LessonInner({
             lessonId,
           }),
         });
+        if (result.allComplete) {
+          setShowFinished(true);
+          return;
+        }
         toastManager.add({ title: "Lesson marked complete", type: "success" });
       },
       onError: (err) => {
@@ -116,11 +122,16 @@ function LessonInner({
     })
   );
 
+  const isFinalLesson = !lessonData.nav.nextLessonId;
+  const isMarkingComplete =
+    markCompleteMutation.isPending ||
+    (markCompleteMutation.isSuccess && !lessonData.lesson.isCompleted);
+
   const header = (
     <div className="flex items-center justify-between gap-4 px-4 py-3">
       <Button
         nativeButton={false}
-        render={<Link href="/dashboard/library" />}
+        render={<Link href="/dashboard/journey" />}
         size="sm"
         variant="outline"
       >
@@ -139,36 +150,44 @@ function LessonInner({
   );
 
   return (
-    <LearnShell
-      bottomBar={
-        <LessonBottomBar
-          canMarkComplete={canMarkComplete}
-          completionBlocker={completionBlocker}
-          courseId={courseId}
-          isCompleted={lessonData.lesson.isCompleted}
-          isMarkingComplete={markCompleteMutation.isPending}
-          nextIsLocked={lessonData.nav.nextIsLocked}
-          nextLessonId={lessonData.nav.nextLessonId}
-          onMarkComplete={() =>
-            markCompleteMutation.mutate({ courseId, lessonId })
-          }
-          prevLessonId={lessonData.nav.prevLessonId}
-        />
-      }
-      content={
-        <LessonViewer
-          content={lessonData.lesson.content as JSONContent}
-          onRequirementsChange={setRequirements}
-        />
-      }
-      header={header}
-      sidebar={
-        <CourseSidebar
-          courseId={courseId}
-          currentLessonId={lessonId}
-          data={courseData}
-        />
-      }
-    />
+    <>
+      <LearnShell
+        bottomBar={
+          <LessonBottomBar
+            canMarkComplete={canMarkComplete}
+            completionBlocker={completionBlocker}
+            courseId={courseId}
+            isCompleted={lessonData.lesson.isCompleted}
+            isFinalLesson={isFinalLesson}
+            isMarkingComplete={isMarkingComplete}
+            nextIsLocked={lessonData.nav.nextIsLocked}
+            nextLessonId={lessonData.nav.nextLessonId}
+            onMarkComplete={() =>
+              markCompleteMutation.mutate({ courseId, lessonId })
+            }
+            prevLessonId={lessonData.nav.prevLessonId}
+          />
+        }
+        content={
+          <LessonViewer
+            content={lessonData.lesson.content as JSONContent}
+            onRequirementsChange={setRequirements}
+          />
+        }
+        header={header}
+        sidebar={
+          <CourseSidebar
+            courseId={courseId}
+            currentLessonId={lessonId}
+            data={courseData}
+          />
+        }
+      />
+      <CourseFinishedDialog
+        courseTitle={lessonData.course.title}
+        onOpenChange={setShowFinished}
+        open={showFinished}
+      />
+    </>
   );
 }

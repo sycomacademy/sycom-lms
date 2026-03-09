@@ -17,6 +17,7 @@ export function LessonBottomBar({
   prevLessonId,
   nextLessonId,
   nextIsLocked,
+  isFinalLesson,
   canMarkComplete,
   completionBlocker,
   isCompleted,
@@ -27,6 +28,7 @@ export function LessonBottomBar({
   prevLessonId: string | null;
   nextLessonId: string | null;
   nextIsLocked: boolean;
+  isFinalLesson: boolean;
   canMarkComplete: boolean;
   completionBlocker?: "scroll" | "quiz" | null;
   isCompleted: boolean;
@@ -40,20 +42,24 @@ export function LessonBottomBar({
     ? (`/learn/${courseId}?lesson=${nextLessonId}` as Route)
     : null;
 
-  let markLabel = "Mark complete";
+  let markLabel = isFinalLesson ? "Finish" : "Mark complete";
   if (isCompleted) {
-    markLabel = "Completed";
+    markLabel = isFinalLesson ? "Finished" : "Completed";
   } else if (isMarkingComplete) {
-    markLabel = "Marking...";
+    markLabel = isFinalLesson ? "Finishing..." : "Marking...";
   }
 
-  let tooltipContent = "Mark this lesson as complete";
+  let tooltipContent = isFinalLesson
+    ? "Finish this course"
+    : "Mark this lesson as complete";
   if (!canMarkComplete && completionBlocker === "quiz") {
     tooltipContent = "Answer the quiz correctly to enable completion";
   } else if (!canMarkComplete) {
     tooltipContent = "Scroll to the end to enable completion";
   } else if (isCompleted) {
-    tooltipContent = "Already completed";
+    tooltipContent = isFinalLesson
+      ? "Course already finished"
+      : "Already completed";
   }
 
   return (

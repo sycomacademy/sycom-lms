@@ -592,3 +592,15 @@ export const markLessonCompleteSchema = z.object({
   courseId: z.string(),
   lessonId: z.string(),
 });
+
+export const listAdminEnrollmentsSchema = z.object({
+  limit: z.number().int().min(1).max(100).default(10),
+  offset: z.number().int().min(0).default(0),
+  search: z.string().optional(),
+  filterStatus: z
+    .enum(["active", "completed", "dropped", "suspended"])
+    .optional(),
+  filterSource: z
+    .enum(["public", "cohort_assignment", "admin_assigned"])
+    .optional(),
+});

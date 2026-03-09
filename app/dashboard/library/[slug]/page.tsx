@@ -1,10 +1,5 @@
 import type { JSONContent } from "@tiptap/react";
-import {
-  BookOpenIcon,
-  ChevronLeftIcon,
-  ClockIcon,
-  UsersIcon,
-} from "lucide-react";
+import { BookOpenIcon, ChevronLeftIcon, ClockIcon } from "lucide-react";
 import type { Metadata, Route } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -84,11 +79,11 @@ async function LibraryCourseDetail({ slug }: { slug: string }) {
         Back to library
       </Button>
 
-      <section className="overflow-hidden rounded-xl border bg-card p-6 lg:p-8">
-        <div className="grid gap-6 xl:grid-cols-3">
+      <section className="overflow-hidden">
+        <div className="grid gap-6 p-1 xl:grid-cols-3">
           <div className="grid gap-6 md:grid-cols-3 md:items-start xl:col-span-2">
             <div className="overflow-hidden rounded-xl border bg-muted md:col-span-1">
-              <AspectRatio ratio={4 / 5}>
+              <AspectRatio ratio={8 / 8}>
                 <Image
                   alt={course.title}
                   className="object-cover"
@@ -145,46 +140,23 @@ async function LibraryCourseDetail({ slug }: { slug: string }) {
                   <span>Lessons:</span>
                   <span className="font-medium">{totalLessons} lessons</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <UsersIcon className="size-4" />
-                  <span>Students:</span>
-                  <span className="font-medium">
-                    {course.enrollmentCount.toLocaleString()} enrolled
-                  </span>
-                </div>
               </div>
             </CardContent>
           </Card>
         </div>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle>About this course</CardTitle>
-            <CardDescription>
-              What you can expect before you begin.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground text-sm leading-7">
-              {course.description ?? "No description."}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Course summary</CardTitle>
-            <CardDescription>
-              A more detailed breakdown of the topics and outcomes.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CourseSummary content={courseSummary} />
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Course summary</CardTitle>
+          <CardDescription>
+            A more detailed breakdown of the topics and outcomes.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CourseSummary content={courseSummary} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

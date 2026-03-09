@@ -4,10 +4,13 @@ import {
   assignCourseToCohort,
   canEnrollInCohortCourse,
   createEnrollment,
+  enrollPublic,
   getEnrolledCourse,
   getEnrolledLesson,
+  getEnrollmentStatus,
   listAssignableCourses,
   listCohortCourses,
+  listMyEnrollments,
   listOrgCourses,
   markLessonComplete,
   unassignCourseFromCohort,
@@ -55,16 +58,60 @@ const orgProcedure = protectedProcedure.use(orgMiddleware);
 // ---------------------------------------------------------------------------
 
 export const enrollmentRouter = router({
-  // ── Student-facing ──
+  // ── Student-facing (public) ──
 
-  /** Self-enroll in a course (public or org cohort). */
+  /** Check enrollment status for a course. */
+  status: protectedProcedure
+    .input(z.object({ courseId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const result = await getEnrollmentStatus(ctx.db, {
+        courseId: input.courseId,
+        userId: ctx.session.user.id,
+      });
+      return { isEnrolled: !!result, enrollmentId: result?.id ?? null };
+    }),
+
+  /** Public self-enrollment (platform org, no assignment check). */
+  enrollPublic: protectedProcedure
+    .input(z.object({ courseId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await enrollPublic(ctx.db, {
+        courseId: input.courseId,
+        userId: ctx.session.user.id,
+      });
+
+      if ("error" in result) {
+        const messages: Record<string, string> = {
+          course_not_found: "Course not found or not published",
+          platform_org_missing: "Platform organization not configured",
+          already_enrolled: "You are already enrolled in this course",
+        };
+        throw new TRPCError({
+          code:
+            result.error === "already_enrolled" ? "CONFLICT" : "BAD_REQUEST",
+          message:
+            messages[result.error as keyof typeof messages] ||
+            "Enrollment failed",
+        });
+      }
+
+      return { enrollmentId: result.enrollmentId };
+    }),
+
+  /** List all enrolled courses for the current user (My Journey). */
+  listMy: protectedProcedure.query(async ({ ctx }) => {
+    return listMyEnrollments(ctx.db, { userId: ctx.session.user.id });
+  }),
+
+  // ── Student-facing (org context) ──
+
+  /** Enroll in a course within org context. */
   enroll: orgProcedure
     .input(z.object({ courseId: z.string(), cohortId: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
       const { db, session, organizationId } = ctx;
       const userId = session.user.id;
 
-      // If cohortId provided, verify eligibility
       if (input.cohortId) {
         const check = await canEnrollInCohortCourse(db, {
           courseId: input.courseId,
@@ -81,8 +128,6 @@ export const enrollmentRouter = router({
         }
       }
 
-      // Resolve cohortId — use provided or find first cohort the user is in
-      // that has this course assigned
       let cohortId = input.cohortId;
       if (!cohortId) {
         const orgCourses = await listOrgCourses(db, { userId, organizationId });
@@ -101,7 +146,7 @@ export const enrollmentRouter = router({
         courseId: input.courseId,
         organizationId,
         cohortId,
-        source: "public",
+        source: "cohort_assignment",
       });
 
       if (!result) {
@@ -116,10 +161,9 @@ export const enrollmentRouter = router({
 
   /** List courses available to the user in their current org. */
   listOrgCourses: orgProcedure.query(async ({ ctx }) => {
-    const { db, session, organizationId } = ctx;
-    return listOrgCourses(db, {
-      userId: session.user.id,
-      organizationId,
+    return listOrgCourses(ctx.db, {
+      userId: ctx.session.user.id,
+      organizationId: ctx.organizationId,
     });
   }),
 
@@ -127,11 +171,10 @@ export const enrollmentRouter = router({
   getEnrolledCourse: orgProcedure
     .input(getEnrolledCourseSchema)
     .query(async ({ ctx, input }) => {
-      const { db, session, organizationId } = ctx;
-      return getEnrolledCourse(db, {
+      return getEnrolledCourse(ctx.db, {
         courseId: input.courseId,
-        userId: session.user.id,
-        organizationId,
+        userId: ctx.session.user.id,
+        organizationId: ctx.organizationId,
       });
     }),
 
@@ -139,12 +182,11 @@ export const enrollmentRouter = router({
   getEnrolledLesson: orgProcedure
     .input(getEnrolledLessonSchema)
     .query(async ({ ctx, input }) => {
-      const { db, session, organizationId } = ctx;
-      return getEnrolledLesson(db, {
+      return getEnrolledLesson(ctx.db, {
         courseId: input.courseId,
         lessonId: input.lessonId,
-        userId: session.user.id,
-        organizationId,
+        userId: ctx.session.user.id,
+        organizationId: ctx.organizationId,
       });
     }),
 
@@ -152,12 +194,11 @@ export const enrollmentRouter = router({
   markLessonComplete: orgProcedure
     .input(markLessonCompleteSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db, session, organizationId } = ctx;
-      return markLessonComplete(db, {
+      return markLessonComplete(ctx.db, {
         courseId: input.courseId,
         lessonId: input.lessonId,
-        userId: session.user.id,
-        organizationId,
+        userId: ctx.session.user.id,
+        organizationId: ctx.organizationId,
       });
     }),
 
@@ -179,12 +220,11 @@ export const enrollmentRouter = router({
   assignCourseToCohort: orgProcedure
     .input(assignCourseToCohortSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db, session, organizationId } = ctx;
-      const result = await assignCourseToCohort(db, {
+      const result = await assignCourseToCohort(ctx.db, {
         courseId: input.courseId,
         cohortId: input.cohortId,
-        organizationId,
-        assignedBy: session.user.id,
+        organizationId: ctx.organizationId,
+        assignedBy: ctx.session.user.id,
       });
 
       if (!result) {
