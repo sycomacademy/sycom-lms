@@ -356,7 +356,13 @@ function EntitlementsSheet({
                     value={selectedCourseId || undefined}
                   >
                     <SelectTrigger className="w-full" size="sm">
-                      <SelectValue placeholder="Select a course..." />
+                      <SelectValue placeholder="Select a course...">
+                        {selectedCourseId
+                          ? availableCourses.find(
+                              (c) => c.id === selectedCourseId
+                            )?.title
+                          : "Select a course..."}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {availableCourses.length === 0 ? (
@@ -423,14 +429,12 @@ function EntitlementsSheet({
                       </p>
                       <div className="flex items-center gap-2">
                         {entitlement.isActive ? (
-                          <Badge className="rounded-full" variant="default">
+                          <Badge variant="default">
                             <CheckIcon className="size-3" />
                             Active
                           </Badge>
                         ) : (
-                          <Badge className="rounded-full" variant="secondary">
-                            Revoked
-                          </Badge>
+                          <Badge variant="secondary">Revoked</Badge>
                         )}
                         {entitlement.expiresAt && (
                           <span className="text-muted-foreground text-xs">

@@ -1,6 +1,6 @@
 import { MailIcon, MapPinIcon, PhoneIcon } from "lucide-react";
 import type { Route } from "next";
-import { DiscordLogo } from "@/components/icons/logos/discord";
+import { FacebookLogo } from "@/components/icons/logos/facebook";
 import { InstagramLogo } from "@/components/icons/logos/instagram";
 import { LinkedinLogo } from "@/components/icons/logos/linkedin";
 import { TwitterLogo } from "@/components/icons/logos/twitter";
@@ -10,13 +10,13 @@ import { Separator } from "../ui/separator";
 import { ModeSwitcher } from "./mode-switcher";
 
 const socialLinks = [
-  { href: "https://x.com/sycomsolutions", label: "Twitter" },
-  { href: "https://www.instagram.com/sycomsolutions", label: "Instagram" },
+  { href: "https://twitter.com/sycomacademy", label: "Twitter" },
+  { href: "https://www.instagram.com/sycomacademy/", label: "Instagram" },
   {
-    href: "https://www.linkedin.com/company/sycomsolutions",
+    href: "https://www.linkedin.com/company/sycom-solutions",
     label: "LinkedIn",
   },
-  { href: "https://discord.gg/sycomacademy", label: "Discord" },
+  { href: "https://www.facebook.com/sycomacademy/", label: "Facebook" },
 ];
 
 const iconClass = "size-4";
@@ -29,8 +29,8 @@ function SocialIcon({ label }: { label: string }) {
       return <InstagramLogo className={iconClass} />;
     case "LinkedIn":
       return <LinkedinLogo className={iconClass} colorScheme="grayscale" />;
-    case "Discord":
-      return <DiscordLogo className={iconClass} />;
+    case "Facebook":
+      return <FacebookLogo className={iconClass} />;
     default:
       return null;
   }

@@ -3850,6 +3850,7 @@ export async function listAdminEnrollments(
   }
   if (params.search) {
     conditions.push(
+      // biome-ignore lint/style/noNonNullAssertion: idc
       or(
         ilike(user.name, `%${params.search}%`),
         ilike(user.email, `%${params.search}%`),

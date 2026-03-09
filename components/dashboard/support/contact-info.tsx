@@ -28,14 +28,14 @@ const contactInfo: ContactItem[] = [
   {
     icon: <PhoneIcon className="size-4" />,
     label: "Phone",
-    value: "+1 (555) 123-4567",
-    href: "tel:+15551234567",
+    value: "+44-113-328-0244",
+    href: "tel:+441133280244",
   },
   {
     icon: <MailIcon className="size-4" />,
     label: "Email",
-    value: "support@sycom.edu",
-    href: "mailto:support@sycom.edu",
+    value: "info@sycom.academy",
+    href: "mailto:info@sycom.academy",
   },
 ];
 
@@ -43,22 +43,22 @@ const socialLinks: SocialLink[] = [
   {
     icon: <TwitterIcon className="size-4" />,
     label: "Twitter",
-    href: "https://twitter.com/sycom",
+    href: "https://twitter.com/sycomacademy",
   },
   {
     icon: <FacebookIcon className="size-4" />,
     label: "Facebook",
-    href: "https://facebook.com/sycom",
+    href: "https://facebook.com/sycomacademy",
   },
   {
     icon: <InstagramIcon className="size-4" />,
     label: "Instagram",
-    href: "https://instagram.com/sycom",
+    href: "https://instagram.com/sycomacademy",
   },
   {
     icon: <LinkedinIcon className="size-4" />,
     label: "LinkedIn",
-    href: "https://linkedin.com/company/sycom",
+    href: "https://linkedin.com/company/sycom-academy",
   },
 ];
 
@@ -178,13 +178,13 @@ export function ContactInfo() {
             <div className="flex flex-col">
               <span className="text-muted-foreground text-xs">Address</span>
               <span className="font-medium text-foreground text-sm">
-                123 Education Lane
+                2 Infirmary St
               </span>
               <span className="text-muted-foreground text-xs">
-                Suite 400, Learning District
+                Leeds LS1 2JP
               </span>
               <span className="text-muted-foreground text-xs">
-                New York, NY 10001
+                United Kingdom
               </span>
             </div>
           </div>
