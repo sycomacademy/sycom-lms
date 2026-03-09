@@ -42,24 +42,20 @@ export function OrgSwitcher() {
     : (activeOrg?.name ?? "Select org");
   const displayInitial = displayName.charAt(0).toUpperCase();
 
-  async function handleSwitch(orgId: string) {
+  async function handleSwitch(orgId: string, slug: string) {
     if (orgId === activeOrg?.id || switching) {
       return;
     }
     setSwitching(true);
     await authClient.organization.setActive({ organizationId: orgId });
+
+    if (slug === PUBLIC_ORG_SLUG) {
+      router.push("/dashboard");
+    } else {
+      router.push(`/tenant/${slug}`);
+    }
     router.refresh();
     setSwitching(false);
-  }
-
-  async function handleSwitchToPlatform() {
-    if (isPublicOrg || switching) {
-      return;
-    }
-    const platformOrg = orgs?.find((o) => o.slug === PUBLIC_ORG_SLUG);
-    if (platformOrg) {
-      await handleSwitch(platformOrg.id);
-    }
   }
 
   return (
@@ -108,8 +104,15 @@ export function OrgSwitcher() {
               </DropdownMenuLabel>
 
               <DropdownMenuItem
-                disabled={switching}
-                onClick={handleSwitchToPlatform}
+                disabled={switching || isPublicOrg}
+                onClick={() => {
+                  const platformOrg = orgs?.find(
+                    (o) => o.slug === PUBLIC_ORG_SLUG
+                  );
+                  if (platformOrg) {
+                    handleSwitch(platformOrg.id, PUBLIC_ORG_SLUG);
+                  }
+                }}
               >
                 <Avatar className="size-6 rounded-md">
                   <AvatarFallback className="rounded-md text-[10px]">
@@ -133,7 +136,7 @@ export function OrgSwitcher() {
                       <DropdownMenuItem
                         disabled={switching}
                         key={org.id}
-                        onClick={() => handleSwitch(org.id)}
+                        onClick={() => handleSwitch(org.id, org.slug)}
                       >
                         <Avatar className="size-6">
                           {org.logo ? (
