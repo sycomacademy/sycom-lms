@@ -1,7 +1,7 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { type NextRequest, NextResponse } from "next/server";
 
-const PORT_SUFFIX_RE = /:\d+$/;
+// const PORT_SUFFIX_RE = /:\d+$/;
 
 export function proxy(request: NextRequest) {
   // const hostname = request.headers.get("host") ?? "";
