@@ -77,9 +77,6 @@ export function BusinessHero() {
             Contact Us
             <ArrowRight className="ml-1 size-4" data-icon="inline-end" />
           </Button>
-          <Button size="lg" variant="outline">
-            View Pricing
-          </Button>
         </motion.div>
 
         <motion.div

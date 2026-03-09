@@ -38,7 +38,6 @@ export function BusinessCta() {
               <ArrowRight className="ml-1 size-4" data-icon="inline-end" />
             </Button>
             <Button
-              className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
               nativeButton={false}
               render={
                 // biome-ignore lint/a11y/useAnchorContent: Base UI render prop injects children
