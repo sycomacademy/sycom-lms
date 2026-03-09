@@ -604,3 +604,19 @@ export const listAdminEnrollmentsSchema = z.object({
     .enum(["public", "cohort_assignment", "admin_assigned"])
     .optional(),
 });
+
+// ---------------------------------------------------------------------------
+// Entitlement schemas
+// ---------------------------------------------------------------------------
+
+export const grantEntitlementSchema = z.object({
+  organizationId: z.string(),
+  courseId: z.string(),
+  maxSeats: z.number().int().positive().optional(),
+  expiresAt: z.date().optional(),
+});
+
+export const revokeEntitlementSchema = z.object({
+  organizationId: z.string(),
+  courseId: z.string(),
+});

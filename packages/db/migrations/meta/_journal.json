@@ -120,6 +120,13 @@
       "when": 1773012422305,
       "tag": "0016_faulty_killer_shrike",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1773029594181,
+      "tag": "0017_pink_blade",
+      "breakpoints": true
     }
   ]
 }

@@ -31,9 +31,21 @@ export const auth = betterAuth({
   }),
   appName: "Sycom Solutions LMS",
   baseURL,
-  trustedOrigins: [baseURL], // TODO: Add trusted origins
+  trustedOrigins: [
+    baseURL,
+    ...(env.NODE_ENV === "production"
+      ? [`https://*.${process.env.ROOT_DOMAIN ?? "learn.sycom.com"}`]
+      : ["http://localhost:3000"]),
+  ],
   advanced: {
     useSecureCookies: env.NODE_ENV === "production",
+    crossSubDomainCookies: {
+      enabled: true,
+      domain:
+        env.NODE_ENV === "production"
+          ? `.${process.env.ROOT_DOMAIN ?? "learn.sycom.com"}`
+          : ".localhost",
+    },
     ipAddress: {
       ipAddressHeaders: [
         process.env.NODE_ENV === "production"

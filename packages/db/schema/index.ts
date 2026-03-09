@@ -55,6 +55,10 @@ import {
   lessonProgressRelations,
 } from "./enrollment";
 import {
+  orgCourseEntitlement,
+  orgCourseEntitlementRelations,
+} from "./entitlement";
+import {
   feedback,
   feedbackRelations,
   report,
@@ -149,6 +153,10 @@ const schema = {
   cohortSectionSettingsRelations,
   cohortLessonSettings,
   cohortLessonSettingsRelations,
+
+  // entitlements (org course access)
+  orgCourseEntitlement,
+  orgCourseEntitlementRelations,
 };
 
 export { schema };

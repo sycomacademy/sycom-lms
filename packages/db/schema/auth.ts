@@ -10,6 +10,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { createdAt, updatedAt } from "../helper";
+import { orgCourseEntitlement } from "./entitlement";
 
 const auth = pgSchema("auth");
 
@@ -296,6 +297,7 @@ export const organizationRelations = relations(organization, ({ many }) => ({
   cohorts: many(cohort),
   members: many(member),
   invitations: many(invitation),
+  entitlements: many(orgCourseEntitlement),
 }));
 
 export const cohortRelations = relations(cohort, ({ one, many }) => ({

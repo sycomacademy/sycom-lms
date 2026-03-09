@@ -46,6 +46,7 @@ import {
   enrollment,
   lessonProgress,
 } from "./schema/enrollment";
+import { orgCourseEntitlement } from "./schema/entitlement";
 import { feedback, report } from "./schema/feedback";
 import { profile, profileSettingsDefault } from "./schema/profile";
 import { publicInvite } from "./schema/public-invite";
@@ -3896,4 +3897,163 @@ export async function listAdminEnrollments(
   const enrollments = rows.map(({ _total, ...row }) => row);
 
   return { enrollments, total };
+}
+
+// ---------------------------------------------------------------------------
+// Org Course Entitlements
+// ---------------------------------------------------------------------------
+
+export async function getOrgBySlug(
+  database: Database,
+  params: { slug: string }
+) {
+  const [org] = await database
+    .select({
+      id: organization.id,
+      name: organization.name,
+      slug: organization.slug,
+      logo: organization.logo,
+      metadata: organization.metadata,
+      createdAt: organization.createdAt,
+    })
+    .from(organization)
+    .where(eq(organization.slug, params.slug))
+    .limit(1);
+  return org ?? null;
+}
+
+export async function isMemberOfOrg(
+  database: Database,
+  params: { userId: string; organizationId: string }
+) {
+  const [row] = await database
+    .select({ id: member.id })
+    .from(member)
+    .where(
+      and(
+        eq(member.userId, params.userId),
+        eq(member.organizationId, params.organizationId)
+      )
+    )
+    .limit(1);
+  return !!row;
+}
+
+export async function setSessionActiveOrg(
+  database: Database,
+  params: { sessionId: string; organizationId: string }
+) {
+  await database
+    .update(sessionTable)
+    .set({ activeOrganizationId: params.organizationId })
+    .where(eq(sessionTable.id, params.sessionId));
+}
+
+export async function getOrgEntitlements(
+  database: Database,
+  params: { organizationId: string }
+) {
+  return database
+    .select({
+      id: orgCourseEntitlement.id,
+      courseId: orgCourseEntitlement.courseId,
+      courseTitle: course.title,
+      courseSlug: course.slug,
+      courseStatus: course.status,
+      maxSeats: orgCourseEntitlement.maxSeats,
+      isActive: orgCourseEntitlement.isActive,
+      expiresAt: orgCourseEntitlement.expiresAt,
+      grantedBy: orgCourseEntitlement.grantedBy,
+      createdAt: orgCourseEntitlement.createdAt,
+    })
+    .from(orgCourseEntitlement)
+    .innerJoin(course, eq(course.id, orgCourseEntitlement.courseId))
+    .where(eq(orgCourseEntitlement.organizationId, params.organizationId))
+    .orderBy(desc(orgCourseEntitlement.createdAt));
+}
+
+export async function hasOrgCourseEntitlement(
+  database: Database,
+  params: { organizationId: string; courseId: string }
+) {
+  const [row] = await database
+    .select({ id: orgCourseEntitlement.id })
+    .from(orgCourseEntitlement)
+    .where(
+      and(
+        eq(orgCourseEntitlement.organizationId, params.organizationId),
+        eq(orgCourseEntitlement.courseId, params.courseId),
+        eq(orgCourseEntitlement.isActive, true)
+      )
+    )
+    .limit(1);
+
+  if (!row) {
+    return false;
+  }
+
+  // Check expiration separately so we don't need sql`now()`
+  const [full] = await database
+    .select({ expiresAt: orgCourseEntitlement.expiresAt })
+    .from(orgCourseEntitlement)
+    .where(eq(orgCourseEntitlement.id, row.id))
+    .limit(1);
+
+  if (full?.expiresAt && full.expiresAt < new Date()) {
+    return false;
+  }
+
+  return true;
+}
+
+export async function grantOrgCourseEntitlement(
+  database: Database,
+  params: {
+    organizationId: string;
+    courseId: string;
+    maxSeats?: number;
+    expiresAt?: Date;
+    grantedBy: string;
+  }
+) {
+  const [row] = await database
+    .insert(orgCourseEntitlement)
+    .values({
+      organizationId: params.organizationId,
+      courseId: params.courseId,
+      maxSeats: params.maxSeats ?? null,
+      expiresAt: params.expiresAt ?? null,
+      grantedBy: params.grantedBy,
+      isActive: true,
+    })
+    .onConflictDoUpdate({
+      target: [
+        orgCourseEntitlement.organizationId,
+        orgCourseEntitlement.courseId,
+      ],
+      set: {
+        maxSeats: params.maxSeats ?? null,
+        expiresAt: params.expiresAt ?? null,
+        grantedBy: params.grantedBy,
+        isActive: true,
+      },
+    })
+    .returning({ id: orgCourseEntitlement.id });
+
+  return row ?? null;
+}
+
+export async function revokeOrgCourseEntitlement(
+  database: Database,
+  params: { organizationId: string; courseId: string }
+) {
+  await database
+    .update(orgCourseEntitlement)
+    .set({ isActive: false })
+    .where(
+      and(
+        eq(orgCourseEntitlement.organizationId, params.organizationId),
+        eq(orgCourseEntitlement.courseId, params.courseId)
+      )
+    );
 }
