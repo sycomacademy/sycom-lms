@@ -32,17 +32,17 @@ export const auth = betterAuth({
   appName: "Sycom Solutions LMS",
   baseURL,
   trustedOrigins: [baseURL],
-  advanced: {
-    useSecureCookies: env.NODE_ENV === "production",
-    ipAddress: {
-      ipAddressHeaders: [
-        process.env.NODE_ENV === "production"
-          ? "x-vercel-forwarded-for"
-          : "cf-connecting-ip",
-        // "x-forwarded-for",
-      ],
-    },
-  },
+  // advanced: {
+  //   useSecureCookies: env.NODE_ENV === "production",
+  //   ipAddress: {
+  //     ipAddressHeaders: [
+  //       process.env.NODE_ENV === "production"
+  //         ? "x-vercel-forwarded-for"
+  //         : "cf-connecting-ip",
+  //       // "x-forwarded-for",
+  //     ],
+  //   },
+  // },
   experimental: {
     joins: true,
   },
@@ -55,6 +55,8 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24,
     updateAge: 60 * 60 * 1,
+    // Disable cookie cache to avoid getSession returning null in API routes (better-auth#7008)
+    cookieCache: { enabled: false },
   },
   databaseHooks: {
     user: {

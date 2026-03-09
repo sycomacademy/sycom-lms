@@ -7,6 +7,23 @@ import { createLoggerWithContext } from "@/packages/utils/logger";
 const authLogger = createLoggerWithContext("auth:getSession");
 
 /**
+ * Resolve session from explicit headers. Use this in API routes (e.g. tRPC)
+ * when you have the incoming request, to ensure cookies are passed correctly.
+ */
+export async function getSessionFromHeaders(
+  headersOrRequest: Headers | { headers: Headers }
+): Promise<Awaited<ReturnType<typeof auth.api.getSession>>> {
+  const h =
+    headersOrRequest instanceof Headers
+      ? headersOrRequest
+      : headersOrRequest.headers;
+  authLogger.debug("fetching session from headers");
+  const session = await auth.api.getSession({ headers: h });
+  authLogger.debug("session resolved", { hasSession: !!session?.user });
+  return session;
+}
+
+/**
  * Session for the current request. Cached per-request so multiple
  * getSession() calls (e.g. in layout + page + Server Actions) only hit auth once.
  */
