@@ -6,11 +6,11 @@ import {
   type TRPCQueryOptions,
 } from "@trpc/tanstack-react-query";
 import { headers } from "next/headers";
-import { NextRequest } from "next/server";
 import React, { cache } from "react";
 import { appRouter } from "@/app/api/trpc/router";
-import { getWebsiteUrl } from "@/packages/env/utils";
-import { createContext } from "@/packages/trpc/context";
+import { getSession } from "@/packages/auth/helper";
+import { db } from "@/packages/db";
+import type { Context } from "@/packages/trpc/context";
 import { makeQueryClient } from "@/packages/trpc/shared";
 import { createLoggerWithContext } from "@/packages/utils/logger";
 
@@ -18,13 +18,14 @@ export const getQueryClient = cache(makeQueryClient);
 
 const trpcLogger = createLoggerWithContext("trpc:server-action");
 
-const trpcContext = async () => {
+const trpcContext = async (): Promise<Context> => {
   const headersList = await headers();
-  const req = new NextRequest(getWebsiteUrl(), {
+  const session = await getSession();
+  return {
+    session,
+    db,
     headers: headersList,
-  });
-  const ctx = await createContext(req);
-  return ctx;
+  };
 };
 
 export const trpc = createTRPCOptionsProxy({
