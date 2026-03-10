@@ -8,11 +8,13 @@ import {
 import type { JSONContent } from "@tiptap/react";
 import { ArrowLeftIcon } from "lucide-react";
 import { useQueryState } from "nuqs";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import type { RouterOutputs } from "@/app/api/trpc/router";
 import { Link } from "@/components/layout/foresight-link";
 import { Button } from "@/components/ui/button";
 import { toastManager } from "@/components/ui/toast";
+import { track } from "@/packages/analytics/client";
+import { analyticsEvents } from "@/packages/analytics/events";
 import { useTRPC } from "@/packages/trpc/client";
 import { CourseFinishedDialog } from "./course-finished-dialog";
 import { CourseSidebar } from "./course-sidebar";
@@ -77,6 +79,33 @@ function LessonInner({
     scrollReachedEnd: false,
   });
   const [showFinished, setShowFinished] = useState(false);
+  const lessonStartTimeRef = useRef(Date.now());
+
+  // Track course started on first lesson load
+  useEffect(() => {
+    track({
+      event: analyticsEvents.enrollmentCourseStarted,
+      course_id: courseId,
+      course_title: courseData.course.title,
+      progress_percent: courseData.progress.percent,
+    });
+  }, [courseId, courseData.course.title, courseData.progress.percent]);
+
+  // Track time spent on lesson when unmounting
+  useEffect(() => {
+    const startTime = lessonStartTimeRef.current;
+    return () => {
+      const seconds = Math.round((Date.now() - startTime) / 1000);
+      if (seconds > 2) {
+        track({
+          event: analyticsEvents.enrollmentLessonTimeSpent,
+          course_id: courseId,
+          lesson_id: lessonId,
+          duration_seconds: seconds,
+        });
+      }
+    };
+  }, [courseId, lessonId]);
 
   const canMarkComplete =
     requirements.scrollReachedEnd && requirements.quizSatisfied;
@@ -106,7 +135,21 @@ function LessonInner({
             lessonId,
           }),
         });
+
+        track({
+          event: analyticsEvents.enrollmentLessonCompleted,
+          course_id: courseId,
+          lesson_id: lessonId,
+          lesson_title: lessonData.lesson.title,
+          course_title: lessonData.course.title,
+        });
+
         if (result.allComplete) {
+          track({
+            event: analyticsEvents.enrollmentCourseCompleted,
+            course_id: courseId,
+            course_title: lessonData.course.title,
+          });
           setShowFinished(true);
           return;
         }

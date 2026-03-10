@@ -63,17 +63,24 @@ type OAuthProvider = "google" | "linkedin";
 
 const providerConfig: Record<
   OAuthProvider,
-  { label: string; name: OAuthProvider; logo: React.ReactNode }
+  {
+    label: string;
+    name: OAuthProvider;
+    logo: React.ReactNode;
+    disabled: boolean;
+  }
 > = {
   google: {
     label: "Google",
     name: "google",
     logo: <GoogleLogo />,
+    disabled: true,
   },
   linkedin: {
     label: "LinkedIn",
     name: "linkedin",
     logo: <LinkedInLogo />,
+    disabled: true,
   },
 };
 
@@ -242,6 +249,7 @@ export function OAuthButtons({ type, callbackUrl }: OAuthButtonsProps) {
             )}
             {Object.values(providerConfig).map((provider) => (
               <OAuthButton
+                disabled={provider.disabled}
                 isLastUsed={lastMethod === provider.name}
                 isLoading={loadingProvider === provider.name}
                 key={provider.name}

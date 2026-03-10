@@ -42,6 +42,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toastManager } from "@/components/ui/toast";
+import { track } from "@/packages/analytics/client";
+import { analyticsEvents } from "@/packages/analytics/events";
 import type { StorageFolder } from "@/packages/db/schema/storage";
 import { uploadFile } from "@/packages/storage/upload";
 import { useTRPC } from "@/packages/trpc/client";
@@ -117,6 +119,11 @@ export function CreateCourseForm({
       onSuccess: (course) => {
         queryClient.invalidateQueries({
           queryKey: trpc.course.list.queryKey(),
+        });
+        track({
+          event: analyticsEvents.courseCreated,
+          course_id: course.id,
+          course_title: course.title,
         });
         toastManager.add({
           title: "Course created",

@@ -242,31 +242,31 @@ export async function setSessionActiveOrgIfNull(
 
   const publicIds = await getPublicOrgAndCohortIds(database);
 
-  // Temporarily disable preferred non-public org selection.
-  // const preferredRow = await database
-  //   .select({
-  //     organizationId: member.organizationId,
-  //     cohortId: cohort.id,
-  //   })
-  //   .from(member)
-  //   .innerJoin(organization, eq(organization.id, member.organizationId))
-  //   .leftJoin(cohort, eq(cohort.organizationId, member.organizationId))
-  //   .where(
-  //     and(
-  //       eq(member.userId, sessionRow.userId),
-  //       ne(organization.slug, PUBLIC_ORG_SLUG)
-  //     )
-  //   )
-  //   .orderBy(asc(member.createdAt), asc(cohort.createdAt))
-  //   .limit(1)
-  //   .then((rows) => rows[0] ?? null);
+  const preferredRow = await database
+    .select({
+      organizationId: member.organizationId,
+      cohortId: cohort.id,
+    })
+    .from(member)
+    .innerJoin(organization, eq(organization.id, member.organizationId))
+    .leftJoin(cohort, eq(cohort.organizationId, member.organizationId))
+    .where(
+      and(
+        eq(member.userId, sessionRow.userId),
+        ne(organization.slug, PUBLIC_ORG_SLUG)
+      )
+    )
+    .orderBy(asc(member.createdAt), asc(cohort.createdAt))
+    .limit(1)
+    .then((rows) => rows[0] ?? null);
 
-  const activeOrganizationId = publicIds?.orgId ?? null;
+  const activeOrganizationId =
+    preferredRow?.organizationId ?? publicIds?.orgId ?? null;
   if (!activeOrganizationId) {
     return;
   }
 
-  const activeCohortId = publicIds?.cohortId ?? null;
+  const activeCohortId = preferredRow?.cohortId ?? publicIds?.cohortId ?? null;
 
   await database
     .update(sessionTable)

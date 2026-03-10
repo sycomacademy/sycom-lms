@@ -1,4 +1,5 @@
 import type { Route } from "next";
+import Image from "next/image";
 import { Suspense } from "react";
 import { Link } from "@/components/layout/foresight-link";
 import { getSession } from "@/packages/auth/helper";
@@ -18,15 +19,25 @@ export async function Header() {
     <header className="sticky top-0 z-50 w-full border-border border-b bg-background">
       <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-6 px-4 py-4 sm:px-8">
         <Link
-          className="inline-flex flex-col transition-opacity hover:opacity-90"
+          className="inline-flex transition-opacity hover:opacity-90"
           href="/"
         >
-          <span className="font-sans font-semibold text-xl tracking-tight sm:text-2xl">
-            <span className="text-foreground">SYCOM</span>
-          </span>
-          <span className="mt-0.5 font-sans text-foreground text-xs uppercase tracking-wider sm:text-sm">
-            Integrated Solutions
-          </span>
+          <Image
+            alt="Sycom Integrated Solutions"
+            className="hidden h-12 w-auto sm:h-18 dark:block"
+            height={48}
+            priority
+            src="/sycom-logo.png"
+            width={200}
+          />
+          <Image
+            alt="Sycom Integrated Solutions"
+            className="h-12 w-auto sm:h-14 dark:hidden"
+            height={48}
+            priority
+            src="/logos/sycom-logo-white.jpg"
+            width={200}
+          />
         </Link>
 
         <nav className="hidden flex-1 items-center justify-center gap-6 md:flex">

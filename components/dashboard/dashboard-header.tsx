@@ -12,7 +12,7 @@ export function DashboardHeader() {
     >
       <SidebarTrigger />
       <div className="flex items-center gap-2 md:px-2">
-        <DebugInfo />
+        {process.env.NODE_ENV === "development" && <DebugInfo />}
         <FeedbackPopover />
         <DashboardUserMenu />
       </div>

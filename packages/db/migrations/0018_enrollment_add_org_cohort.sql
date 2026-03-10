@@ -34,12 +34,22 @@ ALTER TABLE "enrollment" ALTER COLUMN "organization_id" SET NOT NULL;
 ALTER TABLE "enrollment" ALTER COLUMN "cohort_id" SET NOT NULL;
 --> statement-breakpoint
 
--- Step 5: Add foreign key constraints
-ALTER TABLE "enrollment" ADD CONSTRAINT "enrollment_organization_id_organization_id_fk" 
-  FOREIGN KEY ("organization_id") REFERENCES "auth"."organization"("id") ON DELETE cascade ON UPDATE no action;
---> statement-breakpoint
-ALTER TABLE "enrollment" ADD CONSTRAINT "enrollment_cohort_id_cohort_id_fk" 
-  FOREIGN KEY ("cohort_id") REFERENCES "auth"."cohort"("id") ON DELETE cascade ON UPDATE no action;
+-- Step 5: Add foreign key constraints (idempotent - skip if already exist)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'enrollment_organization_id_organization_id_fk'
+  ) THEN
+    ALTER TABLE "enrollment" ADD CONSTRAINT "enrollment_organization_id_organization_id_fk" 
+      FOREIGN KEY ("organization_id") REFERENCES "auth"."organization"("id") ON DELETE cascade ON UPDATE no action;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'enrollment_cohort_id_cohort_id_fk'
+  ) THEN
+    ALTER TABLE "enrollment" ADD CONSTRAINT "enrollment_cohort_id_cohort_id_fk" 
+      FOREIGN KEY ("cohort_id") REFERENCES "auth"."cohort"("id") ON DELETE cascade ON UPDATE no action;
+  END IF;
+END $$;
 --> statement-breakpoint
 
 -- Step 6: Add indexes

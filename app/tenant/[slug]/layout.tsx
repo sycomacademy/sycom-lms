@@ -18,6 +18,10 @@ export default async function TenantLayout({
 }) {
   const { slug } = await params;
 
+  if (slug === "platform") {
+    redirect("/dashboard");
+  }
+
   const org = await getOrgBySlug(db, { slug });
   if (!org) {
     notFound();

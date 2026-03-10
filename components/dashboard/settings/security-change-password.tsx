@@ -12,6 +12,8 @@ import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
+import { track } from "@/packages/analytics/client";
+import { analyticsEvents } from "@/packages/analytics/events";
 import { authClient } from "@/packages/auth/auth-client";
 
 const changePasswordSchema = z
@@ -55,6 +57,7 @@ export function SecurityChangePassword() {
       });
       return;
     }
+    track({ event: analyticsEvents.settingsPasswordChanged });
     toastManager.add({
       title: "Password updated",
       type: "success",

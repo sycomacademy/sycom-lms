@@ -17,6 +17,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
+import { track } from "@/packages/analytics/client";
+import { analyticsEvents } from "@/packages/analytics/events";
 import { authClient } from "@/packages/auth/auth-client";
 
 function GoogleLogo() {
@@ -140,6 +142,10 @@ export function SecurityLinkOAuth() {
       });
       return;
     }
+    track({
+      event: analyticsEvents.settingsOauthLinked,
+      provider,
+    });
     fetchAccounts();
   }
 
@@ -156,6 +162,10 @@ export function SecurityLinkOAuth() {
       });
       return;
     }
+    track({
+      event: analyticsEvents.settingsOauthUnlinked,
+      provider: providerId,
+    });
     toastManager.add({
       title: "Account unlinked",
       type: "success",
