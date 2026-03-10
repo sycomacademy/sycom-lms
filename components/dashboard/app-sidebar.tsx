@@ -213,7 +213,7 @@ function AppSidebarContent() {
             className="h-10 w-auto group-data-[collapsible=icon]:hidden"
             height={40}
             priority
-            src="/logo/logo.jpg"
+            src="/logos/logo.jpg"
             width={160}
           />
           <Image
@@ -221,7 +221,7 @@ function AppSidebarContent() {
             className="hidden size-10 rounded-md group-data-[collapsible=icon]:block"
             height={40}
             priority
-            src="/logo/logo.jpg"
+            src="/logos/logo.jpg"
             width={40}
           />
         </Link>
