@@ -23,6 +23,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
+import { track } from "@/packages/analytics/client";
+import { analyticsEvents } from "@/packages/analytics/events";
 import { authClient } from "@/packages/auth/auth-client";
 import { useUserQuery } from "@/packages/hooks/use-user";
 import { formatDeviceLabel, isMobileAgent } from "@/packages/utils/device";
@@ -108,6 +110,7 @@ export function SecuritySessionsPasskey() {
       });
       return;
     }
+    track({ event: analyticsEvents.settingsPasskeyRegistered });
     toastManager.add({
       title: "Passkey added",
       description: "You can now sign in with this passkey.",
@@ -130,6 +133,7 @@ export function SecuritySessionsPasskey() {
       });
       return;
     }
+    track({ event: analyticsEvents.settingsPasskeyRemoved });
     toastManager.add({
       title: "Passkey removed",
       type: "success",

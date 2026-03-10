@@ -46,6 +46,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toastManager } from "@/components/ui/toast";
+import { track } from "@/packages/analytics/client";
+import { analyticsEvents } from "@/packages/analytics/events";
 import type { StorageFolder } from "@/packages/db/schema/storage";
 import { uploadFile } from "@/packages/storage/upload";
 import { useTRPC } from "@/packages/trpc/client";
@@ -125,13 +127,26 @@ export function EditCourseInfoForm({ courseId }: EditCourseInfoFormProps) {
   );
   const updateMutation = useMutation(
     trpc.course.update.mutationOptions({
-      onSuccess: () => {
+      onSuccess: (_data, variables) => {
         queryClient.invalidateQueries({
           queryKey: trpc.course.getById.queryKey({ courseId }),
         });
         queryClient.invalidateQueries({
           queryKey: trpc.course.list.queryKey(),
         });
+
+        if (variables.status && variables.status !== course.status) {
+          const event =
+            variables.status === "published"
+              ? analyticsEvents.coursePublished
+              : analyticsEvents.courseUnpublished;
+          track({
+            event,
+            course_id: courseId,
+            course_title: variables.title ?? course.title,
+          });
+        }
+
         toastManager.add({
           title: "Course updated",
           description: "Your changes have been saved.",

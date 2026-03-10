@@ -35,6 +35,8 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
+import { track } from "@/packages/analytics/client";
+import { analyticsEvents } from "@/packages/analytics/events";
 import { useTRPC } from "@/packages/trpc/client";
 import { createPublicInviteSchema, ROLE_LABELS } from "@/packages/utils/schema";
 
@@ -56,7 +58,12 @@ export function CreateUserDialog() {
 
   const createMutation = useMutation(
     trpc.admin.createUser.mutationOptions({
-      onSuccess: (data) => {
+      onSuccess: (data, variables) => {
+        track({
+          event: analyticsEvents.memberInvited,
+          email: variables.email,
+          role: variables.role,
+        });
         toastManager.add({
           title: data.emailSent ? "Invite sent" : "Invite created",
           description: data.emailSent

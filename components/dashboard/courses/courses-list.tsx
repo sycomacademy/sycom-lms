@@ -81,6 +81,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { track } from "@/packages/analytics/client";
+import { analyticsEvents } from "@/packages/analytics/events";
 import { useTRPC } from "@/packages/trpc/client";
 import { DIFFICULTY_OPTIONS, STATUS_OPTIONS } from "@/packages/utils/schema";
 import { formatCourseDate } from "@/packages/utils/time";
@@ -296,9 +298,14 @@ export function CoursesList() {
 
   const deleteCourseMutation = useMutation(
     trpc.course.delete.mutationOptions({
-      onSuccess: () => {
+      onSuccess: (_data, variables) => {
         queryClient.invalidateQueries({
           queryKey: trpc.course.list.queryKey(),
+        });
+        track({
+          event: analyticsEvents.courseDeleted,
+          course_id: variables.courseId,
+          course_title: deleteAlertCourse?.title,
         });
         setDeleteAlertCourse(null);
         toastManager.add({ title: "Course deleted", type: "success" });

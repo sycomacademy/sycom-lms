@@ -69,6 +69,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toastManager } from "@/components/ui/toast";
+import { track } from "@/packages/analytics/client";
+import { analyticsEvents } from "@/packages/analytics/events";
 import { useTRPC } from "@/packages/trpc/client";
 import { cn } from "@/packages/utils/cn";
 
@@ -406,6 +408,12 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
         );
         persistedOrderRef.current = buildOrderSnapshot(getSectionsFromCache());
         setExpandedLessonId(newLesson.id);
+        track({
+          event: analyticsEvents.courseLessonAdded,
+          course_id: courseId,
+          lesson_id: newLesson.id,
+          lesson_title: newLesson.title,
+        });
         toastManager.add({
           title: "Lesson created",
           type: "success",
@@ -436,9 +444,14 @@ export function EditCurriculumForm({ courseId }: EditCurriculumFormProps) {
 
   const deleteLessonMutation = useMutation(
     trpc.course.deleteLesson.mutationOptions({
-      onSuccess: () => {
+      onSuccess: (_data, variables) => {
         persistedOrderRef.current = buildOrderSnapshot(getSectionsFromCache());
         setExpandedLessonId(null);
+        track({
+          event: analyticsEvents.courseLessonDeleted,
+          course_id: courseId,
+          lesson_id: variables.lessonId,
+        });
         toastManager.add({
           title: "Lesson deleted",
           type: "success",

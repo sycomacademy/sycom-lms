@@ -18,6 +18,8 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
+import { track } from "@/packages/analytics/client";
+import { analyticsEvents } from "@/packages/analytics/events";
 import { useTRPC } from "@/packages/trpc/client";
 import { getInitials } from "@/packages/utils/string";
 
@@ -75,8 +77,13 @@ function CoCreatorsContent({ courseId }: { courseId: string }) {
 
   const addMutation = useMutation(
     trpc.course.addCoLead.mutationOptions({
-      onSuccess: () => {
+      onSuccess: (_data, variables) => {
         invalidate();
+        track({
+          event: analyticsEvents.courseCocreatorAdded,
+          course_id: courseId,
+          user_id: variables.userId,
+        });
         toastManager.add({ title: "Co-creator added", type: "success" });
       },
       onError: (err) => {
@@ -91,8 +98,13 @@ function CoCreatorsContent({ courseId }: { courseId: string }) {
 
   const removeMutation = useMutation(
     trpc.course.removeCoLead.mutationOptions({
-      onSuccess: () => {
+      onSuccess: (_data, variables) => {
         invalidate();
+        track({
+          event: analyticsEvents.courseCocreatorRemoved,
+          course_id: courseId,
+          user_id: variables.userId,
+        });
         toastManager.add({ title: "Co-creator removed", type: "success" });
       },
       onError: (err) => {
