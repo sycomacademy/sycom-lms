@@ -33,7 +33,6 @@ import { useIsMobile } from "@/packages/hooks/use-mobile";
 import { useUserQuery } from "@/packages/hooks/use-user";
 import { cn } from "@/packages/utils/cn";
 import { capitalize } from "@/packages/utils/string";
-import { OrgSwitcher } from "./org-switcher";
 
 interface NavItem {
   href: Route;
@@ -270,9 +269,7 @@ function AppSidebarContent() {
         ))}
       </SidebarContent>
 
-      <SidebarFooter>
-        <OrgSwitcher />
-      </SidebarFooter>
+      <SidebarFooter>{/* <OrgSwitcher /> */}</SidebarFooter>
     </Sidebar>
   );
 }
