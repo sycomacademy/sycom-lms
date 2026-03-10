@@ -44,7 +44,7 @@ export function BusinessCta() {
                 <a href="tel:+441133280244" />
               }
               size="lg"
-              variant="outline"
+              variant="secondary"
             >
               <Phone className="mr-2 size-4" />
               Schedule a Call
