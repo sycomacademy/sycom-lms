@@ -4,7 +4,29 @@ import { cache } from "react";
 import { auth } from "@/packages/auth/auth";
 import { createLoggerWithContext } from "@/packages/utils/logger";
 
+const PUBLIC_EMAIL_DOMAINS = new Set([
+  "aol.com",
+  "gmail.com",
+  "googlemail.com",
+  "hotmail.com",
+  "icloud.com",
+  "live.com",
+  "mail.com",
+  "me.com",
+  "msn.com",
+  "outlook.com",
+  "proton.me",
+  "protonmail.com",
+  "yahoo.com",
+  "ymail.com",
+]);
+
 const authLogger = createLoggerWithContext("auth:getSession");
+
+export function isPublicEmailDomain(email: string) {
+  const domain = email.trim().toLowerCase().split("@")[1];
+  return domain ? PUBLIC_EMAIL_DOMAINS.has(domain) : false;
+}
 
 /**
  * Resolve session from explicit headers. Use this in API routes (e.g. tRPC)
