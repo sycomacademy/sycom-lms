@@ -12,6 +12,38 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/packages/utils/cn";
 
+function getMarkLabel(
+  isFinalLesson: boolean,
+  isCompleted: boolean,
+  isMarkingComplete: boolean
+) {
+  if (isCompleted) {
+    return isFinalLesson ? "Finished" : "Completed";
+  }
+  if (isMarkingComplete) {
+    return isFinalLesson ? "Finishing..." : "Marking...";
+  }
+  return isFinalLesson ? "Finish" : "Mark complete";
+}
+
+function getTooltipContent(
+  isFinalLesson: boolean,
+  canMarkComplete: boolean,
+  completionBlocker: "scroll" | "quiz" | null | undefined,
+  isCompleted: boolean
+) {
+  if (!canMarkComplete && completionBlocker === "quiz") {
+    return "Answer the quiz correctly to enable completion";
+  }
+  if (!canMarkComplete) {
+    return "Scroll to the end to enable completion";
+  }
+  if (isCompleted) {
+    return isFinalLesson ? "Course already finished" : "Already completed";
+  }
+  return isFinalLesson ? "Finish this course" : "Mark this lesson as complete";
+}
+
 export function LessonBottomBar({
   courseId,
   prevLessonId,
@@ -23,6 +55,7 @@ export function LessonBottomBar({
   isCompleted,
   isMarkingComplete,
   onMarkComplete,
+  onScrollToQuiz,
 }: {
   courseId: string;
   prevLessonId: string | null;
@@ -34,6 +67,7 @@ export function LessonBottomBar({
   isCompleted: boolean;
   isMarkingComplete: boolean;
   onMarkComplete: () => void;
+  onScrollToQuiz?: () => void;
 }) {
   const prevHref = prevLessonId
     ? (`/learn/${courseId}?lesson=${prevLessonId}` as Route)
@@ -42,25 +76,14 @@ export function LessonBottomBar({
     ? (`/learn/${courseId}?lesson=${nextLessonId}` as Route)
     : null;
 
-  let markLabel = isFinalLesson ? "Finish" : "Mark complete";
-  if (isCompleted) {
-    markLabel = isFinalLesson ? "Finished" : "Completed";
-  } else if (isMarkingComplete) {
-    markLabel = isFinalLesson ? "Finishing..." : "Marking...";
-  }
-
-  let tooltipContent = isFinalLesson
-    ? "Finish this course"
-    : "Mark this lesson as complete";
-  if (!canMarkComplete && completionBlocker === "quiz") {
-    tooltipContent = "Answer the quiz correctly to enable completion";
-  } else if (!canMarkComplete) {
-    tooltipContent = "Scroll to the end to enable completion";
-  } else if (isCompleted) {
-    tooltipContent = isFinalLesson
-      ? "Course already finished"
-      : "Already completed";
-  }
+  const markLabel = getMarkLabel(isFinalLesson, isCompleted, isMarkingComplete);
+  const tooltipText = getTooltipContent(
+    isFinalLesson,
+    canMarkComplete,
+    completionBlocker,
+    isCompleted
+  );
+  const quizBlocking = !canMarkComplete && completionBlocker === "quiz";
 
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3">
@@ -107,16 +130,27 @@ export function LessonBottomBar({
           render={
             <span className="inline-block">
               <Button
-                disabled={!canMarkComplete || isCompleted || isMarkingComplete}
-                onClick={onMarkComplete}
+                disabled={
+                  isCompleted ||
+                  isMarkingComplete ||
+                  !(canMarkComplete || quizBlocking)
+                }
+                onClick={() => {
+                  if (quizBlocking) {
+                    onScrollToQuiz?.();
+                    return;
+                  }
+                  onMarkComplete();
+                }}
                 size="sm"
+                variant={quizBlocking ? "outline" : "default"}
               >
                 {markLabel}
               </Button>
             </span>
           }
         />
-        <TooltipContent>{tooltipContent}</TooltipContent>
+        <TooltipContent>{tooltipText}</TooltipContent>
       </Tooltip>
     </div>
   );
