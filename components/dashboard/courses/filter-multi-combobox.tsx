@@ -75,7 +75,10 @@ export function FilterMultiCombobox({
       <ComboboxTrigger
         render={
           <Button
-            className={cn("justify-between gap-2 font-normal", className)}
+            className={cn(
+              "justify-between gap-2 border-input font-normal",
+              className
+            )}
             size="sm"
             variant="outline"
           />

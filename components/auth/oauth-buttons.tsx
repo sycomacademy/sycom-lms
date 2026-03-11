@@ -232,20 +232,30 @@ export function OAuthButtons({ type, callbackUrl }: OAuthButtonsProps) {
         <AccordionContent>
           <div className="space-y-3 pt-2">
             {type === "sign-in" && (
-              <Button
-                className="w-full gap-3"
-                disabled={!!loadingProvider}
-                onClick={handlePasskeySignIn}
-                type="button"
-                variant="outline"
-              >
-                {loadingProvider === "passkey" ? (
-                  <Loader2Icon className="h-5 w-5 animate-spin" />
-                ) : (
-                  <FingerprintIcon className="h-5 w-5 shrink-0" />
+              <div className="relative w-full">
+                <Button
+                  className="w-full gap-3"
+                  disabled={!!loadingProvider}
+                  onClick={handlePasskeySignIn}
+                  type="button"
+                  variant="outline"
+                >
+                  {loadingProvider === "passkey" ? (
+                    <Loader2Icon className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <FingerprintIcon className="h-5 w-5 shrink-0" />
+                  )}
+                  <span>Continue with passkey</span>
+                </Button>
+                {lastMethod === "passkey" && (
+                  <Badge
+                    className="pointer-events-none absolute -top-2 -right-2"
+                    variant="default"
+                  >
+                    Last used
+                  </Badge>
                 )}
-                <span>Continue with passkey</span>
-              </Button>
+              </div>
             )}
             {Object.values(providerConfig).map((provider) => (
               <OAuthButton

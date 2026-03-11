@@ -255,7 +255,12 @@ export function CoCreatorsModal({ courseId }: CoCreatorsModalProps) {
     <Dialog>
       <DialogTrigger
         render={
-          <Button size="sm" type="button" variant="outline">
+          <Button
+            className="border-input"
+            size="sm"
+            type="button"
+            variant="outline"
+          >
             <UsersIcon className="size-4" />
             Co-creators
           </Button>

@@ -21,6 +21,7 @@ export interface LessonRequirements {
   scrollReachedEnd: boolean;
   quizSatisfied: boolean;
   hasQuizBlocks: boolean;
+  scrollToQuiz: () => void;
 }
 
 export function LessonViewer({
@@ -35,6 +36,8 @@ export function LessonViewer({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
   const [scrollReachedEnd, setScrollReachedEnd] = useState(false);
+  const scrollReachedEndRef = useRef(false);
+  const lastScrollHeightRef = useRef(0);
   const requiredQuizCount = countQuizBlocks(content);
   const hasQuizBlocks = requiredQuizCount > 0;
   const [quizSatisfied, setQuizSatisfied] = useState(!hasQuizBlocks);
@@ -47,16 +50,50 @@ export function LessonViewer({
     }
   }, [hasQuizBlocks]);
 
+  const scrollToQuiz = useCallback(() => {
+    const root = scrollRef.current;
+    if (!root) {
+      return;
+    }
+    const quizBlock = root.querySelector('[data-type="quiz-block"]');
+    if (quizBlock) {
+      quizBlock.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, []);
+
   useEffect(() => {
     onRequirementsChange?.({
       hasQuizBlocks,
       quizSatisfied: hasQuizBlocks ? quizSatisfied : true,
       scrollReachedEnd,
+      scrollToQuiz,
     });
-  }, [hasQuizBlocks, quizSatisfied, scrollReachedEnd, onRequirementsChange]);
+  }, [
+    hasQuizBlocks,
+    quizSatisfied,
+    scrollReachedEnd,
+    scrollToQuiz,
+    onRequirementsChange,
+  ]);
 
   const handleReachedEndChange = useCallback((atEnd: boolean) => {
-    setScrollReachedEnd((prev) => (prev === atEnd ? prev : atEnd));
+    const root = scrollRef.current;
+    if (!root) {
+      return;
+    }
+
+    if (atEnd) {
+      lastScrollHeightRef.current = root.scrollHeight;
+      scrollReachedEndRef.current = true;
+      setScrollReachedEnd(true);
+    } else if (scrollReachedEndRef.current) {
+      const heightGrew = root.scrollHeight > lastScrollHeightRef.current + 100;
+      if (heightGrew) {
+        lastScrollHeightRef.current = root.scrollHeight;
+        scrollReachedEndRef.current = false;
+        setScrollReachedEnd(false);
+      }
+    }
   }, []);
 
   const handleAllQuizCorrectChange = useCallback((allCorrect: boolean) => {
