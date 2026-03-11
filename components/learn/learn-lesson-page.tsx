@@ -57,7 +57,7 @@ export function LearnLessonPage({ courseId }: { courseId: string }) {
         courseId={courseId}
         key={lessonId}
         lessonId={lessonId}
-        onNavigateToLesson={setLessonId}
+        // onNavigateToLesson={setLessonId}
       />
     </Suspense>
   );
@@ -67,12 +67,12 @@ function LessonInner({
   courseId,
   lessonId,
   courseData,
-  onNavigateToLesson,
+  // onNavigateToLesson,
 }: {
   courseId: string;
   lessonId: string;
   courseData: EnrolledCourse;
-  onNavigateToLesson: (id: string) => void;
+  // onNavigateToLesson: (id: string) => void;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -160,9 +160,9 @@ function LessonInner({
 
         toastManager.add({ title: "Lesson marked complete", type: "success" });
 
-        if (lessonData.nav.nextLessonId && !lessonData.nav.nextIsLocked) {
-          onNavigateToLesson(lessonData.nav.nextLessonId);
-        }
+        // if (lessonData.nav.nextLessonId && !lessonData.nav.nextIsLocked) {
+        //   onNavigateToLesson(lessonData.nav.nextLessonId);
+        // }
       },
       onError: (err) => {
         toastManager.add({
