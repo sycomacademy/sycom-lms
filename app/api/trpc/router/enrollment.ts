@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { isPublicEmailDomain } from "@/packages/auth/helper";
 import {
   assignCourseToCohort,
   canEnrollInCohortCourse,
@@ -76,6 +77,16 @@ export const enrollmentRouter = router({
   enrollPublic: protectedProcedure
     .input(z.object({ courseId: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      const isPublicEmail = isPublicEmailDomain(ctx.session.user.email);
+
+      if (isPublicEmail) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message:
+            "Accounts with public email domains are not allowed to enroll in courses",
+        });
+      }
+
       const result = await enrollPublic(ctx.db, {
         courseId: input.courseId,
         userId: ctx.session.user.id,

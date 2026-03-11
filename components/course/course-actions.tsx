@@ -32,11 +32,23 @@ export function CourseActions({ courseId }: CourseActionsProps) {
         });
       },
       onError: (error) => {
-        toastManager.add({
-          title: "Enrollment failed",
-          description: error.message,
-          type: "error",
-        });
+        if (
+          error.message ===
+          "Accounts with public email domains are not allowed to enroll in courses"
+        ) {
+          toastManager.add({
+            title: "Enrollment failed",
+            description:
+              "Accounts with public email domains are not allowed to enroll in courses. Create a new account with an organization email domain to enroll.",
+            type: "error",
+          });
+        } else {
+          toastManager.add({
+            title: "Enrollment failed",
+            description: error.message,
+            type: "error",
+          });
+        }
       },
     })
   );

@@ -57,6 +57,7 @@ export function LearnLessonPage({ courseId }: { courseId: string }) {
         courseId={courseId}
         key={lessonId}
         lessonId={lessonId}
+        // onNavigateToLesson={setLessonId}
       />
     </Suspense>
   );
@@ -66,10 +67,12 @@ function LessonInner({
   courseId,
   lessonId,
   courseData,
+  // onNavigateToLesson,
 }: {
   courseId: string;
   lessonId: string;
   courseData: EnrolledCourse;
+  // onNavigateToLesson: (id: string) => void;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -77,6 +80,7 @@ function LessonInner({
     hasQuizBlocks: false,
     quizSatisfied: true,
     scrollReachedEnd: false,
+    scrollToQuiz: () => undefined,
   });
   const [showFinished, setShowFinished] = useState(false);
   const lessonStartTimeRef = useRef(Date.now());
@@ -153,7 +157,12 @@ function LessonInner({
           setShowFinished(true);
           return;
         }
+
         toastManager.add({ title: "Lesson marked complete", type: "success" });
+
+        // if (lessonData.nav.nextLessonId && !lessonData.nav.nextIsLocked) {
+        //   onNavigateToLesson(lessonData.nav.nextLessonId);
+        // }
       },
       onError: (err) => {
         toastManager.add({
@@ -208,6 +217,7 @@ function LessonInner({
             onMarkComplete={() =>
               markCompleteMutation.mutate({ courseId, lessonId })
             }
+            onScrollToQuiz={requirements.scrollToQuiz}
             prevLessonId={lessonData.nav.prevLessonId}
           />
         }
