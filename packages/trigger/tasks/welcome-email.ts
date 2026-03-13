@@ -34,7 +34,7 @@ export const welcomeEmailTask = schemaTask({
     const { error, data } = await sendEmail({
       to: payload.email,
       subject: "Welcome to Sycom LMS 🎉",
-      from: "Abdul <abdul@learn.sycomsolutions.com>",
+      from: "Abdul <abdul@updates.sycomsolutions.com>",
       headers: {
         "List-Unsubscribe": `<${unsubscribeUrl}>`,
         "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
