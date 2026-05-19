@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "destination": "https://learn.sycom.academy/$1",
+      "permanent": true
+    }
+  ]
+}
