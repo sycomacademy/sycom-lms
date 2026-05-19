@@ -190,14 +190,7 @@ function LessonInner({
         <ArrowLeftIcon />
         Back
       </Button>
-      <div className="min-w-0 text-right">
-        <p className="truncate font-medium text-sm">
-          {lessonData.course.title}
-        </p>
-        <p className="truncate text-muted-foreground text-xs">
-          {lessonData.lesson.title}
-        </p>
-      </div>
+
     </div>
   );
 
